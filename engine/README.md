@@ -6,4 +6,4 @@ The narrow shared helper [`transactionalFileReplace.ts`](../src/application/pers
 
 Infrastructure under [`src/infrastructure/`](../src/infrastructure/) supplies Ajv schema validation, safe JSON I/O, workspace state capture, changed-file audits, and snapshot storage. Domain services do not depend on terminal output, a GUI, Godot, fixture scenes, or source-patching heuristics.
 
-Godot runtime orchestration remains a Phase 1B service boundary and is not present in this implementation.
+Phase 1B runtime orchestration lives under [`src/application/runtime/`](../src/application/runtime/) with protocol/comparison rules under `src/domain/runtime/` and Godot discovery, process, and session adapters under `src/infrastructure/runtime/`. The process-per-run adapter never persists movement changes.

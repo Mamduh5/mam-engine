@@ -39,11 +39,11 @@ Phase 1A.1 extends failed persistence data backward-compatibly:
 
 Recovery status is `not_required`, `restored`, or `failed`. The requested operation remains top-level `failed` after successful recovery, so exit status remains non-zero. Successful rollback data includes `sourceSnapshotId` and `preRollbackSnapshotId`; top-level `snapshotId` is the pre-rollback safety snapshot.
 
-The `mam.runtime/v1` Godot protocol below remains a Phase 1B design contract and has no implementation in Phase 1A.
+The `mam.runtime/v1` Godot protocol below is implemented in Phase 1B using atomic files under an isolated runtime session directory.
 
 ## Purpose
 
-The runtime protocol is the versioned JSON boundary between engine/application services and the Godot runtime adapter. Transport is intentionally undecided; implementations may use process standard streams or files, but must exchange complete JSON messages and must never depend on parsing terminal prose.
+The runtime protocol is the versioned JSON boundary between engine/application services and the Godot runtime adapter. Transport is process-per-run with complete request, readiness, and response JSON files. Standard streams are bounded diagnostic evidence and are never parsed as protocol.
 
 Protocol version `mam.runtime/v1` below is a design contract for Phase 1B. Examples are illustrative, not evidence of a running runtime.
 
@@ -68,10 +68,14 @@ Each request contains:
   "requestedAt": "2026-07-12T08:00:00Z",
   "timeoutMs": 10000,
   "payload": {
-    "definitionSchemaVersion": "mam.movement/v1",
-    "profileId": "movement/default",
-    "fixedDeltaSeconds": 0.0166666667,
-    "scenarioId": "accelerate-forward"
+    "definitionSchemaVersion": 1,
+    "profile": {},
+    "scenario": {
+      "id": "accelerate",
+      "durationSeconds": 3,
+      "fixedDeltaSeconds": 0.016666666666666666,
+      "cameraYawDegrees": 0
+    }
   }
 }
 ```
@@ -97,16 +101,18 @@ Each response contains:
   "correlationId": "run-01JEXAMPLE",
   "status": "ok",
   "metrics": {
-    "maximumGroundSpeedMetersPerSecond": 6.0,
-    "timeToMaximumSpeedSeconds": 0.75,
-    "stoppingDistanceMeters": 1.42
+    "finalSpeed": 5.5,
+    "maximumObservedSpeed": 5.5,
+    "timeToNinetyFivePercentSeconds": 0.3,
+    "totalDistance": 15.705,
+    "physicsSteps": 180
   },
   "warnings": [],
   "validationErrors": [],
   "runtimeErrors": [],
   "changedFiles": [],
   "evidence": {
-    "godotVersion": "4.x",
+    "godotVersion": "4.7.stable.official",
     "physicsSteps": 180
   }
 }
@@ -145,8 +151,9 @@ Initial cross-domain codes include `PROTOCOL_VERSION_UNSUPPORTED`, `COMMAND_UNKN
 2. Godot emits exactly one structured readiness response with status `ready`, fixture identity, correlation data for the launch request, and runtime version evidence.
 3. If readiness is not received before the startup deadline, the caller records `RUNTIME_NOT_READY` or `RUNTIME_TIMEOUT`, terminates the owned process, and preserves available diagnostics.
 4. The caller sends only schema-valid commands. The runtime still validates compatibility and rejects malformed or unsupported messages.
-5. The caller requests `runtime.fixture.shutdown`. Godot stops accepting work, emits `shutting_down`, flushes the final report, and exits.
-6. If controlled shutdown exceeds its deadline, the caller may terminate only the process it launched and reports `RUNTIME_SHUTDOWN_FAILED`.
+5. Godot writes exactly one final response and exits cleanly. The TypeScript owner terminates only its child process when a bounded deadline expires.
+
+Persistent interactive sessions and `runtime.fixture.shutdown` are reserved for a later phase.
 
 Timeout is never reported as success. Late responses retain their correlation ID and cannot satisfy another request. Fixture launch and shutdown must not alter canonical definitions; any unexpected changed file makes the operation fail its safety audit.
 

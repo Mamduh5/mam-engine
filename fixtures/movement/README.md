@@ -1,5 +1,5 @@
 # Movement fixture
 
-This directory is reserved for the controlled third-person movement fixture planned for Phase 1B. Its configuration will name the Phase 1A.1 validated movement profile, test scenario, fixed timestep, initial conditions, and measurable assertions.
+[`basic-ground.fixture.json`](basic-ground.fixture.json) registers the controlled third-person movement fixture implemented in Phase 1B. It names the Godot scene, 1/60-second timestep, and exactly five scenarios: accelerate, stop, sprint, dodge, and turn.
 
-The fixture will prove that the Godot adapter consumes the same definition used by inspection and deterministic simulation. It is acceptance infrastructure, not the product or an alternate source of movement truth. No fixture implementation is included in Phase 1A.1.
+The fixture consumes the same complete validated profile used by deterministic simulation. It is acceptance infrastructure, not a product, game prototype, or alternate movement source. Camera yaw is supplied per request and displacement is measured headlessly.

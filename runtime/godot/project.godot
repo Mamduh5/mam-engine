@@ -1,0 +1,19 @@
+; Movement Editor Phase 1B controlled fixture host.
+config_version=5
+
+[application]
+config/name="mam-engine movement runtime fixture"
+run/main_scene="res://scenes/movement_fixture.tscn"
+
+[display]
+window/size/viewport_width=960
+window/size/viewport_height=540
+window/size/window_width_override=960
+window/size/window_height_override=540
+
+[physics]
+common/physics_ticks_per_second=60
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "movement/basic-ground",
+  "scene": "res://scenes/movement_fixture.tscn",
+  "fixedDeltaSeconds": 0.016666666666666666,
+  "scenarios": ["accelerate", "stop", "sprint", "dodge", "turn"]
+}

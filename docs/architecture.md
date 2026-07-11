@@ -12,7 +12,7 @@ Movement and snapshot application services (implemented)
 Movement domain, JSON Schema, semantic validation (implemented)
                         |
                         v
-Runtime protocol -> Godot adapter -> fixtures (Phase 1B)
+Runtime protocol -> process-per-run Godot adapter -> fixture (implemented in Phase 1B)
                         |
                         v
 Machine-readable reports
@@ -38,15 +38,15 @@ The movement v1 JSON Schema defines canonical authored data, identifiers, suppor
 
 Ajv performs structural checks and project-owned domain code performs semantic checks. Errors have stable codes and precise dotted paths. Invalid definitions cannot be simulated, snapshotted, or persisted.
 
-### Runtime protocol - specified, not implemented
+### Runtime protocol - implemented in Phase 1B
 
-Provides versioned request and response envelopes between engine services and the Godot process. It covers readiness, execution, metrics, warnings, errors, timeout, and shutdown without terminal-text parsing.
+Provides validated `mam.runtime/v1` request, readiness, and final-response files between engine services and one owned Godot process. Terminal output is bounded diagnostics only.
 
-### Godot runtime adapter - Phase 1B
+### Godot runtime adapter - implemented in Phase 1B
 
 Translates validated definitions and fixture commands into Godot execution, then measures and reports outcomes. It may implement runtime integration details but may not define canonical authoring values in scenes or resources.
 
-### Fixtures - Phase 1B
+### Fixtures - implemented in Phase 1B
 
 Provide controlled worlds, initial state, inputs, clocks, and expected measurements for one vertical slice. A fixture cannot add a private authoring model.
 
@@ -62,16 +62,16 @@ Real set operations capture exact previous content immediately before writing. R
 
 Persistent set and rollback operations use an in-process repository-relative target queue. Operations for the same target serialize; different targets may proceed independently. Locks release in `finally`, including failure paths. Inspect, validate, simulate, dry-run, and snapshot listing do not take the write lock.
 
-### Automated tests and remote CI - engine-independent layers implemented
+### Automated tests and remote CI
 
-Node built-in tests verify schema, semantic validation, simulation, transactions, injected failures, recovery, locking, reversible rollback, and CLI output. GitHub Actions runs `npm ci` and `npm run check` on Ubuntu Node 20/22 and Windows Node 22, plus a package dry-run. Godot-dependent checks remain a future narrow integration tier.
+Node built-in tests verify schema, validation, simulation, transactions, recovery, locking, rollback, CLI output, runtime protocol, discovery, comparison, and process lifecycle. GitHub Actions retains the Node matrix and adds a Node 22 job that downloads and digest-verifies the exact official `4.7-stable` standard Linux artifact before real Godot integration.
 
 ## Dependency rules
 
 - Clients depend on engine service interfaces; services never depend on a terminal or GUI.
 - Services depend on domain types, schemas, validators, and ports for storage/runtime operations.
 - Schema and domain code do not depend on Godot.
-- The future Godot adapter will depend on published schemas and protocol contracts, not CLI presentation.
+- The Godot adapter depends on published schemas and protocol contracts, not CLI presentation.
 - Fixtures depend on the runtime adapter and validated definitions; engine logic does not depend on a particular fixture.
 - Reports use shared protocol/domain types rather than scraping logs.
 - Persistence requires validation first; runtime launch will follow the same rule in Phase 1B.

@@ -7,6 +7,8 @@ import { validateMovementFile } from "../application/movement/validateMovement";
 import { createSnapshot } from "../application/snapshots/createSnapshot";
 import { listSnapshots } from "../application/snapshots/listSnapshots";
 import { rollbackSnapshot } from "../application/snapshots/rollbackSnapshot";
+import { checkRuntime } from "../application/runtime/checkRuntime";
+import { runMovementRuntimeTest } from "../application/runtime/runMovementRuntimeTest";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -82,6 +84,8 @@ async function dispatch(
       return validateMovementFile(workspaceRoot, command.file);
     case "movement.simulate":
       return simulateMovementFile(workspaceRoot, command.file, command.scenario, command.seconds);
+    case "movement.runtime-test":
+      return runMovementRuntimeTest(workspaceRoot, command.file, command.scenario, command.seconds, command.cameraYawDegrees, { godot: command.godot, keepSession: command.keepSession });
     case "movement.set":
       return dependencies.setMovementValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "snapshot.list":
@@ -90,6 +94,8 @@ async function dispatch(
       return createSnapshot(workspaceRoot, command.file);
     case "snapshot.rollback":
       return dependencies.rollbackSnapshot(workspaceRoot, command.snapshotId);
+    case "runtime.check":
+      return checkRuntime(workspaceRoot, command.godot);
   }
 }
 

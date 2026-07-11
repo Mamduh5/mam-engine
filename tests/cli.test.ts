@@ -45,6 +45,12 @@ test("unknown commands return CLI_ARGUMENT_INVALID", async (context) => {
   assert.equal(processResult.stderr, "");
 });
 
+test("unsupported runtime scenarios use the runtime-specific stable code", async () => {
+  const execution = await executeCli(["movement", "runtime-test", "examples/movement/default.json", "--scenario", "fly", "--json"]);
+  assert.equal(execution.exitCode, 2);
+  assert.equal(execution.result.errors[0]?.code, ErrorCodes.RuntimeScenarioUnsupported);
+});
+
 test("recovered write failures serialize in JSON and remain non-zero", async (context) => {
   const workspace = await createTestWorkspace(context);
   let reads = 0;

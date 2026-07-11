@@ -33,7 +33,34 @@ export function simulateMovement(
       return simulateSprint(profile, positiveDuration(requestedSeconds, 5));
     case "dodge":
       return simulateDodge(profile);
+    case "turn":
+      return simulateTurn(profile);
   }
+}
+
+function simulateTurn(profile: MovementProfile): SimulationResult {
+  const targetYaw = 90;
+  const maximumStep = profile.ground.rotationSpeedDegrees * FIXED_TIMESTEP_SECONDS;
+  let yaw = 0;
+  let steps = 0;
+  let maximumAngularSpeed = 0;
+  while (yaw < targetYaw && steps < 10_000) {
+    const change = Math.min(maximumStep, targetYaw - yaw);
+    yaw += change;
+    steps += 1;
+    maximumAngularSpeed = Math.max(maximumAngularSpeed, change / FIXED_TIMESTEP_SECONDS);
+  }
+  return {
+    scenario: "turn",
+    metrics: {
+      targetYawDegrees: targetYaw,
+      finalYawDegrees: roundMetric(yaw),
+      maximumAngularSpeedDegreesPerSecond: roundMetric(maximumAngularSpeed),
+      timeToTargetYawSeconds: roundMetric(steps * FIXED_TIMESTEP_SECONDS),
+      fixedTimestepSeconds: roundMetric(FIXED_TIMESTEP_SECONDS),
+      simulationSteps: steps
+    }
+  };
 }
 
 function simulateAccelerate(profile: MovementProfile, duration: number): SimulationResult {

@@ -2,9 +2,9 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. The current milestone is **Movement Editor Phase 1A.1**, the transactionally safe, engine-independent movement-domain foundation. It does not include Godot integration or combat.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 is implemented through Phase 1B**: the transactionally safe movement foundation now has a controlled process-per-run Godot runtime proof. It does not include combat.
 
-## Implemented through Phase 1A.1
+## Implemented through Phase 1B
 
 - A Node.js/TypeScript `mam` CLI with versioned JSON results.
 - JSON Schema and semantic validation for movement profile v1.
@@ -18,12 +18,13 @@ The long-term target is a Dauntless-style action hunting game. The current miles
 - Per-target in-process serialization for persistent operations; read-only operations remain unlocked.
 - Node built-in tests for schema, validation, simulation, editing, failure recovery, locking, snapshots, rollback, and CLI behavior.
 - GitHub Actions checks on Ubuntu with Node 20/22 and Windows with Node 22.
+- Godot 4.7-stable discovery, structured readiness/results, a fixed-step basic-ground fixture, simulator/runtime comparisons, and a separate real-runtime CI job.
 
 ## Why CLI first
 
 The `mam` CLI gives automated agents stable commands, structured input and output, deterministic validation, exact changed-file reporting, and testable failure behavior before a human-facing interface exists. A later visual editor will call the same application services rather than replace them.
 
-Godot 4 remains the planned runtime host because it provides rendering, physics, skeletal animation, input, audio, navigation, and headless execution. Godot is not the product or canonical authoring source. No Godot adapter or fixture is implemented in Phase 1A.
+Godot 4 is the controlled runtime host. It consumes the supplied validated definition and is not the product or canonical authoring source.
 
 ## Requirements and setup
 
@@ -44,7 +45,9 @@ Every command accepts `--json`. JSON mode writes one versioned result envelope t
 ```text
 mam movement inspect <file> [--json]
 mam movement validate <file> [--json]
-mam movement simulate <file> --scenario <accelerate|stop|sprint|dodge> [--seconds <number>] [--json]
+mam movement simulate <file> --scenario <accelerate|stop|sprint|dodge|turn> [--seconds <number>] [--json]
+mam runtime check [--godot <path>] [--json]
+mam movement runtime-test <file> --scenario <accelerate|stop|sprint|dodge|turn> [--seconds <number>] [--camera-yaw-degrees <number>] [--godot <path>] [--keep-session] [--json]
 mam movement set <file> <property-path> <json-value> [--dry-run] [--json]
 
 mam snapshot create <file> [--json]
@@ -74,15 +77,15 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [`schemas/movement/`](schemas/movement/v1.schema.json) - canonical movement profile v1 schema.
 - [`examples/movement/`](examples/movement/default.json) - prototype defaults, not final game balance.
 - [`tests/`](tests/README.md) - engine-independent automated verification.
-- [`runtime/godot/`](runtime/godot/README.md) and [`fixtures/movement/`](fixtures/movement/README.md) - documented Phase 1B boundaries only.
+- [`runtime/godot/`](runtime/godot/README.md) and [`fixtures/movement/`](fixtures/movement/README.md) - controlled Phase 1B runtime and fixture.
 
 ## Current limitations
 
-- No Godot runtime adapter, live connection, or movement fixture exists yet.
+- No persistent live runtime session, live editing, camera editor, or explicit interactive shutdown command exists.
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - There is no combat, targeting, enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Movement Editor v0.1 as a whole is not complete until Phase 1B proves the same profile through Godot.
+- Broader movement, camera, targeting, defensive-action, and combat phases remain separate roadmap work.
 
 ## Documentation
 
@@ -93,4 +96,4 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [Runtime and CLI protocols](docs/runtime-protocol.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Roadmap](docs/roadmap.md)
-- Decisions: [CLI first](docs/decisions/0001-cli-first.md), [Godot runtime](docs/decisions/0002-godot-runtime.md), and [authored vs. engine-owned files](docs/decisions/0003-codex-owned-vs-engine-owned.md)
+- Decisions: [CLI first](docs/decisions/0001-cli-first.md), [Godot runtime](docs/decisions/0002-godot-runtime.md), [authored vs. engine-owned files](docs/decisions/0003-codex-owned-vs-engine-owned.md), and [process-per-run transport](docs/decisions/0004-process-per-run-runtime-transport.md)

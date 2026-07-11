@@ -1,4 +1,5 @@
 node_modules/
 dist/
 .mam-engine/
+runtime/godot/.godot/
 *.tsbuildinfo

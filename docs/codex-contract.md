@@ -24,7 +24,7 @@ Codex-authored game content includes:
 - encounter definitions
 - fixture configuration
 
-Movement profiles are supported in Phase 1A. Movement fixture configuration is deferred to Phase 1B; the other categories reserve long-term boundaries and are not implemented.
+Movement profiles are supported from Phase 1A and the basic-ground fixture configuration is implemented in Phase 1B. The other categories reserve long-term boundaries and are not implemented.
 
 Engine-owned infrastructure includes:
 
@@ -59,3 +59,7 @@ Read-only inspection, validation, simulation, snapshot listing, and set dry runs
 ## Result expectations
 
 Phase 1A.1 results identify protocol version `1`, command, correlation ID, status, input, data, validation findings, warnings, exact changed files, and snapshot ID. Failed transaction data may add `failureStage` and `recovery` without changing the envelope. For rollback, top-level `snapshotId` is the new pre-rollback safety snapshot; data separately identifies the selected source snapshot. The implemented statuses remain `passed`, `failed`, `dry_run`, and `rolled_back`.
+
+## Phase 1B runtime operations
+
+`runtime check` and `movement runtime-test` are read-only engine-development operations. They validate the full movement profile before launch, pass the normalized profile inside one `mam.runtime/v1` request, accept only the registered basic-ground fixture and five movement scenarios, audit canonical files after execution, and return simulation/runtime/comparison evidence. Successful internal sessions are removed unless explicitly retained; failed and timed-out sessions remain ignored diagnostics.

@@ -44,3 +44,12 @@ test("dodge distance and timing match the profile", async () => {
   assert.equal(result.metrics.invulnerabilityDurationSeconds, 0.24);
   assert.equal(result.metrics.staminaConsumed, profile.dodge.staminaCost);
 });
+
+test("turn reaches 90 degrees using the configured shortest-angle rate", async () => {
+  const profile = await defaultProfile();
+  const result = simulateMovement(profile, "turn");
+  assert.equal(result.metrics.targetYawDegrees, 90);
+  assert.equal(result.metrics.finalYawDegrees, 90);
+  assert.equal(result.metrics.maximumAngularSpeedDegreesPerSecond, profile.ground.rotationSpeedDegrees);
+  assert.equal(result.metrics.simulationSteps, 8);
+});

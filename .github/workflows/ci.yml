@@ -33,10 +33,10 @@ jobs:
             pack: false
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
@@ -50,3 +50,44 @@ jobs:
       - name: Verify package contents
         if: matrix.pack
         run: npm pack --dry-run
+
+  godot-integration:
+    name: Godot 4.7 stable integration
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.7-stable
+      GODOT_ASSET: Godot_v4.7-stable_linux.x86_64.zip
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download and verify official Godot release
+        shell: bash
+        run: |
+          set -euo pipefail
+          release="https://api.github.com/repos/godotengine/godot-builds/releases/tags/${GODOT_VERSION}"
+          download="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/${GODOT_ASSET}"
+          mkdir -p .ci-godot
+          curl --fail --location --silent --show-error "$release" > .ci-godot/release.json
+          digest="$(jq -r --arg asset "$GODOT_ASSET" '.assets[] | select(.name == $asset) | .digest' .ci-godot/release.json)"
+          test "${digest#sha256:}" != "$digest"
+          curl --fail --location --silent --show-error "$download" --output ".ci-godot/${GODOT_ASSET}"
+          echo "${digest#sha256:}  .ci-godot/${GODOT_ASSET}" | sha256sum --check --strict
+          unzip -q ".ci-godot/${GODOT_ASSET}" -d .ci-godot
+          chmod +x ".ci-godot/Godot_v${GODOT_VERSION}_linux.x86_64"
+          echo "MAM_GODOT_BIN=$GITHUB_WORKSPACE/.ci-godot/Godot_v${GODOT_VERSION}_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Verify pinned Godot runtime
+        run: npm run mam -- runtime check --json
+
+      - name: Run real Godot integration suite
+        run: npm run test:godot

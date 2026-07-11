@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/runtime/v1-response.schema.json",
+  "title": "mam runtime v1 response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "commandId", "fixtureId", "correlationId", "status", "metrics", "warnings", "validationErrors", "runtimeErrors", "changedFiles", "evidence"],
+  "properties": {
+    "schemaVersion": { "const": "mam.runtime/v1" },
+    "commandId": { "enum": ["runtime.fixture.ready", "runtime.fixture.run"] },
+    "fixtureId": { "const": "movement/basic-ground" },
+    "correlationId": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["ready", "ok", "rejected", "failed", "timed_out"] },
+    "metrics": { "type": "object" },
+    "warnings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "validationErrors": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "runtimeErrors": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "changedFiles": { "type": "array", "items": { "type": "string" } },
+    "evidence": { "type": "object" }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["code", "message"],
+      "properties": { "code": { "type": "string" }, "message": { "type": "string" }, "path": { "type": "string" } }
+    }
+  }
+}

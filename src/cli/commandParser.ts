@@ -1,17 +1,20 @@
 import type { MovementScenario } from "../domain/movement/movementTypes";
 import { ErrorCodes } from "../shared/errorCodes";
+import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
   | { kind: "movement.inspect"; file: string; json: boolean }
   | { kind: "movement.validate"; file: string; json: boolean }
   | { kind: "movement.simulate"; file: string; scenario: MovementScenario; seconds?: number; json: boolean }
+  | { kind: "movement.runtime-test"; file: string; scenario: MovementScenario; seconds?: number; cameraYawDegrees: number; godot?: string; keepSession: boolean; json: boolean }
+  | { kind: "runtime.check"; godot?: string; json: boolean }
   | { kind: "movement.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "snapshot.list"; json: boolean }
   | { kind: "snapshot.create"; file: string; json: boolean }
   | { kind: "snapshot.rollback"; snapshotId: string; json: boolean };
 
 export class CliParseError extends Error {
-  readonly code = ErrorCodes.CliArgumentInvalid;
+  constructor(message: string, public readonly code: ErrorCode = ErrorCodes.CliArgumentInvalid) { super(message); }
 }
 
 interface ParsedArguments {
@@ -19,7 +22,7 @@ interface ParsedArguments {
   flags: Map<string, string | true>;
 }
 
-const movementScenarios = new Set<MovementScenario>(["accelerate", "stop", "sprint", "dodge"]);
+const movementScenarios = new Set<MovementScenario>(["accelerate", "stop", "sprint", "dodge", "turn"]);
 
 export function parseCommand(argv: string[]): ParsedCommand {
   const [group, action, ...remaining] = argv;
@@ -32,6 +35,12 @@ export function parseCommand(argv: string[]): ParsedCommand {
   }
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
+  }
+  if (group === "runtime" && action === "check") {
+    const parsed = parseArguments(remaining, new Set(["--json", "--godot"]), new Set(["--godot"]));
+    requirePositionals(parsed, 0, "runtime check does not accept positional arguments");
+    const godot = parsed.flags.get("--godot");
+    return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
 }
@@ -48,7 +57,7 @@ function parseMovementCommand(action: string, args: string[]): ParsedCommand {
     requirePositionals(parsed, 1, "movement simulate requires exactly one file argument");
     const scenarioValue = parsed.flags.get("--scenario");
     if (typeof scenarioValue !== "string" || !movementScenarios.has(scenarioValue as MovementScenario)) {
-      throw new CliParseError("--scenario must be one of: accelerate, stop, sprint, dodge");
+      throw new CliParseError("--scenario must be one of: accelerate, stop, sprint, dodge, turn");
     }
     const secondsValue = parsed.flags.get("--seconds");
     let seconds: number | undefined;
@@ -63,6 +72,32 @@ function parseMovementCommand(action: string, args: string[]): ParsedCommand {
       file: parsed.positional[0] as string,
       scenario: scenarioValue as MovementScenario,
       ...(seconds === undefined ? {} : { seconds }),
+      json: parsed.flags.has("--json")
+    };
+  }
+
+  if (action === "runtime-test") {
+    const parsed = parseArguments(args, new Set(["--json", "--scenario", "--seconds", "--camera-yaw-degrees", "--godot", "--keep-session"]), new Set(["--scenario", "--seconds", "--camera-yaw-degrees", "--godot"]));
+    requirePositionals(parsed, 1, "movement runtime-test requires exactly one file argument");
+    const scenarioValue = parsed.flags.get("--scenario");
+    if (typeof scenarioValue !== "string" || !movementScenarios.has(scenarioValue as MovementScenario)) {
+      throw new CliParseError("--scenario must be one of: accelerate, stop, sprint, dodge, turn", ErrorCodes.RuntimeScenarioUnsupported);
+    }
+    const seconds = optionalPositiveNumber(parsed.flags.get("--seconds"), "--seconds");
+    const yawValue = parsed.flags.get("--camera-yaw-degrees");
+    const cameraYawDegrees = yawValue === undefined ? 0 : Number(yawValue);
+    if (!Number.isFinite(cameraYawDegrees)) {
+      throw new CliParseError("--camera-yaw-degrees must be a finite number");
+    }
+    const godot = parsed.flags.get("--godot");
+    return {
+      kind: "movement.runtime-test",
+      file: parsed.positional[0] as string,
+      scenario: scenarioValue as MovementScenario,
+      ...(seconds === undefined ? {} : { seconds }),
+      cameraYawDegrees,
+      ...(typeof godot === "string" ? { godot } : {}),
+      keepSession: parsed.flags.has("--keep-session"),
       json: parsed.flags.has("--json")
     };
   }
@@ -86,6 +121,13 @@ function parseMovementCommand(action: string, args: string[]): ParsedCommand {
     };
   }
   throw new CliParseError(`Unknown movement command '${action}'`);
+}
+
+function optionalPositiveNumber(value: string | true | undefined, flag: string): number | undefined {
+  if (typeof value !== "string") return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) throw new CliParseError(`${flag} must be a finite number greater than 0`);
+  return parsed;
 }
 
 function parseSnapshotCommand(action: string, args: string[]): ParsedCommand {

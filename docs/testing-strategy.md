@@ -2,7 +2,7 @@
 
 Automated evidence is part of each editor/engine feature, not a final polish step. Tests should use stable structured results and measurable values, avoid reliance on terminal prose, and identify environment limitations separately from product failures.
 
-Phase 1A.1 implements the fast engine-independent layers with Node's built-in test runner. Tests compile from TypeScript and use isolated temporary workspaces for all write operations. Injected application dependencies deterministically force write, read, validation, audit, snapshot, and recovery failures without production CLI debug flags. Godot-dependent layers remain pending Phase 1B.
+Phase 1A.1 implements the fast engine-independent layers with Node's built-in test runner. Tests compile from TypeScript and use isolated temporary workspaces for all write operations. Phase 1B implements a separate Godot-dependent integration tier while keeping normal checks runtime-independent.
 
 ## Test layers
 
@@ -24,7 +24,7 @@ Use fixed timesteps and explicit inputs to assert ordered samples and metrics. M
 
 ### Godot headless integration tests
 
-**Phase 1B.** Launch the real Godot adapter, perform readiness and shutdown handshakes, execute named fixtures, and compare runtime metrics with expected tolerances. These tests require a supported Godot 4 executable and may run in a slower integration job.
+Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute named fixtures, and compare runtime metrics with named tolerances. These tests require compatible Godot 4.7 stable and run in a separate slower integration job.
 
 ### Runtime fixture smoke tests
 
@@ -48,7 +48,7 @@ Force atomic write, post-write read, validation, scope audit, recovery write, re
 
 ### Remote CI
 
-GitHub Actions runs `npm ci` and `npm run check` for Ubuntu Node 20, Ubuntu Node 22, and Windows Node 22. Ubuntu Node 20 also runs `npm pack --dry-run`. The workflow uses lockfile caching, read-only contents permission, and no deployment, secrets, or Godot installation.
+GitHub Actions runs `npm ci` and `npm run check` for Ubuntu Node 20, Ubuntu Node 22, and Windows Node 22. Ubuntu Node 20 also runs `npm pack --dry-run`. A separate Ubuntu/Node 22 job downloads the exact official `4.7-stable` standard binary, verifies its GitHub release SHA-256 digest, and runs the real integration tier. The workflow uses immutable action SHAs, read-only contents permission, no deployment, and no secrets.
 
 ### Regression tests
 
@@ -56,7 +56,7 @@ Every fixed defect receives the smallest test at the owning layer. Cross-layer r
 
 ## Runtime-independent versus Godot-required
 
-Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. Type checking plus the full suite runs through `npm run check`. Godot protocol integration and fixture smoke tests will form a separate slower suite with explicit executable/version detection in Phase 1B.
+Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. Type checking plus the full suite runs through `npm run check`. Godot protocol integration and fixture smoke tests run through `npm run test:godot`. Local absence is reported as skipped; pinned CI must pass rather than skip.
 
 If Godot is unavailable, the fast suite can pass while Godot-required checks are reported as not run because of the environment. They must not be claimed as passing or silently omitted.
 

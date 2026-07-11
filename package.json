@@ -9,13 +9,21 @@
   },
   "files": [
     "dist/src",
-    "schemas"
+    "schemas",
+    "runtime/godot/project.godot",
+    "runtime/godot/README.md",
+    "runtime/godot/scenes",
+    "runtime/godot/scripts",
+    "fixtures/movement"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc --noEmit -p tsconfig.json",
-    "test": "npm run build && node --test dist/tests/*.test.js",
+    "test": "npm run test:unit",
+    "test:unit": "npm run build && node --test dist/tests/*.test.js",
+    "test:godot": "npm run build && node --test dist/tests/godot/*.integration.js",
     "check": "npm run lint && npm test",
+    "check:all": "npm run check && npm run test:godot",
     "mam": "npm run build --silent && node dist/src/cli/main.js"
   },
   "engines": {

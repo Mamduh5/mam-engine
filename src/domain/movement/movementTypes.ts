@@ -36,7 +36,7 @@ export interface MovementProfile {
   dodge: DodgeDefinition;
 }
 
-export type MovementScenario = "accelerate" | "stop" | "sprint" | "dodge";
+export type MovementScenario = "accelerate" | "stop" | "sprint" | "dodge" | "turn";
 
 export interface MovementDerivedMetrics {
   speedOrdering: {

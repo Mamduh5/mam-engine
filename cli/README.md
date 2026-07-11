@@ -6,4 +6,4 @@ The local parser supports movement inspection, validation, simulation, transacti
 
 Failed persistent commands remain top-level `failed` even when recovery restores the original target. Their JSON data identifies `failureStage` and typed recovery evidence. Rollback JSON returns both the selected `sourceSnapshotId` and newly created `preRollbackSnapshotId`; top-level `snapshotId` means the pre-rollback safety snapshot.
 
-The CLI parses and presents operations only. Movement rules live in the domain layer, orchestration and transaction recovery in application services, and filesystem/schema behavior in infrastructure. Godot launch commands are not implemented in Phase 1A.1.
+The parser also supports `runtime check` and `movement runtime-test`. Runtime commands discover Godot from `--godot`, `MAM_GODOT_BIN`, or `PATH`; launch without a shell; and return structured discovery, measurement, comparison, and retained-session evidence. The CLI remains presentation only: movement/runtime rules live in domain and application layers, while process, filesystem, session, and discovery behavior remain infrastructure concerns.

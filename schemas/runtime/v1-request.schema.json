@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/runtime/v1-request.schema.json",
+  "title": "mam runtime v1 request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "commandId", "fixtureId", "correlationId", "requestedAt", "timeoutMs", "payload"],
+  "properties": {
+    "schemaVersion": { "const": "mam.runtime/v1" },
+    "commandId": { "const": "runtime.fixture.run" },
+    "fixtureId": { "const": "movement/basic-ground" },
+    "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
+    "requestedAt": { "type": "string" },
+    "timeoutMs": { "type": "number", "exclusiveMinimum": 0, "maximum": 60000 },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definitionSchemaVersion", "profile", "scenario"],
+      "properties": {
+        "definitionSchemaVersion": { "const": 1 },
+        "profile": { "$ref": "../movement/v1.schema.json" },
+        "scenario": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "durationSeconds", "fixedDeltaSeconds", "cameraYawDegrees"],
+          "properties": {
+            "id": { "enum": ["accelerate", "stop", "sprint", "dodge", "turn"] },
+            "durationSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+            "fixedDeltaSeconds": { "const": 0.016666666666666666 },
+            "cameraYawDegrees": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}
