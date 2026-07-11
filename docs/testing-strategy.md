@@ -2,7 +2,7 @@
 
 Automated evidence is part of each editor/engine feature, not a final polish step. Tests should use stable structured results and measurable values, avoid reliance on terminal prose, and identify environment limitations separately from product failures.
 
-Phase 1A implements the fast engine-independent layers with Node's built-in test runner. Tests compile from TypeScript and use isolated temporary workspaces for all write operations. Godot-dependent layers remain pending Phase 1B.
+Phase 1A.1 implements the fast engine-independent layers with Node's built-in test runner. Tests compile from TypeScript and use isolated temporary workspaces for all write operations. Injected application dependencies deterministically force write, read, validation, audit, snapshot, and recovery failures without production CLI debug flags. Godot-dependent layers remain pending Phase 1B.
 
 ## Test layers
 
@@ -40,7 +40,15 @@ Start from a known file snapshot, run read-only and mutating operations, and com
 
 ### Snapshot and rollback tests
 
-Verify snapshot manifests, content integrity, overwrite-before-snapshot ordering, rollback previews, path containment, partial failure reports, restored content, and post-rollback audits. Most are fast; an optional integration test may exercise the CLI.
+Verify snapshot manifests, content integrity, overwrite-before-snapshot ordering, reversible rollback, both snapshot identities, path containment, failure recovery, restored content, source immutability, and post-rollback audits.
+
+### Transaction and locking tests
+
+Force atomic write, post-write read, validation, scope audit, recovery write, recovery validation, and pre-rollback snapshot failures through explicit test seams. Assertions cover exact final bytes and retained snapshots. Concurrency tests prove same-target writes do not interleave, locks release after success/failure, and inspection remains available while a write is waiting.
+
+### Remote CI
+
+GitHub Actions runs `npm ci` and `npm run check` for Ubuntu Node 20, Ubuntu Node 22, and Windows Node 22. Ubuntu Node 20 also runs `npm pack --dry-run`. The workflow uses lockfile caching, read-only contents permission, and no deployment, secrets, or Godot installation.
 
 ### Regression tests
 

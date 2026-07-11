@@ -21,6 +21,24 @@ Phase 1A implements the Codex-facing CLI operation envelope, not the Godot runti
 
 CLI status is limited to `passed`, `failed`, `dry_run`, and `rolled_back`. Normal errors use project-owned codes, return a non-zero exit code, and do not require terminal-text parsing. Repository-relative paths are used when available.
 
+Phase 1A.1 extends failed persistence data backward-compatibly:
+
+```json
+{
+  "failureStage": "post_write_validation",
+  "recovery": {
+    "attempted": true,
+    "status": "restored",
+    "restoredFile": "examples/movement/default.json",
+    "contentHashVerified": true,
+    "validationPassed": true,
+    "scopeAuditPassed": true
+  }
+}
+```
+
+Recovery status is `not_required`, `restored`, or `failed`. The requested operation remains top-level `failed` after successful recovery, so exit status remains non-zero. Successful rollback data includes `sourceSnapshotId` and `preRollbackSnapshotId`; top-level `snapshotId` is the pre-rollback safety snapshot.
+
 The `mam.runtime/v1` Godot protocol below remains a Phase 1B design contract and has no implementation in Phase 1A.
 
 ## Purpose

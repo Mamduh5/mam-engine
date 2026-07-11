@@ -2,9 +2,9 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. The current milestone is **Movement Editor Phase 1A**, the engine-independent movement-domain foundation. It does not include Godot integration or combat.
+The long-term target is a Dauntless-style action hunting game. The current milestone is **Movement Editor Phase 1A.1**, the transactionally safe, engine-independent movement-domain foundation. It does not include Godot integration or combat.
 
-## Implemented in Phase 1A
+## Implemented through Phase 1A.1
 
 - A Node.js/TypeScript `mam` CLI with versioned JSON results.
 - JSON Schema and semantic validation for movement profile v1.
@@ -12,9 +12,12 @@ The long-term target is a Dauntless-style action hunting game. The current miles
 - Read-only movement inspection with derived metrics.
 - Existing-property dotted-path edits, including dry runs and full-candidate validation.
 - Atomic two-space JSON persistence with a trailing newline.
-- Pre-write snapshots, snapshot listing, and exact-content rollback.
+- Transactional persistence that restores exact pre-operation content when post-write verification fails.
+- Pre-write snapshots, snapshot listing, and reversible rollback with a pre-rollback safety snapshot.
 - Repository-relative changed-file auditing and explicit write allowlists.
-- Node built-in tests for schema, validation, simulation, editing, snapshots, rollback, and CLI behavior.
+- Per-target in-process serialization for persistent operations; read-only operations remain unlocked.
+- Node built-in tests for schema, validation, simulation, editing, failure recovery, locking, snapshots, rollback, and CLI behavior.
+- GitHub Actions checks on Ubuntu with Node 20/22 and Windows with Node 22.
 
 ## Why CLI first
 
@@ -58,12 +61,14 @@ npm run mam -- movement set examples/movement/default.json ground.runSpeed 6.5 -
 npm run mam -- movement set examples/movement/default.json ground.orientationMode '"camera_relative"' --json
 ```
 
-Snapshots are stored under ignored `.mam-engine/snapshots/`. A real set validates first, snapshots immediately before writing, writes atomically, re-reads and validates, then audits the actual changed files.
+Snapshots are stored under ignored `.mam-engine/snapshots/`. A real set validates first, snapshots immediately before writing, writes atomically, verifies hash and validation, then audits actual changes. If post-write verification fails, the operation restores and verifies the exact snapshot content while retaining the original failure and snapshot.
+
+Rollback is reversible by default. Before restoring a selected historical snapshot, `mam` snapshots the current valid target using operation `snapshot.rollback.pre_restore`. For rollback results, top-level `snapshotId` is the new pre-rollback safety snapshot; `data.sourceSnapshotId` is the selected historical snapshot and `data.preRollbackSnapshotId` repeats the safety snapshot explicitly.
 
 ## Repository structure
 
 - [`src/cli/`](src/cli/main.ts) - command parsing and output adapters.
-- [`src/application/`](src/application/movement/inspectMovement.ts) - movement and snapshot use cases.
+- [`src/application/`](src/application/movement/inspectMovement.ts) - movement, snapshot, locking, and transactional persistence use cases.
 - [`src/domain/movement/`](src/domain/movement/movementTypes.ts) - domain types, validation, metrics, and simulation.
 - [`src/infrastructure/`](src/infrastructure/files/changedFileAudit.ts) - JSON, schema, audit, and snapshot adapters.
 - [`schemas/movement/`](schemas/movement/v1.schema.json) - canonical movement profile v1 schema.

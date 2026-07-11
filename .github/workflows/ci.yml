@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  node-checks:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu / Node 20
+            os: ubuntu-latest
+            node-version: 20
+            pack: true
+          - name: Ubuntu / Node 22
+            os: ubuntu-latest
+            node-version: 22
+            pack: false
+          - name: Windows / Node 22
+            os: windows-latest
+            node-version: 22
+            pack: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type checks and tests
+        run: npm run check
+
+      - name: Verify package contents
+        if: matrix.pack
+        run: npm pack --dry-run

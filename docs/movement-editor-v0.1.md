@@ -2,7 +2,7 @@
 
 ## Status
 
-Movement Editor **Phase 1A is implemented**. It proves the movement-domain contract independently of a runtime host. The complete Movement Editor v0.1 milestone is **not finished**: Godot adapter and fixture proof are deferred to Phase 1B.
+Movement Editor **Phase 1A.1 is implemented**. It hardens the engine-independent movement-domain contract with transactional recovery, reversible rollback, same-target locking, and remote CI. The complete Movement Editor v0.1 milestone is **not finished**: Godot adapter and fixture proof are deferred to Phase 1B.
 
 ## Implemented definition scope
 
@@ -29,7 +29,7 @@ mam snapshot rollback <snapshot-id> [--json]
 
 Inspection returns the normalized profile plus speed ordering, estimated run acceleration/stopping time, full-stamina sprint duration, dodge invulnerability duration, and dodge average travel speed. Validation combines JSON Schema and semantic rules.
 
-Set resolves only an existing dotted property. It parses the proposed value as JSON, validates the complete candidate, supports a zero-write dry run, snapshots immediately before a real write, writes atomically with two-space formatting and a trailing newline, re-reads and validates, and audits exact changes.
+Set resolves only an existing dotted property. It parses the proposed value as JSON, validates the complete candidate, supports a zero-write dry run, snapshots immediately before a real write, writes atomically with two-space formatting and a trailing newline, verifies persisted hash and validation, and audits exact changes. A post-write failure triggers one exact-content restoration and verification attempt; top-level status remains `failed` whether recovery is restored or failed.
 
 ## Deterministic simulation
 
@@ -42,32 +42,35 @@ Simulation uses a fixed `1/60` second timestep and never reads wall-clock time o
 
 Equivalent profile, scenario, and duration inputs produce equivalent domain simulation results.
 
-## Phase 1A safety contract
+## Phase 1A.1 safety contract
 
 - Inspect, validate, simulate, snapshot list, and set dry-run allow no changed files.
-- Real set allows only the target movement profile and its new `.mam-engine/snapshots/*.json` record.
+- Real set allows only the target movement profile and its new `.mam-engine/snapshots/*.json` record. Failed post-write verification restores and validates the original snapshot content.
 - Snapshot creation allows only its new snapshot record.
-- Rollback allows only the recorded target file.
+- Rollback requires a valid current target, creates a pre-rollback safety snapshot, and allows only that snapshot plus the recorded target file.
 - Snapshot metadata includes version, ID, timestamp, operation, repository-relative target, SHA-256 content hash, and exact previous content.
-- Rollback verifies the record and hash, validates the saved content, restores it atomically, re-validates, and audits changes.
+- Rollback verifies the source record and hash, restores it atomically, re-validates and audits, and recovers the pre-rollback state on failed verification.
 - Movement targets must be repository-contained JSON files and cannot resolve under `.git`, `.mam-engine`, `node_modules`, or `dist`.
+- Same-target persistent operations serialize within one process and release locks in `finally`; read-only operations remain unlocked.
+
+Rollback top-level `snapshotId` is the newly created pre-rollback safety snapshot. `data.sourceSnapshotId` identifies the selected historical snapshot and `data.preRollbackSnapshotId` explicitly repeats the safety snapshot. Selected snapshots are never mutated or deleted.
 
 ## Stable errors
 
-Phase 1A exposes project-owned codes: `MOVEMENT_FILE_NOT_FOUND`, `MOVEMENT_FILE_READ_FAILED`, `MOVEMENT_JSON_INVALID`, `MOVEMENT_SCHEMA_INVALID`, `MOVEMENT_SCHEMA_VERSION_UNSUPPORTED`, `MOVEMENT_SPEED_ORDER_INVALID`, `MOVEMENT_ACCELERATION_INVALID`, `MOVEMENT_DECELERATION_INVALID`, `MOVEMENT_ROTATION_INVALID`, `MOVEMENT_STAMINA_INVALID`, `MOVEMENT_DODGE_INVALID`, `MOVEMENT_DODGE_IFRAME_WINDOW_INVALID`, `MOVEMENT_PROPERTY_NOT_FOUND`, `MOVEMENT_PROPERTY_VALUE_INVALID`, `MOVEMENT_WRITE_BLOCKED`, `SNAPSHOT_NOT_FOUND`, `SNAPSHOT_ROLLBACK_FAILED`, `CLI_ARGUMENT_INVALID`, and `INTERNAL_ERROR`.
+Phase 1A.1 adds `MOVEMENT_WRITE_VERIFICATION_FAILED`, `MOVEMENT_WRITE_SCOPE_AUDIT_FAILED`, `MOVEMENT_WRITE_RECOVERY_FAILED`, `SNAPSHOT_PRE_ROLLBACK_FAILED`, `SNAPSHOT_ROLLBACK_VERIFICATION_FAILED`, `SNAPSHOT_ROLLBACK_SCOPE_AUDIT_FAILED`, and `SNAPSHOT_ROLLBACK_RECOVERY_FAILED` to the existing project-owned error surface.
 
 Errors include a dotted `path` when a field or file can be identified, a stable message, and optional `actual`, `expected`, or structured details. Raw Ajv diagnostics are not the public contract.
 
 ## Full v0.1 acceptance criteria
 
-1. Codex can change a movement profile without editing engine-owned movement code. **Met in Phase 1A.**
-2. Invalid values are rejected with stable error codes and field paths. **Met in Phase 1A.**
-3. Movement simulation is deterministic. **Met in Phase 1A.**
+1. Codex can change a movement profile without editing engine-owned movement code. **Met through Phase 1A.1.**
+2. Invalid values are rejected with stable error codes and field paths. **Met through Phase 1A.1.**
+3. Movement simulation is deterministic. **Met through Phase 1A.1.**
 4. A Godot fixture consumes the same validated profile. **Pending Phase 1B.**
 5. Runtime results are returned as structured JSON. **CLI results are implemented; Godot runtime results are pending Phase 1B.**
 6. Tests cover acceleration, maximum speed, stopping, turning, sprint stamina, and dodge timing. **Phase 1A covers all listed areas except runtime turning behavior, which is pending fixture integration.**
-7. Unexpected file changes cause the operation to fail. **Met in Phase 1A application audits.**
-8. Snapshot and rollback behavior is testable. **Met in Phase 1A.**
+7. Unexpected file changes cause the operation to fail and attempt target recovery. **Met in Phase 1A.1 application audits.**
+8. Snapshot, reversible rollback, and recovery behavior are testable. **Met in Phase 1A.1.**
 9. No combat functionality is required. **Preserved.**
 
 Phase 1B must add the Godot adapter, a controlled movement fixture, readiness/shutdown handling, runtime measurement reports, simulation-to-runtime tolerances, and headless integration tests without changing the canonical movement definition source.

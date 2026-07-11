@@ -1,18 +1,77 @@
 import { validateMovementDefinition } from "../../domain/movement/movementValidation";
 import type { MovementProfile } from "../../domain/movement/movementTypes";
-import { auditChangedFiles, captureWorkspaceState } from "../../infrastructure/files/changedFileAudit";
-import { atomicWriteText, formatJson, readJsonFile } from "../../infrastructure/files/jsonFileStore";
-import { createFileSnapshot } from "../../infrastructure/snapshots/fileSnapshotStore";
+import { auditChangedFiles, captureWorkspaceState, resolveWorkspacePath } from "../../infrastructure/files/changedFileAudit";
+import { formatJson } from "../../infrastructure/files/jsonFileStore";
+import { createFileSnapshot, type CreatedSnapshot } from "../../infrastructure/snapshots/fileSnapshotStore";
 import { ErrorCodes } from "../../shared/errorCodes";
 import { operationResult, type OperationError, type OperationResult } from "../../shared/operationResult";
+import {
+  transactionalFileReplace,
+  type ContentVerification,
+  type TransactionalFileReplaceDependencies,
+  type TransactionalReplaceFailure
+} from "../persistence/transactionalFileReplace";
+import { withTargetOperationLock } from "../persistence/targetOperationLock";
 import { isLoadedMovement, loadErrors, loadValidMovement } from "./movementOperationSupport";
+
+export interface SetMovementValueDependencies {
+  createSnapshot: typeof createFileSnapshot;
+  transaction: Partial<TransactionalFileReplaceDependencies>;
+  verifyContent: (content: string) => ContentVerification<MovementProfile>;
+}
+
+const productionDependencies: SetMovementValueDependencies = {
+  createSnapshot: createFileSnapshot,
+  transaction: {},
+  verifyContent: verifyMovementContent
+};
 
 export async function setMovementValue(
   workspaceRoot: string,
   inputFile: string,
   propertyPath: string,
   value: unknown,
-  dryRun: boolean
+  dryRun: boolean,
+  injectedDependencies: Partial<SetMovementValueDependencies> = {}
+): Promise<OperationResult> {
+  const dependencies = {
+    ...productionDependencies,
+    ...injectedDependencies,
+    transaction: { ...productionDependencies.transaction, ...injectedDependencies.transaction }
+  };
+
+  if (dryRun) {
+    return executeSet(workspaceRoot, inputFile, propertyPath, value, true, dependencies);
+  }
+
+  let targetRelativePath: string;
+  try {
+    targetRelativePath = resolveWorkspacePath(workspaceRoot, inputFile).relativePath;
+  } catch (caught) {
+    return operationResult({
+      command: "movement.set",
+      status: "failed",
+      input: { file: inputFile, propertyPath, value, dryRun },
+      errors: [{
+        code: ErrorCodes.MovementWriteBlocked,
+        path: inputFile,
+        message: caught instanceof Error ? caught.message : String(caught)
+      }]
+    });
+  }
+
+  return withTargetOperationLock(workspaceRoot, targetRelativePath, () =>
+    executeSet(workspaceRoot, inputFile, propertyPath, value, false, dependencies)
+  );
+}
+
+async function executeSet(
+  workspaceRoot: string,
+  inputFile: string,
+  propertyPath: string,
+  value: unknown,
+  dryRun: boolean,
+  dependencies: SetMovementValueDependencies
 ): Promise<OperationResult> {
   const command = "movement.set";
   const input = { file: inputFile, propertyPath, value, dryRun };
@@ -42,7 +101,17 @@ export async function setMovementValue(
   if (dryRun) {
     const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), []);
     if (!audit.ok) {
-      return unexpectedChangeResult(command, input, audit.changedFiles, audit.unexpectedFiles);
+      return operationResult({
+        command,
+        status: "failed",
+        input,
+        errors: [{
+          code: ErrorCodes.MovementWriteScopeAuditFailed,
+          message: "Dry-run operation changed files outside its zero-write scope",
+          details: { unexpectedFiles: audit.unexpectedFiles }
+        }],
+        changedFiles: audit.changedFiles
+      });
     }
     return operationResult({
       command,
@@ -52,12 +121,11 @@ export async function setMovementValue(
     });
   }
 
-  let snapshot: Awaited<ReturnType<typeof createFileSnapshot>> | undefined;
+  let snapshot: CreatedSnapshot;
   try {
-    snapshot = await createFileSnapshot(workspaceRoot, loaded.relativePath, loaded.content, command);
-    await atomicWriteText(loaded.absolutePath, formatJson(validation.profile));
+    snapshot = await dependencies.createSnapshot(workspaceRoot, loaded.relativePath, loaded.content, command);
   } catch (caught) {
-    const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), snapshot ? [snapshot.relativePath] : []);
+    const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), []);
     return operationResult({
       command,
       status: "failed",
@@ -65,37 +133,85 @@ export async function setMovementValue(
       errors: [{
         code: ErrorCodes.MovementWriteBlocked,
         path: loaded.relativePath,
-        message: `Movement profile could not be written atomically: ${caught instanceof Error ? caught.message : String(caught)}`
+        message: `Pre-write snapshot could not be created: ${caught instanceof Error ? caught.message : String(caught)}`
       }],
-      changedFiles: audit.changedFiles,
-      snapshotId: snapshot?.record.snapshotId ?? null
+      changedFiles: audit.changedFiles
     });
   }
 
-  const persisted = await readJsonFile(loaded.absolutePath);
-  const persistedValidation = validateMovementDefinition(persisted.value);
-  const after = await captureWorkspaceState(workspaceRoot);
-  const audit = auditChangedFiles(before, after, [loaded.relativePath, snapshot.relativePath]);
-  if (!audit.ok) {
-    return unexpectedChangeResult(command, { ...input, file: loaded.relativePath }, audit.changedFiles, audit.unexpectedFiles, snapshot.record.snapshotId);
+  const transaction = await transactionalFileReplace({
+    workspaceRoot,
+    operationStartState: before,
+    targetAbsolutePath: loaded.absolutePath,
+    targetRelativePath: loaded.relativePath,
+    replacementContent: formatJson(validation.profile),
+    originalContent: loaded.content,
+    allowedPaths: [loaded.relativePath, snapshot.relativePath],
+    verifyContent: dependencies.verifyContent,
+    dependencies: dependencies.transaction
+  });
+
+  if (!transaction.ok) {
+    return movementTransactionFailure(command, { ...input, file: loaded.relativePath }, transaction, snapshot.record.snapshotId);
   }
-  if (!persistedValidation.valid) {
-    return operationResult({
-      command,
-      status: "failed",
-      input: { ...input, file: loaded.relativePath },
-      errors: persistedValidation.errors,
-      changedFiles: audit.changedFiles,
-      snapshotId: snapshot.record.snapshotId
-    });
-  }
+
   return operationResult({
     command,
     status: "passed",
     input: { ...input, file: loaded.relativePath },
-    data: { profile: persistedValidation.profile, appliedChange: { path: propertyPath, value } },
-    changedFiles: audit.changedFiles,
+    data: { profile: transaction.value, appliedChange: { path: propertyPath, value } },
+    changedFiles: transaction.changedFiles,
     snapshotId: snapshot.record.snapshotId
+  });
+}
+
+function verifyMovementContent(content: string): ContentVerification<MovementProfile> {
+  let value: unknown;
+  try {
+    value = JSON.parse(content) as unknown;
+  } catch {
+    return { validationPassed: false, errors: [{ code: ErrorCodes.MovementJsonInvalid, message: "Persisted movement content is not valid JSON" }] };
+  }
+  const validation = validateMovementDefinition(value);
+  return validation.valid && validation.profile !== null
+    ? { validationPassed: true, value: validation.profile }
+    : { validationPassed: false, errors: validation.errors };
+}
+
+function movementTransactionFailure(
+  command: string,
+  input: Record<string, unknown>,
+  transaction: TransactionalReplaceFailure,
+  snapshotId: string
+): OperationResult {
+  const primaryCode = transaction.failureStage === "scope_audit"
+    ? ErrorCodes.MovementWriteScopeAuditFailed
+    : ErrorCodes.MovementWriteVerificationFailed;
+  const errors: OperationError[] = [{
+    code: primaryCode,
+    message: transaction.failureMessage,
+    details: {
+      failureStage: transaction.failureStage,
+      unexpectedFiles: transaction.unexpectedFiles,
+      verificationErrors: transaction.verificationErrors
+    }
+  }];
+  if (transaction.recovery.status === "failed") {
+    errors.push({
+      code: ErrorCodes.MovementWriteRecoveryFailed,
+      path: transaction.recovery.restoredFile,
+      message: "Movement write recovery could not verify the exact original target state",
+      details: { recovery: transaction.recovery }
+    });
+  }
+  return operationResult({
+    command,
+    status: "failed",
+    input,
+    data: { failureStage: transaction.failureStage, recovery: transaction.recovery },
+    errors,
+    changedFiles: transaction.changedFiles,
+    snapshotId
   });
 }
 
@@ -129,25 +245,4 @@ function propertyNotFound(propertyPath: string): OperationError {
     path: propertyPath,
     message: "Only existing schema-defined movement properties may be edited"
   };
-}
-
-function unexpectedChangeResult(
-  command: string,
-  input: Record<string, unknown>,
-  changedFiles: string[],
-  unexpectedFiles: string[],
-  snapshotId: string | null = null
-): OperationResult {
-  return operationResult({
-    command,
-    status: "failed",
-    input,
-    errors: [{
-      code: ErrorCodes.MovementWriteBlocked,
-      message: "Operation changed files outside its declared write scope",
-      details: { unexpectedFiles }
-    }],
-    changedFiles,
-    snapshotId
-  });
 }

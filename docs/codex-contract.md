@@ -10,7 +10,7 @@ Codex may modify engine-owned infrastructure only when the task explicitly reque
 
 ### Game-authoring mode
 
-Codex modifies validated game definitions through supported services or formats. In Phase 1A, it should inspect and validate a movement profile, use `mam movement set` for an existing dotted property, prefer `--dry-run` before persistence, and keep the returned snapshot ID available for rollback. It must not change engine-owned code merely to make authored data pass. If the engine lacks a requested capability, Codex returns a structured unsupported-capability result and proposes a separate engine-development task.
+Codex modifies validated game definitions through supported services or formats. In Phase 1A.1, it should inspect and validate a movement profile, use `mam movement set` for an existing dotted property, prefer `--dry-run` before persistence, and retain returned snapshot IDs. It must inspect structured recovery evidence after any failed persistent operation rather than assuming failure means no files were touched.
 
 ## Ownership
 
@@ -54,8 +54,8 @@ For every operation Codex must:
 9. Support an inspectable, validated rollback operation.
 10. Never report success without evidence appropriate to the claim.
 
-Read-only inspection, validation, simulation, snapshot listing, and set dry runs must not change repository files. Phase 1A set operations validate the candidate before writing, snapshot immediately before persistence, permit only the target profile plus the new snapshot record, and fail if auditing detects another changed path. A dry run is not a persistent save and must be reported as `dry_run`.
+Read-only inspection, validation, simulation, snapshot listing, and set dry runs must not change repository files. Phase 1A.1 set operations validate the candidate before writing, snapshot immediately before persistence, permit only the target profile plus the new snapshot record, and recover the exact original target after failed post-write verification. Rollback first snapshots the current valid target so rollback itself can be reversed. Failed requested operations remain `failed` even when recovery is `restored`.
 
 ## Result expectations
 
-Phase 1A results identify protocol version `1`, command, correlation ID, status, input, data, validation findings, warnings, exact changed files, and snapshot ID. The implemented statuses are `passed`, `failed`, `dry_run`, and `rolled_back`. A process exit code is useful but is not a substitute for the structured result. Human-facing text may summarize the result but cannot be its only representation.
+Phase 1A.1 results identify protocol version `1`, command, correlation ID, status, input, data, validation findings, warnings, exact changed files, and snapshot ID. Failed transaction data may add `failureStage` and `recovery` without changing the envelope. For rollback, top-level `snapshotId` is the new pre-rollback safety snapshot; data separately identifies the selected source snapshot. The implemented statuses remain `passed`, `failed`, `dry_run`, and `rolled_back`.

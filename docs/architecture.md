@@ -26,9 +26,9 @@ Snapshots, rollback, and changed-file safety surround every persistent operation
 
 Parses `mam` movement and snapshot commands, invokes application services, emits a versioned operation-result envelope, and maps failures to exit codes. It contains no movement or persistence policy and uses no CLI framework.
 
-### Engine and application services - Phase 1A movement foundation implemented
+### Engine and application services - Phase 1A.1 movement foundation implemented
 
-Coordinate movement inspect, validate, set, and simulate plus snapshot create, list, rollback, and changed-file audits. Runtime launch and fixture orchestration remain Phase 1B. Services accept explicit inputs and return typed, structured results suitable for any client.
+Coordinate movement inspect, validate, transactional set, and simulate plus snapshot create, list, reversible rollback, and changed-file audits. A shared transactional replacement service owns post-write hash/validation checks, scope audit, exact-content recovery, and recovery evidence. Runtime launch and fixture orchestration remain Phase 1B.
 
 ### Schemas and definitions - movement v1 implemented
 
@@ -54,13 +54,17 @@ Provide controlled worlds, initial state, inputs, clocks, and expected measureme
 
 Phase 1A operations return protocol version, command, narrow status, correlation ID, normalized input, data, warnings, errors, exact changed files, and snapshot ID. The separate Godot runtime report contract remains specified for Phase 1B.
 
-### Snapshots and rollback - implemented for movement files
+### Snapshots and rollback - reversible in Phase 1A.1
 
-Real set operations capture exact previous content immediately before writing. Repository-local ignored snapshot records contain metadata version, ID, timestamp, operation, target path, content hash, and restorable content. Rollback verifies metadata and hash, validates the saved profile, restores atomically, re-validates, and audits changed files. Snapshots are retained.
+Real set operations capture exact previous content immediately before writing. Repository-local ignored snapshot records contain metadata version, ID, timestamp, operation, target path, content hash, and restorable content. Before rollback overwrites a valid current target, it creates a `snapshot.rollback.pre_restore` safety snapshot. Both set and rollback recover the exact pre-operation content when post-write verification or scope auditing fails, then verify recovery without deleting either snapshot.
 
-### Automated tests - engine-independent layers implemented
+### Concurrency
 
-Node built-in tests verify Phase 1A schema, semantic validation, simulation, application services, safety behavior, and CLI output. Godot-dependent checks remain a future narrow integration tier.
+Persistent set and rollback operations use an in-process repository-relative target queue. Operations for the same target serialize; different targets may proceed independently. Locks release in `finally`, including failure paths. Inspect, validate, simulate, dry-run, and snapshot listing do not take the write lock.
+
+### Automated tests and remote CI - engine-independent layers implemented
+
+Node built-in tests verify schema, semantic validation, simulation, transactions, injected failures, recovery, locking, reversible rollback, and CLI output. GitHub Actions runs `npm ci` and `npm run check` on Ubuntu Node 20/22 and Windows Node 22, plus a package dry-run. Godot-dependent checks remain a future narrow integration tier.
 
 ## Dependency rules
 
@@ -77,6 +81,6 @@ Engine-domain logic must not depend directly on terminal presentation, a future 
 
 ## Canonical data flow
 
-An authoring client inspects the current canonical definition, proposes a structured dotted-path change, validates the complete candidate, and may dry-run or simulate without persistence. A real set snapshots the existing file, writes formatted JSON atomically, re-reads and validates it, audits actual changes against the target and snapshot allowlist, and returns the result. In Phase 1B, runtime execution will receive the same validated definition plus a fixture request; Godot will not write canonical definitions back implicitly.
+An authoring client inspects the current canonical definition, proposes a structured dotted-path change, validates the complete candidate, and may dry-run or simulate without persistence. A real set locks its target, snapshots the existing file, writes formatted JSON atomically, re-reads it, verifies its hash and domain validity, and audits actual changes. Any post-write failure triggers one exact-content recovery attempt and structured recovery verification. In Phase 1B, runtime execution will receive the same validated definition plus a fixture request; Godot will not write canonical definitions back implicitly.
 
 Temporary live drafts, when introduced, will be separately identified, validated, disposable, and lower priority than an explicit persistent save decision. Clearing a draft must restore the last persisted/baseline behavior without rewriting unrelated files.

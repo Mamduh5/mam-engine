@@ -12,7 +12,25 @@ import { operationResult, type OperationResult } from "../shared/operationResult
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
 import { writeResult } from "./output";
 
-export async function runCli(argv: string[], workspaceRoot = process.cwd()): Promise<number> {
+export interface CliApplicationDependencies {
+  setMovementValue: typeof setMovementValue;
+  rollbackSnapshot: typeof rollbackSnapshot;
+}
+
+export interface CliExecution {
+  result: OperationResult;
+  json: boolean;
+  exitCode: number;
+}
+
+const productionDependencies: CliApplicationDependencies = { setMovementValue, rollbackSnapshot };
+
+export async function executeCli(
+  argv: string[],
+  workspaceRoot = process.cwd(),
+  injectedDependencies: Partial<CliApplicationDependencies> = {}
+): Promise<CliExecution> {
+  const dependencies = { ...productionDependencies, ...injectedDependencies };
   let command: ParsedCommand;
   try {
     command = parseCommand(argv);
@@ -27,13 +45,12 @@ export async function runCli(argv: string[], workspaceRoot = process.cwd()): Pro
         message
       }]
     });
-    writeResult(result, argv.includes("--json"));
-    return 2;
+    return { result, json: argv.includes("--json"), exitCode: 2 };
   }
 
   let result: OperationResult;
   try {
-    result = await dispatch(command, workspaceRoot);
+    result = await dispatch(command, workspaceRoot, dependencies);
   } catch (caught) {
     result = operationResult({
       command: command.kind,
@@ -44,11 +61,20 @@ export async function runCli(argv: string[], workspaceRoot = process.cwd()): Pro
       }]
     });
   }
-  writeResult(result, command.json);
-  return result.status === "failed" ? 1 : 0;
+  return { result, json: command.json, exitCode: result.status === "failed" ? 1 : 0 };
 }
 
-async function dispatch(command: ParsedCommand, workspaceRoot: string): Promise<OperationResult> {
+export async function runCli(argv: string[], workspaceRoot = process.cwd()): Promise<number> {
+  const execution = await executeCli(argv, workspaceRoot);
+  writeResult(execution.result, execution.json);
+  return execution.exitCode;
+}
+
+async function dispatch(
+  command: ParsedCommand,
+  workspaceRoot: string,
+  dependencies: CliApplicationDependencies
+): Promise<OperationResult> {
   switch (command.kind) {
     case "movement.inspect":
       return inspectMovement(workspaceRoot, command.file);
@@ -57,13 +83,13 @@ async function dispatch(command: ParsedCommand, workspaceRoot: string): Promise<
     case "movement.simulate":
       return simulateMovementFile(workspaceRoot, command.file, command.scenario, command.seconds);
     case "movement.set":
-      return setMovementValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
+      return dependencies.setMovementValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "snapshot.list":
       return listSnapshots(workspaceRoot);
     case "snapshot.create":
       return createSnapshot(workspaceRoot, command.file);
     case "snapshot.rollback":
-      return rollbackSnapshot(workspaceRoot, command.snapshotId);
+      return dependencies.rollbackSnapshot(workspaceRoot, command.snapshotId);
   }
 }
 

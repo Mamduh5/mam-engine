@@ -14,8 +14,15 @@ export const ErrorCodes = {
   MovementPropertyNotFound: "MOVEMENT_PROPERTY_NOT_FOUND",
   MovementPropertyValueInvalid: "MOVEMENT_PROPERTY_VALUE_INVALID",
   MovementWriteBlocked: "MOVEMENT_WRITE_BLOCKED",
+  MovementWriteVerificationFailed: "MOVEMENT_WRITE_VERIFICATION_FAILED",
+  MovementWriteScopeAuditFailed: "MOVEMENT_WRITE_SCOPE_AUDIT_FAILED",
+  MovementWriteRecoveryFailed: "MOVEMENT_WRITE_RECOVERY_FAILED",
   SnapshotNotFound: "SNAPSHOT_NOT_FOUND",
   SnapshotRollbackFailed: "SNAPSHOT_ROLLBACK_FAILED",
+  SnapshotPreRollbackFailed: "SNAPSHOT_PRE_ROLLBACK_FAILED",
+  SnapshotRollbackVerificationFailed: "SNAPSHOT_ROLLBACK_VERIFICATION_FAILED",
+  SnapshotRollbackScopeAuditFailed: "SNAPSHOT_ROLLBACK_SCOPE_AUDIT_FAILED",
+  SnapshotRollbackRecoveryFailed: "SNAPSHOT_ROLLBACK_RECOVERY_FAILED",
   CliArgumentInvalid: "CLI_ARGUMENT_INVALID",
   InternalError: "INTERNAL_ERROR"
 } as const;
