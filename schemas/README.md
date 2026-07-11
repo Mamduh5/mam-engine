@@ -1,5 +1,7 @@
 # Schemas and definitions
 
-This directory will own versioned schemas for canonical game definitions, command inputs, runtime envelopes, and reports. Schemas establish field types, units, ranges, compatibility rules, and stable validation error codes.
+[`movement/v1.schema.json`](movement/v1.schema.json) is the canonical JSON Schema for Phase 1A movement profiles. It fixes `schemaVersion` to `1`, `kind` to `movement-profile`, rejects unknown fields at every object level, and permits only `camera_relative` orientation and `movement_input` dodge direction.
 
-Authored definitions will be validated before simulation, persistence, or runtime launch. Godot may consume the validated representation but may not silently redefine it through scene or resource defaults. No concrete schema is added until Movement Editor v0.1 defines and tests its first format.
+Ajv performs structural validation. Project-owned semantic validation then enforces speed ordering, positive rates, stamina relationships, dodge limits, and invulnerability-window timing. Ajv diagnostics are normalized into stable `mam-engine` errors rather than exposed as the only public format.
+
+Godot may consume this definition in Phase 1B, but it may not replace it with scene or resource defaults.

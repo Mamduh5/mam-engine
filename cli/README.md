@@ -1,5 +1,7 @@
 # CLI adapter
 
-This directory will contain the `mam` executable and terminal adapter. It will parse commands, call engine/application services, map stable results to exit codes, and emit versioned JSON without embedding domain rules.
+The executable CLI is implemented under [`src/cli/`](../src/cli/). `package.json` exposes `dist/src/cli/main.js` as `mam`, including a Node shebang for installed use on Windows and other supported Node platforms.
 
-The CLI may format optional human diagnostics on standard error, but scripts must never need to parse terminal prose. It must not access Godot fixture internals, edit definitions without validation, or implement movement behavior itself. No CLI implementation is included in Phase 0.
+The local parser supports movement inspection, validation, simulation, safe set operations, snapshot creation/listing, and rollback without a CLI-framework dependency. Every command accepts `--json`; machine-readable output uses protocol version 1 and normal user errors return stable codes without stack traces.
+
+The CLI parses and presents operations only. Movement rules live in the domain layer, orchestration in application services, and filesystem/schema behavior in infrastructure. Godot launch commands are not implemented in Phase 1A.

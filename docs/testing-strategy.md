@@ -2,6 +2,8 @@
 
 Automated evidence is part of each editor/engine feature, not a final polish step. Tests should use stable structured results and measurable values, avoid reliance on terminal prose, and identify environment limitations separately from product failures.
 
+Phase 1A implements the fast engine-independent layers with Node's built-in test runner. Tests compile from TypeScript and use isolated temporary workspaces for all write operations. Godot-dependent layers remain pending Phase 1B.
+
 ## Test layers
 
 ### Schema tests
@@ -22,11 +24,11 @@ Use fixed timesteps and explicit inputs to assert ordered samples and metrics. M
 
 ### Godot headless integration tests
 
-Launch the real Godot adapter, perform readiness and shutdown handshakes, execute named fixtures, and compare runtime metrics with expected tolerances. These tests require a supported Godot 4 executable and may run in a slower integration job.
+**Phase 1B.** Launch the real Godot adapter, perform readiness and shutdown handshakes, execute named fixtures, and compare runtime metrics with expected tolerances. These tests require a supported Godot 4 executable and may run in a slower integration job.
 
 ### Runtime fixture smoke tests
 
-Prove each registered fixture loads, consumes the expected definition version, emits a report, changes no forbidden files, and exits cleanly. They require Godot and should remain narrow.
+**Phase 1B.** Prove each registered fixture loads, consumes the expected definition version, emits a report, changes no forbidden files, and exits cleanly. They require Godot and should remain narrow.
 
 ### Protocol compatibility tests
 
@@ -46,7 +48,7 @@ Every fixed defect receives the smallest test at the owning layer. Cross-layer r
 
 ## Runtime-independent versus Godot-required
 
-Schema, validator, service, most CLI, deterministic simulation, protocol codec, changed-file, snapshot, and rollback tests must run without Godot and should form the normal fast feedback suite. Godot headless integration and fixture smoke tests form a separate slower suite with explicit executable/version detection.
+Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. Type checking plus the full suite runs through `npm run check`. Godot protocol integration and fixture smoke tests will form a separate slower suite with explicit executable/version detection in Phase 1B.
 
 If Godot is unavailable, the fast suite can pass while Godot-required checks are reported as not run because of the environment. They must not be claimed as passing or silently omitted.
 

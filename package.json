@@ -1,0 +1,31 @@
+{
+  "name": "mam-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Codex-native game engine and editor contracts",
+  "license": "UNLICENSED",
+  "bin": {
+    "mam": "dist/src/cli/main.js"
+  },
+  "files": [
+    "dist/src",
+    "schemas"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "check": "npm run lint && npm test",
+    "mam": "npm run build --silent && node dist/src/cli/main.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
+  }
+}

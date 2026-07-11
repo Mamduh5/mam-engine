@@ -1,5 +1,7 @@
 # Engine and application services
 
-This directory will contain editor/engine use cases shared by the CLI and a future visual editor: inspection, validation, deterministic simulation, persistence planning, changed-file auditing, runtime orchestration, reports, snapshots, and rollback.
+Phase 1A engine code lives under [`src/application/`](../src/application/) and [`src/domain/`](../src/domain/). Application services implement inspect, validate, simulate, set, snapshot, list, and rollback use cases. The movement domain owns profile types, semantic validation, derived metrics, and deterministic fixed-timestep simulation.
 
-Domain services return structured results and depend on schemas and ports, not terminal output, GUI widgets, fixture-specific scenes, or repository source-patching heuristics. Phase 0 documents this boundary without choosing an implementation language or adding boilerplate code.
+Infrastructure under [`src/infrastructure/`](../src/infrastructure/) supplies Ajv schema validation, safe JSON I/O, workspace state capture, changed-file audits, and snapshot storage. Domain services do not depend on terminal output, a GUI, Godot, fixture scenes, or source-patching heuristics.
+
+Godot runtime orchestration remains a Phase 1B service boundary and is not present in this implementation.

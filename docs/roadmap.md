@@ -2,13 +2,13 @@
 
 Progress is gated by evidence, not dates. A phase exits only when its contracts, validation, machine-readable inspection, applicable deterministic behavior, runtime-fixture proof, safety behavior, and automated tests are complete. Later phase names describe direction and do not authorize early implementation.
 
-## Phase 0 — Repository foundation and contracts
+## Phase 0 — Repository foundation and contracts (complete)
 
 Establish product scope, dependency boundaries, ownership, runtime protocol, testing approach, initial milestone, and architectural decisions. **Exit condition:** all foundation documents are internally consistent, linked, non-empty, and validated for scope; no feature is claimed as implemented.
 
-## Phase 1 — Movement Editor
+## Phase 1 — Movement Editor (in progress)
 
-Deliver structured third-person movement profiles, validation, deterministic simulation, CLI authoring, the Godot movement fixture, measured reports, file auditing, snapshots, and rollback. **Exit condition:** every acceptance criterion in [Movement Editor v0.1](movement-editor-v0.1.md) has automated evidence or an explicit Godot environment limitation.
+Phase 1A delivers structured movement profiles, JSON Schema and semantic validation, deterministic simulation, CLI authoring, machine-readable results, file auditing, snapshots, rollback, and engine-independent tests. Phase 1B will add the Godot movement adapter/fixture, lifecycle protocol, measured runtime reports, and headless integration tests. **Exit condition:** every acceptance criterion in [Movement Editor v0.1](movement-editor-v0.1.md) has automated evidence; Phase 1A completion alone does not exit Phase 1.
 
 ## Phase 2 — Camera and targeting
 

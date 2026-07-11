@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/movement/v1.schema.json",
+  "title": "mam-engine movement profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "ground", "stamina", "dodge"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "movement-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "ground": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["walkSpeed", "runSpeed", "sprintSpeed", "acceleration", "deceleration", "rotationSpeedDegrees", "orientationMode"],
+      "properties": {
+        "walkSpeed": { "type": "number" },
+        "runSpeed": { "type": "number" },
+        "sprintSpeed": { "type": "number" },
+        "acceleration": { "type": "number" },
+        "deceleration": { "type": "number" },
+        "rotationSpeedDegrees": { "type": "number" },
+        "orientationMode": { "const": "camera_relative" }
+      }
+    },
+    "stamina": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maximum", "sprintCostPerSecond", "regenerationPerSecond", "regenerationDelaySeconds", "minimumToStartSprint"],
+      "properties": {
+        "maximum": { "type": "number" },
+        "sprintCostPerSecond": { "type": "number" },
+        "regenerationPerSecond": { "type": "number" },
+        "regenerationDelaySeconds": { "type": "number" },
+        "minimumToStartSprint": { "type": "number" }
+      }
+    },
+    "dodge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["distance", "durationSeconds", "staminaCost", "invulnerabilityStartSeconds", "invulnerabilityEndSeconds", "directionMode", "steeringMultiplier"],
+      "properties": {
+        "distance": { "type": "number" },
+        "durationSeconds": { "type": "number" },
+        "staminaCost": { "type": "number" },
+        "invulnerabilityStartSeconds": { "type": "number" },
+        "invulnerabilityEndSeconds": { "type": "number" },
+        "directionMode": { "const": "movement_input" },
+        "steeringMultiplier": { "type": "number" }
+      }
+    }
+  }
+}

@@ -10,7 +10,7 @@ Codex may modify engine-owned infrastructure only when the task explicitly reque
 
 ### Game-authoring mode
 
-Codex modifies validated game definitions and fixture configuration through supported services or formats. It must not change engine-owned runtime code merely to make authored data pass. If the engine lacks a requested capability, Codex returns a structured unsupported-capability result and proposes a separate engine-development task.
+Codex modifies validated game definitions through supported services or formats. In Phase 1A, it should inspect and validate a movement profile, use `mam movement set` for an existing dotted property, prefer `--dry-run` before persistence, and keep the returned snapshot ID available for rollback. It must not change engine-owned code merely to make authored data pass. If the engine lacks a requested capability, Codex returns a structured unsupported-capability result and proposes a separate engine-development task.
 
 ## Ownership
 
@@ -24,7 +24,7 @@ Codex-authored game content includes:
 - encounter definitions
 - fixture configuration
 
-Only movement profiles and movement fixture configuration are planned for the next milestone; the other categories reserve long-term boundaries and are not implemented.
+Movement profiles are supported in Phase 1A. Movement fixture configuration is deferred to Phase 1B; the other categories reserve long-term boundaries and are not implemented.
 
 Engine-owned infrastructure includes:
 
@@ -54,8 +54,8 @@ For every operation Codex must:
 9. Support an inspectable, validated rollback operation.
 10. Never report success without evidence appropriate to the claim.
 
-Read-only inspection, validation, and simulation should not change repository files. A temporary draft is not a persistent save and must be reported as such. Every persistent command should expose a planned file set before applying it, compare actual changes afterward, and fail with a safety error if unexpected paths changed.
+Read-only inspection, validation, simulation, snapshot listing, and set dry runs must not change repository files. Phase 1A set operations validate the candidate before writing, snapshot immediately before persistence, permit only the target profile plus the new snapshot record, and fail if auditing detects another changed path. A dry run is not a persistent save and must be reported as `dry_run`.
 
 ## Result expectations
 
-Results must identify the command, schema version, correlation ID, status, validation findings, warnings, evidence, and changed files. A process exit code is useful but is not a substitute for the structured result. Human-facing text may summarize the result but cannot be its only representation.
+Phase 1A results identify protocol version `1`, command, correlation ID, status, input, data, validation findings, warnings, exact changed files, and snapshot ID. The implemented statuses are `passed`, `failed`, `dry_run`, and `rolled_back`. A process exit code is useful but is not a substitute for the structured result. Human-facing text may summarize the result but cannot be its only representation.

@@ -1,10 +1,33 @@
 # Runtime protocol
 
+## Current implementation status
+
+Phase 1A implements the Codex-facing CLI operation envelope, not the Godot runtime transport described later in this document. Every `mam ... --json` command returns:
+
+```json
+{
+  "protocolVersion": 1,
+  "command": "movement.validate",
+  "status": "passed",
+  "correlationId": "generated-uuid",
+  "input": { "file": "examples/movement/default.json" },
+  "data": {},
+  "errors": [],
+  "warnings": [],
+  "changedFiles": [],
+  "snapshotId": null
+}
+```
+
+CLI status is limited to `passed`, `failed`, `dry_run`, and `rolled_back`. Normal errors use project-owned codes, return a non-zero exit code, and do not require terminal-text parsing. Repository-relative paths are used when available.
+
+The `mam.runtime/v1` Godot protocol below remains a Phase 1B design contract and has no implementation in Phase 1A.
+
 ## Purpose
 
 The runtime protocol is the versioned JSON boundary between engine/application services and the Godot runtime adapter. Transport is intentionally undecided; implementations may use process standard streams or files, but must exchange complete JSON messages and must never depend on parsing terminal prose.
 
-Protocol version `mam.runtime/v1` below is a design contract for future implementation. Examples are illustrative, not evidence of a running runtime.
+Protocol version `mam.runtime/v1` below is a design contract for Phase 1B. Examples are illustrative, not evidence of a running runtime.
 
 ## Request envelope
 
