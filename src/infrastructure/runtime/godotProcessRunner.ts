@@ -6,10 +6,12 @@ import type { RuntimeSession } from "./runtimeSessionStore";
 
 export interface GodotProcessResult { exitCode: number | null; signal: NodeJS.Signals | null; timedOut: boolean; readyObserved: boolean; outputTruncated: boolean }
 export interface ProcessRunnerOptions { readinessTimeoutMs?: number; executionTimeoutMs?: number; maximumOutputBytes?: number; spawnProcess?: typeof spawn }
+export const DEFAULT_GODOT_READINESS_TIMEOUT_MS = 15_000;
+export const DEFAULT_GODOT_EXECUTION_TIMEOUT_MS = 15_000;
 
 export async function runGodotProcess(executable: string, projectPath: string, session: RuntimeSession, options: ProcessRunnerOptions = {}): Promise<GodotProcessResult> {
-  const readinessTimeoutMs = options.readinessTimeoutMs ?? 5_000;
-  const executionTimeoutMs = options.executionTimeoutMs ?? 15_000;
+  const readinessTimeoutMs = options.readinessTimeoutMs ?? DEFAULT_GODOT_READINESS_TIMEOUT_MS;
+  const executionTimeoutMs = options.executionTimeoutMs ?? DEFAULT_GODOT_EXECUTION_TIMEOUT_MS;
   const maximumOutputBytes = options.maximumOutputBytes ?? 1024 * 1024;
   const spawnProcess = options.spawnProcess ?? spawn;
   let child: ChildProcessWithoutNullStreams;
@@ -39,8 +41,7 @@ export async function runGodotProcess(executable: string, projectPath: string, s
     if (!readyObserved && await fileExists(session.readyPath)) readyObserved = true;
     if (!readyObserved && !closed) { timedOut = true; await terminate(child, closePromise); }
     if (readyObserved) {
-      const remaining = Math.max(1, executionTimeoutMs - (Date.now() - started));
-      const completed = await Promise.race([closePromise.then(() => true), delay(remaining).then(() => false)]);
+      const completed = await Promise.race([closePromise.then(() => true), delay(executionTimeoutMs).then(() => false)]);
       if (!completed) { timedOut = true; await terminate(child, closePromise); }
     }
     if (!closed) await closePromise;

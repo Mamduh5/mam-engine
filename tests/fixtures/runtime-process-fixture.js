@@ -10,8 +10,13 @@ if (mode === "no-ready") {
   setTimeout(() => process.exit(0), 10000);
 } else {
   if (mode === "large") process.stdout.write("x".repeat(10000));
-  write(value("--ready"), envelope("runtime.fixture.ready", "ready"));
-  if (mode === "hang") setTimeout(() => process.exit(0), 10000);
-  else if (mode === "no-response") process.exit(0);
-  else { write(value("--response"), envelope("runtime.fixture.run", "ok")); process.exit(mode === "nonzero" ? 9 : 0); }
+  const complete = () => {
+    write(value("--ready"), envelope("runtime.fixture.ready", "ready"));
+    if (mode === "hang") setTimeout(() => process.exit(0), 10000);
+    else if (mode === "no-response") process.exit(0);
+    else if (mode === "delayed-ready") setTimeout(() => { write(value("--response"), envelope("runtime.fixture.run", "ok")); process.exit(0); }, 50);
+    else { write(value("--response"), envelope("runtime.fixture.run", "ok")); process.exit(mode === "nonzero" ? 9 : 0); }
+  };
+  if (mode === "delayed-ready") setTimeout(complete, 300);
+  else complete();
 }
