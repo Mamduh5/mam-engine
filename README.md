@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 is implemented through Phase 1B**: the transactionally safe movement foundation now has a controlled process-per-run Godot runtime proof. It does not include combat.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 is complete.** The transactionally safe movement foundation has a controlled process-per-run Godot 4.7-stable runtime proof. It does not include combat.
 
 ## Implemented through Phase 1B
 

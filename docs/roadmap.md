@@ -6,9 +6,9 @@ Progress is gated by evidence, not dates. A phase exits only when its contracts,
 
 Establish product scope, dependency boundaries, ownership, runtime protocol, testing approach, initial milestone, and architectural decisions. **Exit condition:** all foundation documents are internally consistent, linked, non-empty, and validated for scope; no feature is claimed as implemented.
 
-## Phase 1 — Movement Editor (in progress)
+## Phase 1 — Movement Editor (complete)
 
-Phase 1A delivers structured movement profiles, deterministic simulation, CLI authoring, safety, snapshots, rollback, and engine-independent tests. Phase 1A.1 hardens persistence. Phase 1B code adds the Godot movement adapter/fixture, process-per-run lifecycle, measured reports, comparisons, and headless integration tests. **Exit condition:** every acceptance criterion in [Movement Editor v0.1](movement-editor-v0.1.md) has automated evidence. Phase 1 remains in progress until the official pinned Godot 4.7-stable release is available and its CI job passes.
+Phase 1A delivers structured movement profiles, deterministic simulation, CLI authoring, safety, snapshots, rollback, and engine-independent tests. Phase 1A.1 hardens persistence. Phase 1B adds the Godot movement adapter/fixture, process-per-run lifecycle, measured reports, comparisons, and headless integration tests. **Exit condition met:** every acceptance criterion in [Movement Editor v0.1](movement-editor-v0.1.md) has automated evidence, including the official pinned Godot 4.7-stable release and its CI integration job.
 
 ## Phase 2 — Camera and targeting
 

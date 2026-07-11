@@ -2,7 +2,7 @@
 
 ## Current implementation status
 
-Phase 1A implements the Codex-facing CLI operation envelope, not the Godot runtime transport described later in this document. Every `mam ... --json` command returns:
+Movement Editor v0.1 implements both the Codex-facing CLI operation envelope and the process-per-run Godot runtime transport described later in this document. Every `mam ... --json` command returns:
 
 ```json
 {

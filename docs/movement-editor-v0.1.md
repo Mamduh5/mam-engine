@@ -2,7 +2,24 @@
 
 ## Status
 
-Movement Editor **Phase 1B implementation is present**. It adds the controlled Godot adapter/fixture, five fixed-step runtime scenarios, structured measurements, and simulator comparison to the Phase 1A.1 safety foundation. Final v0.1 acceptance is not marked complete until the requested official Godot 4.7-stable binary exists and the pinned integration job passes.
+Movement Editor v0.1 is complete.
+
+The completed milestone includes:
+
+- canonical movement profile v1
+- schema and semantic validation
+- deterministic domain simulation
+- transactional persistence
+- reversible rollback
+- Godot 4.7-stable discovery
+- process-per-run runtime transport
+- structured readiness and response files
+- five runtime scenarios
+- simulator/runtime tolerance comparison
+- real Godot integration testing
+- remote CI verification
+
+Camera tooling, combat, animation, and the visual editor are not part of this completed milestone.
 
 ## Implemented definition scope
 
@@ -81,7 +98,7 @@ Errors include a dotted `path` when a field or file can be identified, a stable 
 1. Codex can change a movement profile without editing engine-owned movement code. **Met through Phase 1A.1.**
 2. Invalid values are rejected with stable error codes and field paths. **Met through Phase 1A.1.**
 3. Movement simulation is deterministic. **Met through Phase 1A.1.**
-4. A Godot fixture consumes the same validated profile. **Implemented; pinned 4.7-stable acceptance is externally pending.**
+4. A Godot fixture consumes the same validated profile. **Met with the official pinned Godot 4.7-stable runtime.**
 5. Runtime results are returned as structured JSON. **Implemented through readiness and final result files.**
 6. Tests cover acceleration, maximum speed, stopping, turning, sprint stamina, and dodge timing. **Implemented in domain, comparison, process, and real-integration tiers.**
 7. Unexpected file changes cause the operation to fail and attempt target recovery. **Met in Phase 1A.1 application audits.**
