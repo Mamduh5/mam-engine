@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 import { inspectMovement } from "../application/movement/inspectMovement";
+import { inspectCamera } from "../application/camera/inspectCamera";
+import { setCameraValue } from "../application/camera/setCameraValue";
+import { simulateCameraFile } from "../application/camera/simulateCamera";
+import { validateCameraFile } from "../application/camera/validateCamera";
 import { setMovementValue } from "../application/movement/setMovementValue";
 import { simulateMovementFile } from "../application/movement/simulateMovement";
 import { validateMovementFile } from "../application/movement/validateMovement";
@@ -16,6 +20,7 @@ import { writeResult } from "./output";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
+  setCameraValue: typeof setCameraValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -25,7 +30,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -78,6 +83,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "camera.inspect": return inspectCamera(workspaceRoot, command.file);
+    case "camera.validate": return validateCameraFile(workspaceRoot, command.file);
+    case "camera.simulate": return simulateCameraFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);
+    case "camera.set": return dependencies.setCameraValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "movement.inspect":
       return inspectMovement(workspaceRoot, command.file);
     case "movement.validate":

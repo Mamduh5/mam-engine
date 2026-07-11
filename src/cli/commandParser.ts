@@ -1,8 +1,13 @@
 import type { MovementScenario } from "../domain/movement/movementTypes";
+import type { CameraScenario } from "../domain/camera/cameraTypes";
 import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "camera.inspect"; file: string; json: boolean }
+  | { kind: "camera.validate"; file: string; json: boolean }
+  | { kind: "camera.simulate"; file: string; scenario: CameraScenario; seconds?: number; fixedDelta?: number; json: boolean }
+  | { kind: "camera.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "movement.inspect"; file: string; json: boolean }
   | { kind: "movement.validate"; file: string; json: boolean }
   | { kind: "movement.simulate"; file: string; scenario: MovementScenario; seconds?: number; json: boolean }
@@ -23,6 +28,7 @@ interface ParsedArguments {
 }
 
 const movementScenarios = new Set<MovementScenario>(["accelerate", "stop", "sprint", "dodge", "turn"]);
+const cameraScenarios = new Set<CameraScenario>(["orbit", "pitch-clamp", "recenter", "follow", "collision", "basis"]);
 
 export function parseCommand(argv: string[]): ParsedCommand {
   const [group, action, ...remaining] = argv;
@@ -33,6 +39,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
   if (group === "movement") {
     return parseMovementCommand(action, remaining);
   }
+  if (group === "camera") return parseCameraCommand(action, remaining);
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
   }
@@ -43,6 +50,28 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseCameraCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "inspect" || action === "validate") {
+    const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `camera ${action} requires exactly one file argument`);
+    return { kind: `camera.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") };
+  }
+  if (action === "simulate") {
+    const parsed = parseArguments(args, new Set(["--json", "--scenario", "--seconds", "--fixed-delta"]), new Set(["--scenario", "--seconds", "--fixed-delta"]));
+    requirePositionals(parsed, 1, "camera simulate requires exactly one file argument");
+    const scenario = parsed.flags.get("--scenario");
+    if (typeof scenario !== "string" || !cameraScenarios.has(scenario as CameraScenario)) throw new CliParseError("--scenario must be one of: orbit, pitch-clamp, recenter, follow, collision, basis", ErrorCodes.CameraScenarioUnsupported);
+    const seconds = optionalPositiveNumber(parsed.flags.get("--seconds"), "--seconds");
+    const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta");
+    return { kind: "camera.simulate", file: parsed.positional[0] as string, scenario: scenario as CameraScenario, ...(seconds === undefined ? {} : { seconds }), ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") };
+  }
+  if (action === "set") {
+    const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "camera set requires <file> <property-path> <json-value>");
+    let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("camera set <json-value> must be valid JSON"); }
+    return { kind: "camera.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") };
+  }
+  throw new CliParseError(`Unknown camera command '${action}'`);
 }
 
 function parseMovementCommand(action: string, args: string[]): ParsedCommand {

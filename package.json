@@ -10,6 +10,7 @@
   "files": [
     "dist/src",
     "schemas",
+    "examples/camera",
     "runtime/godot/project.godot",
     "runtime/godot/README.md",
     "runtime/godot/scenes",

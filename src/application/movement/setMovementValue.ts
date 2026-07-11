@@ -123,7 +123,7 @@ async function executeSet(
 
   let snapshot: CreatedSnapshot;
   try {
-    snapshot = await dependencies.createSnapshot(workspaceRoot, loaded.relativePath, loaded.content, command);
+    snapshot = await dependencies.createSnapshot(workspaceRoot, loaded.relativePath, loaded.content, command, "movement-profile");
   } catch (caught) {
     const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), []);
     return operationResult({

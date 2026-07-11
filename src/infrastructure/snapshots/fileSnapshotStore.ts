@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
+import type { DefinitionKind } from "../../domain/definitions/definitionTypes";
 import { atomicWriteText, fileExists, formatJson } from "../files/jsonFileStore";
 import { normalizeRepositoryPath, resolveWorkspacePath } from "../files/changedFileAudit";
 
@@ -13,6 +14,7 @@ export interface SnapshotRecord {
   targetPath: string;
   contentHash: string;
   previousContent: string;
+  definitionKind?: DefinitionKind;
 }
 
 export interface SnapshotSummary {
@@ -22,6 +24,7 @@ export interface SnapshotSummary {
   operation: string;
   targetPath: string;
   contentHash: string;
+  definitionKind?: DefinitionKind;
 }
 
 export interface CreatedSnapshot {
@@ -42,7 +45,8 @@ export async function createFileSnapshot(
   workspaceRoot: string,
   targetRelativePath: string,
   previousContent: string,
-  operation: string
+  operation: string,
+  definitionKind?: DefinitionKind
 ): Promise<CreatedSnapshot> {
   const normalizedTarget = resolveWorkspacePath(workspaceRoot, targetRelativePath).relativePath;
   const timestamp = new Date().toISOString();
@@ -54,7 +58,8 @@ export async function createFileSnapshot(
     operation,
     targetPath: normalizedTarget,
     contentHash: contentHash(previousContent),
-    previousContent
+    previousContent,
+    ...(definitionKind === undefined ? {} : { definitionKind })
   };
   const relativePath = normalizeRepositoryPath(path.join(".mam-engine", "snapshots", `${snapshotId}.json`));
   const absolutePath = path.join(path.resolve(workspaceRoot), ...relativePath.split("/"));
@@ -105,5 +110,6 @@ function isSnapshotRecord(value: unknown): value is SnapshotRecord {
     && typeof record.operation === "string"
     && typeof record.targetPath === "string"
     && typeof record.contentHash === "string"
-    && typeof record.previousContent === "string";
+    && typeof record.previousContent === "string"
+    && (record.definitionKind === undefined || record.definitionKind === "movement-profile" || record.definitionKind === "camera-profile");
 }

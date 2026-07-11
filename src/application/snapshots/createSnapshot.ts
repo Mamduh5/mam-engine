@@ -2,18 +2,18 @@ import { auditChangedFiles, captureWorkspaceState } from "../../infrastructure/f
 import { createFileSnapshot } from "../../infrastructure/snapshots/fileSnapshotStore";
 import { ErrorCodes } from "../../shared/errorCodes";
 import { operationResult, type OperationResult } from "../../shared/operationResult";
-import { isLoadedMovement, loadErrors, loadValidMovement } from "../movement/movementOperationSupport";
+import { isLoadedDefinition, loadValidDefinition } from "../definitions/loadValidDefinition";
 
 export async function createSnapshot(workspaceRoot: string, inputFile: string): Promise<OperationResult> {
   const command = "snapshot.create";
   const input = { file: inputFile };
-  const loaded = await loadValidMovement(workspaceRoot, inputFile);
-  if (!isLoadedMovement(loaded)) {
-    return operationResult({ command, status: "failed", input, errors: loadErrors(loaded) });
+  const loaded = await loadValidDefinition(workspaceRoot, inputFile);
+  if (!isLoadedDefinition(loaded)) {
+    return operationResult({ command, status: "failed", input, errors: loaded.errors });
   }
   const before = await captureWorkspaceState(workspaceRoot);
   try {
-    const snapshot = await createFileSnapshot(workspaceRoot, loaded.relativePath, loaded.content, command);
+    const snapshot = await createFileSnapshot(workspaceRoot, loaded.relativePath, loaded.content, command, loaded.kind);
     const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), [snapshot.relativePath]);
     if (!audit.ok) {
       return operationResult({
@@ -41,6 +41,7 @@ export async function createSnapshot(workspaceRoot: string, inputFile: string): 
           operation: snapshot.record.operation,
           targetPath: snapshot.record.targetPath,
           contentHash: snapshot.record.contentHash
+          ,definitionKind: snapshot.record.definitionKind
         }
       },
       changedFiles: audit.changedFiles,

@@ -14,6 +14,18 @@ Phase 1A delivers structured movement profiles, deterministic simulation, CLI au
 
 Add camera definitions, camera-relative intent, target acquisition/selection contracts, inspection, simulation where meaningful, and fixture measurements. **Exit condition:** camera and targeting can be authored without engine-code edits and pass deterministic/fixture acceptance tests without combat.
 
+### Phase 2A.1 — Camera editor domain foundation (complete)
+
+Camera profile v1, schema and semantic validation, deterministic camera math/simulations, inspect/validate/simulate/set CLI operations, kind-aware snapshot safety, and Node tests are complete. The follow scenario moves for its first fixed-step half and settles for its second, preserving half-life and repeatability evidence. This phase is engine-independent and does not modify Godot runtime files.
+
+### Phase 2A.2 — Camera runtime fixture (not started)
+
+Add only a controlled Godot camera adapter and fixture measurement after the Phase 2A.1 contract is stable. It must consume the authored profile and publish measured evidence without becoming a second authoring source.
+
+### Phase 2B — Targeting (not started)
+
+Add target acquisition and selection contracts only after camera runtime scope is explicitly authorized. No targeting data model, runtime behavior, or combat semantics are included in Phase 2A.1.
+
 ## Phase 3 — Dodge and defensive actions
 
 Promote dodge into a complete defensive-action slice with state restrictions, stamina, invulnerability timing, and runtime evidence. **Exit condition:** all defensive transitions and timing windows are definition-driven, validated, deterministic, and measured in Godot.

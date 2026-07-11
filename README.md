@@ -2,9 +2,9 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 is complete.** The transactionally safe movement foundation has a controlled process-per-run Godot 4.7-stable runtime proof. It does not include combat.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 and Camera Editor Phase 2A.1 are complete.** The transactionally safe movement foundation has a controlled process-per-run Godot 4.7-stable runtime proof. Camera Editor Phase 2A.1 is an engine-independent CLI/domain foundation; it does not add camera runtime proof, targeting, or combat.
 
-## Implemented through Phase 1B
+## Implemented through Phase 2A.1
 
 - A Node.js/TypeScript `mam` CLI with versioned JSON results.
 - JSON Schema and semantic validation for movement profile v1.
@@ -19,6 +19,9 @@ The long-term target is a Dauntless-style action hunting game. **Movement Editor
 - Node built-in tests for schema, validation, simulation, editing, failure recovery, locking, snapshots, rollback, and CLI behavior.
 - GitHub Actions checks on Ubuntu with Node 20/22 and Windows with Node 22.
 - Godot 4.7-stable discovery, structured readiness/results, a fixed-step basic-ground fixture, simulator/runtime comparisons, and a separate real-runtime CI job.
+- Camera profile v1 schema and semantic validation for orbit, follow, recenter, collision, and lens settings.
+- Deterministic camera orbit, pitch-clamp, recenter, follow, collision, and basis simulations; follow scenarios include a fixed-step settling interval after target motion.
+- Read-only camera inspect, validate, and simulate operations; safe camera dotted-path edits with dry runs, snapshots, exact recovery, and kind-aware rollback isolation.
 
 ## Why CLI first
 
@@ -50,6 +53,11 @@ mam runtime check [--godot <path>] [--json]
 mam movement runtime-test <file> --scenario <accelerate|stop|sprint|dodge|turn> [--seconds <number>] [--camera-yaw-degrees <number>] [--godot <path>] [--keep-session] [--json]
 mam movement set <file> <property-path> <json-value> [--dry-run] [--json]
 
+mam camera inspect <file> [--json]
+mam camera validate <file> [--json]
+mam camera simulate <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--json]
+mam camera set <file> <property-path> <json-value> [--dry-run] [--json]
+
 mam snapshot create <file> [--json]
 mam snapshot list [--json]
 mam snapshot rollback <snapshot-id> [--json]
@@ -62,6 +70,9 @@ npm run mam -- movement inspect examples/movement/default.json --json
 npm run mam -- movement simulate examples/movement/default.json --scenario accelerate --seconds 2 --json
 npm run mam -- movement set examples/movement/default.json ground.runSpeed 6.5 --dry-run --json
 npm run mam -- movement set examples/movement/default.json ground.orientationMode '"camera_relative"' --json
+npm run mam -- camera inspect examples/camera/default.json --json
+npm run mam -- camera simulate examples/camera/default.json --scenario follow --json
+npm run mam -- camera set examples/camera/default.json follow.distance 6.5 --dry-run --json
 ```
 
 Snapshots are stored under ignored `.mam-engine/snapshots/`. A real set validates first, snapshots immediately before writing, writes atomically, verifies hash and validation, then audits actual changes. If post-write verification fails, the operation restores and verifies the exact snapshot content while retaining the original failure and snapshot.
@@ -73,19 +84,21 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [`src/cli/`](src/cli/main.ts) - command parsing and output adapters.
 - [`src/application/`](src/application/movement/inspectMovement.ts) - movement, snapshot, locking, and transactional persistence use cases.
 - [`src/domain/movement/`](src/domain/movement/movementTypes.ts) - domain types, validation, metrics, and simulation.
+- [`src/domain/camera/`](src/domain/camera/cameraTypes.ts) - camera profile types, validation, math, metrics, and simulation.
 - [`src/infrastructure/`](src/infrastructure/files/changedFileAudit.ts) - JSON, schema, audit, and snapshot adapters.
 - [`schemas/movement/`](schemas/movement/v1.schema.json) - canonical movement profile v1 schema.
 - [`examples/movement/`](examples/movement/default.json) - prototype defaults, not final game balance.
+- [`schemas/camera/`](schemas/camera/v1.schema.json) and [`examples/camera/`](examples/camera/default.json) - canonical Camera Editor Phase 2A.1 profile contract and prototype default.
 - [`tests/`](tests/README.md) - engine-independent automated verification.
 - [`runtime/godot/`](runtime/godot/README.md) and [`fixtures/movement/`](fixtures/movement/README.md) - controlled Phase 1B runtime and fixture.
 
 ## Current limitations
 
-- No persistent live runtime session, live editing, camera editor, or explicit interactive shutdown command exists.
+- No persistent live runtime session, live editing, visual camera editor, camera Godot adapter/fixture, or explicit interactive shutdown command exists.
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
-- There is no combat, targeting, enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Broader movement, camera, targeting, defensive-action, and combat phases remain separate roadmap work.
+- There is no targeting, combat, enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
+- Camera runtime work, targeting, defensive-action, and combat remain separate roadmap work.
 
 ## Documentation
 
@@ -93,6 +106,7 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [Architecture](docs/architecture.md)
 - [Codex contract](docs/codex-contract.md)
 - [Movement Editor v0.1](docs/movement-editor-v0.1.md)
+- [Camera Editor Phase 2A.1](docs/camera-editor-v0.1.md)
 - [Runtime and CLI protocols](docs/runtime-protocol.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Roadmap](docs/roadmap.md)

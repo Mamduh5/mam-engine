@@ -6,6 +6,7 @@ import type { TestContext } from "node:test";
 import { rm } from "node:fs/promises";
 
 import type { MovementProfile } from "../src/domain/movement/movementTypes";
+import type { CameraProfile } from "../src/domain/camera/cameraTypes";
 
 export function projectRoot(): string {
   return path.resolve(__dirname, "../..");
@@ -13,6 +14,10 @@ export function projectRoot(): string {
 
 export async function defaultProfile(): Promise<MovementProfile> {
   return JSON.parse(await readFile(path.join(projectRoot(), "examples", "movement", "default.json"), "utf8")) as MovementProfile;
+}
+
+export async function defaultCameraProfile(): Promise<CameraProfile> {
+  return JSON.parse(await readFile(path.join(projectRoot(), "examples", "camera", "default.json"), "utf8")) as CameraProfile;
 }
 
 export async function createTestWorkspace(context: TestContext): Promise<{ root: string; movementFile: string; relativeFile: string }> {
@@ -24,4 +29,19 @@ export async function createTestWorkspace(context: TestContext): Promise<{ root:
   await writeFile(movementFile, await readFile(path.join(projectRoot(), ...relativeFile.split("/")), "utf8"), "utf8");
   await writeFile(path.join(root, "unrelated.txt"), "unchanged\n", "utf8");
   return { root, movementFile, relativeFile };
+}
+
+export async function createCameraTestWorkspace(context: TestContext): Promise<{ root: string; cameraFile: string; relativeFile: string; movementFile: string; movementRelativeFile: string }> {
+  const root = await mkdtemp(path.join(tmpdir(), "mam-camera-test-"));
+  context.after(async () => rm(root, { recursive: true, force: true }));
+  const relativeFile = "examples/camera/default.json";
+  const cameraFile = path.join(root, ...relativeFile.split("/"));
+  const movementRelativeFile = "examples/movement/default.json";
+  const movementFile = path.join(root, ...movementRelativeFile.split("/"));
+  await mkdir(path.dirname(cameraFile), { recursive: true });
+  await mkdir(path.dirname(movementFile), { recursive: true });
+  await writeFile(cameraFile, await readFile(path.join(projectRoot(), ...relativeFile.split("/")), "utf8"), "utf8");
+  await writeFile(movementFile, await readFile(path.join(projectRoot(), ...movementRelativeFile.split("/")), "utf8"), "utf8");
+  await writeFile(path.join(root, "unrelated.txt"), "unchanged\n", "utf8");
+  return { root, cameraFile, relativeFile, movementFile, movementRelativeFile };
 }

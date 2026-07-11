@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "camera-profile",
+  "id": "default-hunter-camera",
+  "displayName": "Default Hunter Camera",
+  "orbit": {
+    "yawSpeedDegreesPerSecond": 180,
+    "pitchSpeedDegreesPerSecond": 120,
+    "invertYaw": false,
+    "invertPitch": false,
+    "minimumPitchDegrees": -35,
+    "maximumPitchDegrees": 60,
+    "initialYawDegrees": 0,
+    "initialPitchDegrees": 15
+  },
+  "follow": {
+    "distance": 6,
+    "height": 2.2,
+    "shoulderOffset": 0.6,
+    "lookAtHeight": 1.4,
+    "positionHalfLifeSeconds": 0.12,
+    "rotationHalfLifeSeconds": 0.08
+  },
+  "recenter": {
+    "enabled": true,
+    "delaySeconds": 1.2,
+    "yawSpeedDegreesPerSecond": 90,
+    "movementInputThreshold": 0.2
+  },
+  "collision": {
+    "enabled": true,
+    "probeRadius": 0.25,
+    "minimumDistance": 1,
+    "returnHalfLifeSeconds": 0.1
+  },
+  "lens": {
+    "fieldOfViewDegrees": 65,
+    "nearClipDistance": 0.1,
+    "farClipDistance": 500
+  }
+}

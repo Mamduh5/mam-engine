@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/camera/v1.schema.json",
+  "title": "mam-engine camera profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "orbit", "follow", "recenter", "collision", "lens"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "camera-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "orbit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["yawSpeedDegreesPerSecond", "pitchSpeedDegreesPerSecond", "invertYaw", "invertPitch", "minimumPitchDegrees", "maximumPitchDegrees", "initialYawDegrees", "initialPitchDegrees"],
+      "properties": {
+        "yawSpeedDegreesPerSecond": { "type": "number" },
+        "pitchSpeedDegreesPerSecond": { "type": "number" },
+        "invertYaw": { "type": "boolean" },
+        "invertPitch": { "type": "boolean" },
+        "minimumPitchDegrees": { "type": "number" },
+        "maximumPitchDegrees": { "type": "number" },
+        "initialYawDegrees": { "type": "number" },
+        "initialPitchDegrees": { "type": "number" }
+      }
+    },
+    "follow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["distance", "height", "shoulderOffset", "lookAtHeight", "positionHalfLifeSeconds", "rotationHalfLifeSeconds"],
+      "properties": {
+        "distance": { "type": "number" },
+        "height": { "type": "number" },
+        "shoulderOffset": { "type": "number" },
+        "lookAtHeight": { "type": "number" },
+        "positionHalfLifeSeconds": { "type": "number" },
+        "rotationHalfLifeSeconds": { "type": "number" }
+      }
+    },
+    "recenter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "delaySeconds", "yawSpeedDegreesPerSecond", "movementInputThreshold"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "delaySeconds": { "type": "number" },
+        "yawSpeedDegreesPerSecond": { "type": "number" },
+        "movementInputThreshold": { "type": "number" }
+      }
+    },
+    "collision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "probeRadius", "minimumDistance", "returnHalfLifeSeconds"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "probeRadius": { "type": "number" },
+        "minimumDistance": { "type": "number" },
+        "returnHalfLifeSeconds": { "type": "number" }
+      }
+    },
+    "lens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fieldOfViewDegrees", "nearClipDistance", "farClipDistance"],
+      "properties": {
+        "fieldOfViewDegrees": { "type": "number" },
+        "nearClipDistance": { "type": "number" },
+        "farClipDistance": { "type": "number" }
+      }
+    }
+  }
+}

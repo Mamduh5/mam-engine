@@ -2,7 +2,7 @@
 
 ## Current implementation status
 
-Movement Editor v0.1 implements both the Codex-facing CLI operation envelope and the process-per-run Godot runtime transport described later in this document. Every `mam ... --json` command returns:
+Movement Editor v0.1 implements both the Codex-facing CLI operation envelope and the process-per-run Godot runtime transport described later in this document. Camera Editor Phase 2A.1 uses the same CLI operation envelope for read-only inspect/validate/simulate and safe set operations, but does not implement a camera Godot transport or fixture. Every `mam ... --json` command returns:
 
 ```json
 {
