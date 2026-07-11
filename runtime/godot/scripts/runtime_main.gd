@@ -1,6 +1,9 @@
 extends Node3D
 
-@onready var player: MovementFixtureBody = $Player
+const RuntimeProtocol = preload("res://scripts/runtime_protocol.gd")
+const AtomicJsonFile = preload("res://scripts/atomic_json_file.gd")
+
+@onready var player: Variant = $Player
 
 func _ready() -> void:
 	var paths := _parse_paths(OS.get_cmdline_user_args())

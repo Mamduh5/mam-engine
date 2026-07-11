@@ -1,6 +1,7 @@
 class_name RuntimeProtocol
 extends RefCounted
 
+const MovementProfileRuntime = preload("res://scripts/movement_profile.gd")
 const SCHEMA_VERSION := "mam.runtime/v1"
 const COMMAND_ID := "runtime.fixture.run"
 const FIXTURE_ID := "movement/basic-ground"
