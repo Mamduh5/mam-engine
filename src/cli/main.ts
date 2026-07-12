@@ -35,6 +35,7 @@ import { simulateHitFiles } from "../application/health/simulateHit";
 import { validateHealthFile } from "../application/health/validateHealth";
 import { runHealthRuntimeTest } from "../application/runtime/runHealthRuntimeTest";
 import { simulateCombatExchangeFiles } from "../application/combat/simulateCombatExchange";
+import { runCombatRuntimeTest } from "../application/runtime/runCombatRuntimeTest";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -110,6 +111,7 @@ async function dispatch(
 ): Promise<OperationResult> {
   switch (command.kind) {
     case "combat.simulate-exchange": return simulateCombatExchangeFiles(workspaceRoot, command.healthFile, command.offensiveActionFile);
+    case "combat.runtime-test": return runCombatRuntimeTest(workspaceRoot, command.healthFile, command.offensiveActionFile, { godot: command.godot, keepSession: command.keepSession });
     case "health.inspect": return inspectHealth(workspaceRoot, command.file);
     case "health.validate": return validateHealthFile(workspaceRoot, command.file);
     case "health.simulate-hit": return simulateHitFiles(workspaceRoot, command.healthFile, command.offensiveActionFile);

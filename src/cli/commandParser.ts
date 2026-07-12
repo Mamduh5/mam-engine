@@ -7,6 +7,7 @@ import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
   | { kind: "combat.simulate-exchange"; healthFile: string; offensiveActionFile: string; json: boolean }
+  | { kind: "combat.runtime-test"; healthFile: string; offensiveActionFile: string; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "health.inspect"; file: string; json: boolean }
   | { kind: "health.validate"; file: string; json: boolean }
   | { kind: "health.simulate-hit"; healthFile: string; offensiveActionFile: string; json: boolean }
@@ -88,6 +89,12 @@ function parseCombatCommand(action: string, args: string[]): ParsedCommand {
     const parsed = parseArguments(args, new Set(["--json"]));
     requirePositionals(parsed, 2, "combat simulate-exchange requires <health-file> <offensive-action-file>");
     return { kind: "combat.simulate-exchange", healthFile: parsed.positional[0] as string, offensiveActionFile: parsed.positional[1] as string, json: parsed.flags.has("--json") };
+  }
+  if (action === "runtime-test") {
+    const parsed = parseArguments(args, new Set(["--json", "--godot", "--keep-session"]), new Set(["--godot"]));
+    requirePositionals(parsed, 2, "combat runtime-test requires <health-file> <offensive-action-file>");
+    const godot = parsed.flags.get("--godot");
+    return { kind: "combat.runtime-test", healthFile: parsed.positional[0] as string, offensiveActionFile: parsed.positional[1] as string, ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown combat command '${action}'`);
 }

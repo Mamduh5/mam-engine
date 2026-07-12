@@ -14,6 +14,7 @@ export const TARGETING_FIXTURE_ID = "targeting/basic-lock-on" as const;
 export const DEFENSIVE_ACTION_FIXTURE_ID = "defensive-action/basic-dodge" as const;
 export const OFFENSIVE_ACTION_FIXTURE_ID = "offensive-action/basic-light-attack" as const;
 export const HEALTH_FIXTURE_ID = "health/basic-confirmed-hit" as const;
+export const COMBAT_FIXTURE_ID = "combat/basic-exchange" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -126,7 +127,25 @@ export interface HealthRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest;
+export interface CombatRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof COMBAT_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    healthDefinitionKind: "health-profile";
+    healthDefinitionSchemaVersion: 1;
+    healthProfile: HealthProfile;
+    offensiveActionDefinitionKind: "offensive-action-profile";
+    offensiveActionDefinitionSchemaVersion: 1;
+    offensiveActionProfile: OffensiveActionProfile;
+    scenario: { id: "default"; durationSeconds: number; fixedDeltaSeconds: number };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

@@ -11,8 +11,13 @@ func configure(health: Dictionary, action: Dictionary) -> void:
 func run_scenario(scenario: Dictionary) -> Dictionary:
 	if scenario.id != "confirmed-hit": return {}
 	await get_tree().physics_frame
-	var starting_health := float(health_profile.startingHealth)
-	var incoming_damage := float(action_profile.damage)
+	var result := resolve_damage(health_profile, action_profile)
+	result.physicsSteps = 1
+	return result
+
+static func resolve_damage(health: Dictionary, action: Dictionary) -> Dictionary:
+	var starting_health := float(health.startingHealth)
+	var incoming_damage := float(action.damage)
 	var applied_damage: float = min(starting_health, incoming_damage)
 	var remaining_health: float = max(0.0, starting_health - applied_damage)
 	var overkill_damage := incoming_damage - applied_damage
@@ -24,6 +29,5 @@ func run_scenario(scenario: Dictionary) -> Dictionary:
 		"remainingHealth": remaining_health,
 		"overkillDamage": overkill_damage,
 		"defeated": defeated,
-		"finalTargetState": "defeated" if defeated else "alive",
-		"physicsSteps": 1
+		"finalTargetState": "defeated" if defeated else "alive"
 	}
