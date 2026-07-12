@@ -6,6 +6,7 @@ import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "combat.simulate-exchange"; healthFile: string; offensiveActionFile: string; json: boolean }
   | { kind: "health.inspect"; file: string; json: boolean }
   | { kind: "health.validate"; file: string; json: boolean }
   | { kind: "health.simulate-hit"; healthFile: string; offensiveActionFile: string; json: boolean }
@@ -69,6 +70,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
   if (group === "defensive-action") return parseDefensiveActionCommand(action, remaining);
   if (group === "offensive-action") return parseOffensiveActionCommand(action, remaining);
   if (group === "health") return parseHealthCommand(action, remaining);
+  if (group === "combat") return parseCombatCommand(action, remaining);
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
   }
@@ -79,6 +81,15 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseCombatCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "simulate-exchange") {
+    const parsed = parseArguments(args, new Set(["--json"]));
+    requirePositionals(parsed, 2, "combat simulate-exchange requires <health-file> <offensive-action-file>");
+    return { kind: "combat.simulate-exchange", healthFile: parsed.positional[0] as string, offensiveActionFile: parsed.positional[1] as string, json: parsed.flags.has("--json") };
+  }
+  throw new CliParseError(`Unknown combat command '${action}'`);
 }
 
 function parseHealthCommand(action: string, args: string[]): ParsedCommand {
