@@ -26,9 +26,9 @@ The controlled Godot `camera/basic-third-person` fixture consumes the complete v
 
 Canonical targeting rules, schema/semantic validation, deterministic candidate eligibility/scoring, stable ties, retention/grace/reacquisition, directional switching/cooldown, safe CLI authoring, and kind-aware snapshots are complete. Candidates remain scenario data rather than authored profile state.
 
-### Phase 2B.2 — Runtime targeting and target-driven camera framing (not started)
+### Phase 2B.2 — Runtime targeting and target-driven camera framing (complete)
 
-Add controlled runtime targeting evidence and target-driven camera framing only after separate authorization. Phase 2B.1 adds no Godot targeting behavior, enemies, or combat semantics.
+The separate controlled targeting fixture proves real LOS, acquisition/scoring, retention/grace/loss/reacquisition, switching/cooldown, and target-driven framing from existing camera fields. **Targeting Editor v0.1 is complete through Phase 2B.2. Phase 2 camera and targeting is complete. Phase 3 dodge and defensive actions is not started.** This is not a complete combat system.
 
 ## Phase 3 — Dodge and defensive actions
 

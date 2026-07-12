@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "const": "runtime.fixture.run" },
-    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person"] },
+    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on"] },
     "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
     "requestedAt": { "type": "string" },
     "timeoutMs": { "type": "number", "exclusiveMinimum": 0, "maximum": 60000 },
@@ -22,6 +22,10 @@
     {
       "if": { "properties": { "fixtureId": { "const": "camera/basic-third-person" } } },
       "then": { "properties": { "payload": { "$ref": "#/$defs/cameraPayload" } } }
+    },
+    {
+      "if": { "properties": { "fixtureId": { "const": "targeting/basic-lock-on" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/targetingPayload" } } }
     }
   ],
   "$defs": {
@@ -65,6 +69,51 @@
             "variant": { "enum": ["default", "disabled", "below-threshold", "manual-input"] }
           }
         }
+      }
+    },
+    "vector3": {
+      "type": "object", "additionalProperties": false, "required": ["x", "y", "z"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } }
+    },
+    "targetingCandidate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "targetPoint", "targetable", "priority", "obstruction"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "targetPoint": { "$ref": "#/$defs/vector3" },
+        "targetable": { "type": "boolean" }, "priority": { "type": "number", "minimum": 0, "maximum": 1 },
+        "obstruction": { "enum": ["none", "controlled-wall"] }
+      }
+    },
+    "targetingEvent": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["step", "type"], "properties": { "step": { "type": "integer", "minimum": 1 }, "type": { "const": "request-acquire" } } },
+        { "type": "object", "additionalProperties": false, "required": ["step", "type", "targetId", "obstruction"], "properties": { "step": { "type": "integer", "minimum": 1 }, "type": { "const": "set-obstruction" }, "targetId": { "type": "string", "minLength": 1 }, "obstruction": { "enum": ["none", "controlled-wall"] } } },
+        { "type": "object", "additionalProperties": false, "required": ["step", "type", "targetId", "targetable"], "properties": { "step": { "type": "integer", "minimum": 1 }, "type": { "const": "set-targetable" }, "targetId": { "type": "string", "minLength": 1 }, "targetable": { "type": "boolean" } } },
+        { "type": "object", "additionalProperties": false, "required": ["step", "type", "targetId", "targetPoint"], "properties": { "step": { "type": "integer", "minimum": 1 }, "type": { "const": "move-target" }, "targetId": { "type": "string", "minLength": 1 }, "targetPoint": { "$ref": "#/$defs/vector3" } } },
+        { "type": "object", "additionalProperties": false, "required": ["step", "type", "direction"], "properties": { "step": { "type": "integer", "minimum": 1 }, "type": { "const": "request-switch" }, "direction": { "enum": ["left", "right"] } } }
+      ]
+    },
+    "targetingScenario": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "durationSeconds", "fixedDeltaSeconds", "origin", "viewForward", "initialTargetId", "initialSwitchCooldownSeconds", "candidates", "events"],
+      "properties": {
+        "id": { "enum": ["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"] },
+        "durationSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+        "fixedDeltaSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "origin": { "$ref": "#/$defs/vector3" }, "viewForward": { "$ref": "#/$defs/vector3" },
+        "initialTargetId": { "type": ["string", "null"] }, "initialSwitchCooldownSeconds": { "type": "number", "minimum": 0 },
+        "candidates": { "type": "array", "items": { "$ref": "#/$defs/targetingCandidate" } },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/targetingEvent" } }
+      }
+    },
+    "targetingPayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["definitionKind", "definitionSchemaVersion", "profile", "cameraDefinitionKind", "cameraDefinitionSchemaVersion", "cameraProfile", "scenario"],
+      "properties": {
+        "definitionKind": { "const": "targeting-profile" }, "definitionSchemaVersion": { "const": 1 },
+        "profile": { "$ref": "../targeting/v1.schema.json" },
+        "cameraDefinitionKind": { "const": "camera-profile" }, "cameraDefinitionSchemaVersion": { "const": 1 },
+        "cameraProfile": { "$ref": "../camera/v1.schema.json" }, "scenario": { "$ref": "#/$defs/targetingScenario" }
       }
     }
   }

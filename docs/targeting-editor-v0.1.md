@@ -1,10 +1,8 @@
-# Targeting Editor Phase 2B.1
+# Targeting Editor v0.1 through Phase 2B.2
 
 ## Status
 
-Phase 2B.1 domain foundation complete.
-
-Phase 2B.2 runtime targeting and target-driven camera framing not started.
+Phase 2B.1 domain foundation and Phase 2B.2 runtime targeting and target-driven camera framing are complete. Phase 2 camera and targeting is complete. Phase 3 dodge and defensive actions is not started.
 
 ## Canonical profile
 
@@ -40,6 +38,7 @@ Switching measures signed horizontal displacement from the current target direct
 mam targeting inspect <file> [--json]
 mam targeting validate <file> [--json]
 mam targeting simulate <file> --scenario <acquire|eligibility|tie-break|retention|loss|reacquire|switch-left|switch-right|switch-cooldown> [--seconds <number>] [--fixed-delta <number>] [--json]
+mam targeting runtime-test <file> --camera <camera-file> --scenario <scenario-id> [--seconds <number>] [--fixed-delta <number>] [--godot <path>] [--keep-session] [--json]
 mam targeting set <file> <property-path> <json-value> [--dry-run] [--json]
 ```
 
@@ -49,6 +48,6 @@ Simulations use a default fixed delta of 1/60 second and return selected/initial
 
 Inspect, validate, simulate, and dry-run set are zero-write operations. Real set validates the complete candidate, locks the target, creates a kind-aware snapshot, writes atomically, verifies hash and targeting validity, audits changed files, and restores exact prior content after post-write failure. Targeting snapshots cannot cross movement/camera kind boundaries and rollback creates a pre-restore safety snapshot.
 
-Node tests cover schema, semantics, context validation, acquisition, scoring, stable ties, retention, grace, loss, reacquisition, switching, cooldown, CLI envelopes, transactions, locking, snapshots, rollback, and cross-kind isolation. This phase adds no Godot targeting request, fixture, scene, script, or target-driven camera behavior.
+Node and real Godot tests cover the normalized dual-profile request, deterministic plans, real spatial LOS, acquisition/scoring/ties, retention/grace/loss/reacquisition, switching/cooldown, target-driven framing, lens readback, session lifecycle, and file safety. Candidate and event data remain ephemeral.
 
-Excluded: runtime targeting, rendered visibility, projection, camera lock-on/framing, enemies, AI, health, attacks, weapons, damage, hitboxes, animation, root motion, audio, VFX, screen shake, camera zones, networking, multiplayer, persistent runtime sessions, and visual editing.
+This controlled fixture is not a complete combat system. Excluded: enemies, AI, health, attacks, weapons, damage, hitboxes, animation, root motion, audio, VFX, screen shake, camera zones, networking, multiplayer, persistent runtime sessions, and visual editing.

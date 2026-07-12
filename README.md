@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Phase 2B.1 domain foundation are complete.** Movement and camera have controlled Godot 4.7-stable runtime proof; targeting remains engine-independent until Phase 2B.2.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Movement, camera, and targeting have controlled Godot 4.7-stable runtime proof. Phase 2 camera and targeting is complete; Phase 3 dodge and defensive actions is not started.
 
 ## Implemented through Phase 2A.2
 
@@ -23,6 +23,7 @@ The long-term target is a Dauntless-style action hunting game. **Movement Editor
 - Deterministic camera orbit, pitch-clamp, recenter, follow, collision, and basis simulations; follow scenarios include a fixed-step settling interval after target motion.
 - Read-only camera inspect, validate, and simulate operations; safe camera dotted-path edits with dry runs, snapshots, exact recovery, and kind-aware rollback isolation.
 - A `camera/basic-third-person` Godot fixture consuming the complete validated camera profile for orbit, pitch clamp, move-then-settle follow, delayed recenter, real spatial collision compression/recovery, camera-relative basis, and lens application.
+- A separate `targeting/basic-lock-on` fixture consuming normalized targeting and camera profiles plus ephemeral plans for real LOS, acquisition, retention, switching, and target-driven framing.
 - Structured camera runtime metrics and named domain/runtime tolerances, including real cold-cache Godot integration tests.
 - Targeting profile v1 validation and safe authoring, deterministic acquisition/scoring, stable ties, retention/grace/reacquisition, and directional switching/cooldown simulations.
 
@@ -65,6 +66,7 @@ mam camera set <file> <property-path> <json-value> [--dry-run] [--json]
 mam targeting inspect <file> [--json]
 mam targeting validate <file> [--json]
 mam targeting simulate <file> --scenario <acquire|eligibility|tie-break|retention|loss|reacquire|switch-left|switch-right|switch-cooldown> [--seconds <number>] [--fixed-delta <number>] [--json]
+mam targeting runtime-test <file> --camera <camera-file> --scenario <acquire|eligibility|tie-break|retention|loss|reacquire|switch-left|switch-right|switch-cooldown|framing-acquire|framing-switch|framing-loss|framing-reacquire> [--seconds <number>] [--fixed-delta <number>] [--godot <path>] [--keep-session] [--json]
 mam targeting set <file> <property-path> <json-value> [--dry-run] [--json]
 
 mam snapshot create <file> [--json]
@@ -109,8 +111,8 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - No persistent live runtime session, live editing, visual camera editor, or explicit interactive shutdown command exists.
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
-- There is no targeting runtime, target-driven camera, combat, enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Phase 2B.2 runtime targeting, defensive-action, and combat remain separate roadmap work.
+- Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
+- Phase 3 dodge and defensive actions, and later combat systems, remain separate roadmap work.
 
 ## Documentation
 

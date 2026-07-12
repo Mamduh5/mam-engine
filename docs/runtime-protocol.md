@@ -39,7 +39,7 @@ Phase 1A.1 extends failed persistence data backward-compatibly:
 
 Recovery status is `not_required`, `restored`, or `failed`. The requested operation remains top-level `failed` after successful recovery, so exit status remains non-zero. Successful rollback data includes `sourceSnapshotId` and `preRollbackSnapshotId`; top-level `snapshotId` is the pre-rollback safety snapshot.
 
-The `mam.runtime/v1` Godot protocol is implemented using atomic files under an isolated runtime session directory. It dispatches validated fixture IDs `movement/basic-ground` and `camera/basic-third-person`; unknown fixtures remain rejected.
+The `mam.runtime/v1` Godot protocol is implemented using atomic files under an isolated runtime session directory. It dispatches validated fixture IDs `movement/basic-ground`, `camera/basic-third-person`, and `targeting/basic-lock-on`; unknown fixtures remain rejected.
 
 ## Purpose
 
@@ -49,7 +49,7 @@ Protocol version `mam.runtime/v1` below is the implemented movement/camera proce
 
 Camera requests include `definitionKind: "camera-profile"`, `definitionSchemaVersion: 1`, the complete normalized profile, and a scenario containing one of `orbit`, `pitch-clamp`, `recenter`, `follow`, `collision`, or `basis`. Unsupported kinds, schema versions, profiles, scenarios, commands, fixtures, correlations, invalid fixed deltas, and non-finite values are rejected before execution. Runtime responses retain the same envelope and include typed camera metrics plus lens readback; terminal prose is never parsed.
 
-Targeting Phase 2B.1 does not extend `mam.runtime/v1`. Target candidates, acquisition, retention, and switching are engine-independent domain simulations only. A targeting runtime fixture and target-driven camera framing remain Phase 2B.2 work.
+The additive targeting discriminant carries a complete normalized targeting profile as `profile`, a complete normalized camera profile as `cameraProfile`, and a validated scenario plan. It carries no source paths or expected outcomes. Candidates and events remain ephemeral; Godot owns real ray-query LOS and returns structured targeting/framing metrics.
 
 ## Request envelope
 

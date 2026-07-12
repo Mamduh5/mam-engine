@@ -2,7 +2,7 @@
 
 The executable CLI is implemented under [`src/cli/`](../src/cli/). `package.json` exposes `dist/src/cli/main.js` as `mam`, including a Node shebang for installed use on Windows and other supported Node platforms.
 
-The local parser supports movement, camera, and targeting inspection, validation, deterministic simulation, transactional set operations, snapshot creation/listing, and reversible rollback without a CLI-framework dependency. Every command accepts `--json`; machine-readable output uses protocol version 1 and normal user errors return stable codes without stack traces.
+The local parser supports movement, camera, and targeting inspection, validation, deterministic simulation, transactional set operations, runtime tests, snapshot creation/listing, and reversible rollback without a CLI-framework dependency. `targeting runtime-test` requires `--camera` and supports all thirteen targeting/framing scenarios. Every command accepts `--json`; machine-readable output uses protocol version 1 and normal user errors return stable codes without stack traces.
 
 Targeting supports `inspect`, `validate`, nine named domain-only simulation scenarios, and safe `set`. Candidate lists are built-in scenario inputs rather than a second persisted file format. Targeting commands never start Godot.
 

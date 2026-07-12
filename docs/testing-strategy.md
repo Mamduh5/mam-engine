@@ -24,7 +24,7 @@ Use fixed timesteps and explicit inputs to assert ordered samples and metrics. M
 
 ### Godot headless integration tests
 
-Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute movement and camera fixtures, and compare runtime metrics with named tolerances. Camera coverage includes cold cache, orbit, pitch, recenter variants, move-then-settle follow, real spatial collision enabled/disabled, basis, lens, session cleanup, and file safety. These tests require compatible Godot 4.7 stable and run in a separate slower integration job.
+Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute movement, camera, and targeting fixtures, and compare runtime metrics with named tolerances. Camera coverage includes cold cache, orbit, pitch, recenter variants, move-then-settle follow, real spatial collision enabled/disabled, basis, lens, session cleanup, and file safety. Targeting coverage adds real LOS, acquisition, retention/loss/reacquisition, switching/cooldown, target-driven framing, and lens readback. These tests require compatible Godot 4.7 stable and run in a separate slower integration job.
 
 ### Runtime fixture smoke tests
 
@@ -56,9 +56,9 @@ Every fixed defect receives the smallest test at the owning layer. Cross-layer r
 
 ## Runtime-independent versus Godot-required
 
-Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. `npm run test:camera-runtime` runs focused camera runtime tests. Type checking plus the full Node suite runs through `npm run check`. Godot integration runs through `npm run test:godot`, with `npm run test:godot:camera` available for the camera file. Local absence is reported as skipped; pinned CI must pass rather than skip.
+Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. `npm run test:camera-runtime` and `npm run test:targeting-runtime` run focused runtime tests. Type checking plus the full Node suite runs through `npm run check`. Godot integration runs through `npm run test:godot`, with focused camera and targeting scripts available. Local absence is reported as skipped; pinned CI must pass rather than skip.
 
-Targeting Phase 2B.1 remains in the Node tier. Focused tests cover strict targeting schema/semantics, candidate context integrity, scoring/ties, retention/grace/reacquisition, switching/cooldown, CLI/persistence, and cross-kind rollback. The unchanged Godot suite is a regression gate only and contains no targeting cases.
+Targeting Phase 2B.2 adds plan/protocol/simulation/comparison/application Node coverage and real Godot acquisition, eligibility/LOS, tie, retention/loss/reacquisition, switching/cooldown, camera-framing, lens, lifecycle, cleanup, and file-safety coverage.
 
 If Godot is unavailable, the fast suite can pass while Godot-required checks are reported as not run because of the environment. They must not be claimed as passing or silently omitted.
 

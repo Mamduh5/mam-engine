@@ -1,6 +1,7 @@
 import type { MovementScenario } from "../domain/movement/movementTypes";
 import type { CameraScenario } from "../domain/camera/cameraTypes";
 import type { TargetingScenario } from "../domain/targeting/targetingTypes";
+import type { TargetingRuntimeScenario } from "../domain/runtime/targetingRuntimePlan";
 import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
@@ -13,6 +14,7 @@ export type ParsedCommand =
   | { kind: "targeting.inspect"; file: string; json: boolean }
   | { kind: "targeting.validate"; file: string; json: boolean }
   | { kind: "targeting.simulate"; file: string; scenario: TargetingScenario; seconds?: number; fixedDelta?: number; json: boolean }
+  | { kind: "targeting.runtime-test"; file: string; camera: string; scenario: TargetingRuntimeScenario; seconds?: number; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "targeting.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "movement.inspect"; file: string; json: boolean }
   | { kind: "movement.validate"; file: string; json: boolean }
@@ -36,6 +38,7 @@ interface ParsedArguments {
 const movementScenarios = new Set<MovementScenario>(["accelerate", "stop", "sprint", "dodge", "turn"]);
 const cameraScenarios = new Set<CameraScenario>(["orbit", "pitch-clamp", "recenter", "follow", "collision", "basis"]);
 const targetingScenarios = new Set<TargetingScenario>(["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown"]);
+const targetingRuntimeScenarios = new Set<TargetingRuntimeScenario>(["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]);
 
 export function parseCommand(argv: string[]): ParsedCommand {
   const [group, action, ...remaining] = argv;
@@ -63,6 +66,14 @@ export function parseCommand(argv: string[]): ParsedCommand {
 function parseTargetingCommand(action: string, args: string[]): ParsedCommand {
   if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `targeting ${action} requires exactly one file argument`); return { kind: `targeting.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "simulate") { const parsed = parseArguments(args, new Set(["--json", "--scenario", "--seconds", "--fixed-delta"]), new Set(["--scenario", "--seconds", "--fixed-delta"])); requirePositionals(parsed, 1, "targeting simulate requires exactly one file argument"); const scenario = parsed.flags.get("--scenario"); if (typeof scenario !== "string" || !targetingScenarios.has(scenario as TargetingScenario)) throw new CliParseError("--scenario must be one of: acquire, eligibility, tie-break, retention, loss, reacquire, switch-left, switch-right, switch-cooldown", ErrorCodes.TargetingScenarioUnsupported); const seconds = optionalPositiveNumber(parsed.flags.get("--seconds"), "--seconds"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); return { kind: "targeting.simulate", file: parsed.positional[0] as string, scenario: scenario as TargetingScenario, ...(seconds === undefined ? {} : { seconds }), ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") }; }
+  if (action === "runtime-test") {
+    const parsed = parseArguments(args, new Set(["--json", "--camera", "--scenario", "--seconds", "--fixed-delta", "--godot", "--keep-session"]), new Set(["--camera", "--scenario", "--seconds", "--fixed-delta", "--godot"]));
+    requirePositionals(parsed, 1, "targeting runtime-test requires exactly one targeting file argument");
+    const camera = parsed.flags.get("--camera"); if (typeof camera !== "string") throw new CliParseError("--camera is required");
+    const scenario = parsed.flags.get("--scenario"); if (typeof scenario !== "string" || !targetingRuntimeScenarios.has(scenario as TargetingRuntimeScenario)) throw new CliParseError("--scenario must be one of: acquire, eligibility, tie-break, retention, loss, reacquire, switch-left, switch-right, switch-cooldown, framing-acquire, framing-switch, framing-loss, framing-reacquire", ErrorCodes.TargetingRuntimeScenarioUnsupported);
+    const seconds = optionalPositiveNumber(parsed.flags.get("--seconds"), "--seconds"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); const godot = parsed.flags.get("--godot");
+    return { kind: "targeting.runtime-test", file: parsed.positional[0] as string, camera, scenario: scenario as TargetingRuntimeScenario, ...(seconds === undefined ? {} : { seconds }), ...(fixedDelta === undefined ? {} : { fixedDelta }), ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") };
+  }
   if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "targeting set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("targeting set <json-value> must be valid JSON"); } return { kind: "targeting.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
   throw new CliParseError(`Unknown targeting command '${action}'`);
 }

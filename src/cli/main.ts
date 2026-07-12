@@ -14,6 +14,7 @@ import { rollbackSnapshot } from "../application/snapshots/rollbackSnapshot";
 import { checkRuntime } from "../application/runtime/checkRuntime";
 import { runMovementRuntimeTest } from "../application/runtime/runMovementRuntimeTest";
 import { runCameraRuntimeTest } from "../application/runtime/runCameraRuntimeTest";
+import { runTargetingRuntimeTest } from "../application/runtime/runTargetingRuntimeTest";
 import { inspectTargeting } from "../application/targeting/inspectTargeting";
 import { setTargetingValue } from "../application/targeting/setTargetingValue";
 import { simulateTargetingFile } from "../application/targeting/simulateTargeting";
@@ -97,6 +98,7 @@ async function dispatch(
     case "targeting.inspect": return inspectTargeting(workspaceRoot, command.file);
     case "targeting.validate": return validateTargetingFile(workspaceRoot, command.file);
     case "targeting.simulate": return simulateTargetingFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);
+    case "targeting.runtime-test": return runTargetingRuntimeTest(workspaceRoot, command.file, command.camera, command.scenario, command.seconds, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "targeting.set": return dependencies.setTargetingValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "movement.inspect":
       return inspectMovement(workspaceRoot, command.file);

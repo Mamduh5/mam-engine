@@ -8,6 +8,7 @@ import type { OperationResult } from "../src/shared/operationResult";
 import { ErrorCodes } from "../src/shared/errorCodes";
 import { setMovementValue } from "../src/application/movement/setMovementValue";
 import { executeCli } from "../src/cli/main";
+import { parseCommand } from "../src/cli/commandParser";
 import { createTestWorkspace } from "./testUtils";
 
 function runCli(workspaceRoot: string, args: string[]) {
@@ -49,6 +50,23 @@ test("unsupported runtime scenarios use the runtime-specific stable code", async
   const execution = await executeCli(["movement", "runtime-test", "examples/movement/default.json", "--scenario", "fly", "--json"]);
   assert.equal(execution.exitCode, 2);
   assert.equal(execution.result.errors[0]?.code, ErrorCodes.RuntimeScenarioUnsupported);
+});
+
+test("targeting runtime-test requires camera and uses its stable scenario code", async () => {
+  const missingCamera = await executeCli(["targeting", "runtime-test", "examples/targeting/default.json", "--scenario", "acquire", "--json"]);
+  assert.equal(missingCamera.exitCode, 2); assert.match(missingCamera.result.errors[0]?.message ?? "", /--camera is required/);
+  const unsupported = await executeCli(["targeting", "runtime-test", "examples/targeting/default.json", "--camera", "examples/camera/default.json", "--scenario", "orbit", "--json"]);
+  assert.equal(unsupported.exitCode, 2); assert.equal(unsupported.result.errors[0]?.code, ErrorCodes.TargetingRuntimeScenarioUnsupported);
+});
+
+test("targeting runtime-test parses all supported options", () => {
+  const command = parseCommand(["targeting", "runtime-test", "target.json", "--camera", "camera.json", "--scenario", "framing-reacquire", "--seconds", "2", "--fixed-delta", "0.02", "--godot", "godot.exe", "--keep-session", "--json"]);
+  assert.deepEqual(command, { kind: "targeting.runtime-test", file: "target.json", camera: "camera.json", scenario: "framing-reacquire", seconds: 2, fixedDelta: 0.02, godot: "godot.exe", keepSession: true, json: true });
+});
+test("targeting runtime-test rejects duplicate and invalid numeric flags", () => {
+  assert.throws(() => parseCommand(["targeting", "runtime-test", "target.json", "--camera", "camera.json", "--camera", "other.json", "--scenario", "acquire"]), /more than once/);
+  assert.throws(() => parseCommand(["targeting", "runtime-test", "target.json", "--camera", "camera.json", "--scenario", "acquire", "--seconds", "0"]), /--seconds/);
+  assert.throws(() => parseCommand(["targeting", "runtime-test", "target.json", "--camera", "camera.json", "--scenario", "acquire", "--fixed-delta", "nan"]), /--fixed-delta/);
 });
 
 test("recovered write failures serialize in JSON and remain non-zero", async (context) => {

@@ -1,9 +1,13 @@
 import type { CameraProfile, CameraScenario } from "../camera/cameraTypes";
 import type { MovementProfile, MovementScenario } from "../movement/movementTypes";
+import type { TargetingProfile } from "../targeting/targetingTypes";
+import type { TargetingRuntimeScenarioRequest } from "./targetingRuntimePlan";
+export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
 export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
 export const MOVEMENT_FIXTURE_ID = "movement/basic-ground" as const;
 export const CAMERA_FIXTURE_ID = "camera/basic-third-person" as const;
+export const TARGETING_FIXTURE_ID = "targeting/basic-lock-on" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -50,7 +54,25 @@ export interface CameraRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest;
+export interface TargetingRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof TARGETING_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    definitionKind: "targeting-profile";
+    definitionSchemaVersion: 1;
+    profile: TargetingProfile;
+    cameraDefinitionKind: "camera-profile";
+    cameraDefinitionSchemaVersion: 1;
+    cameraProfile: CameraProfile;
+    scenario: TargetingRuntimeScenarioRequest;
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

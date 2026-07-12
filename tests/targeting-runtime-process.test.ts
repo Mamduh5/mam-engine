@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import test from "node:test";
+
+import { runTargetingRuntimeTest } from "../src/application/runtime/runTargetingRuntimeTest";
+import { executeCli } from "../src/cli/main";
+import { ErrorCodes } from "../src/shared/errorCodes";
+import { createTargetingTestWorkspace } from "./testUtils";
+
+test("invalid targeting profile prevents Godot discovery", async (context) => { const workspace = await createTargetingTestWorkspace(context); await writeFile(workspace.targetingFile, "{}\n", "utf8"); const result = await runTargetingRuntimeTest(workspace.root, workspace.relativeFile, workspace.cameraRelativeFile, "acquire", undefined, undefined, { godot: "definitely-missing" }); assert.equal(result.status, "failed"); assert.notEqual(result.errors[0]?.code, ErrorCodes.GodotBinaryNotExecutable); });
+test("invalid camera profile prevents Godot discovery", async (context) => { const workspace = await createTargetingTestWorkspace(context); await writeFile(workspace.cameraFile, "{}\n", "utf8"); const result = await runTargetingRuntimeTest(workspace.root, workspace.relativeFile, workspace.cameraRelativeFile, "acquire", undefined, undefined, { godot: "definitely-missing" }); assert.equal(result.status, "failed"); assert.notEqual(result.errors[0]?.code, ErrorCodes.GodotBinaryNotExecutable); });
+test("targeting runtime public envelope names both relative files", async (context) => { const workspace = await createTargetingTestWorkspace(context); const execution = await executeCli(["targeting", "runtime-test", workspace.relativeFile, "--camera", workspace.cameraRelativeFile, "--scenario", "acquire", "--godot", "definitely-missing", "--json"], workspace.root); assert.equal(execution.result.command, "targeting.runtime-test"); assert.deepEqual(execution.result.input, { file: workspace.relativeFile, camera: workspace.cameraRelativeFile, scenario: "acquire" }); assert.equal(execution.result.snapshotId, null); });
+test("targeting runtime source definitions remain byte-identical during preflight", async (context) => { const workspace = await createTargetingTestWorkspace(context); const beforeTargeting = await readFile(workspace.targetingFile, "utf8"); const beforeCamera = await readFile(workspace.cameraFile, "utf8"); await runTargetingRuntimeTest(workspace.root, workspace.relativeFile, workspace.cameraRelativeFile, "acquire", undefined, undefined, { godot: "definitely-missing" }); assert.equal(await readFile(workspace.targetingFile, "utf8"), beforeTargeting); assert.equal(await readFile(workspace.cameraFile, "utf8"), beforeCamera); });

@@ -36,6 +36,7 @@ export const ErrorCodes = {
   CameraWriteRecoveryFailed: "CAMERA_WRITE_RECOVERY_FAILED",
   CameraScenarioUnsupported: "CAMERA_SCENARIO_UNSUPPORTED",
   CameraRuntimeScenarioUnsupported: "CAMERA_RUNTIME_SCENARIO_UNSUPPORTED",
+  TargetingRuntimeScenarioUnsupported: "TARGETING_RUNTIME_SCENARIO_UNSUPPORTED",
   TargetingFileNotFound: "TARGETING_FILE_NOT_FOUND",
   TargetingFileReadFailed: "TARGETING_FILE_READ_FAILED",
   TargetingJsonInvalid: "TARGETING_JSON_INVALID",

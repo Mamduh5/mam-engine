@@ -1,6 +1,6 @@
 # Godot runtime adapter
 
-This self-contained Godot 4.7 host consumes one validated `mam.runtime/v1` request, atomically writes readiness and final response files, dispatches either `movement/basic-ground` or `camera/basic-third-person`, and exits. Terminal output is bounded diagnostics, never protocol.
+This self-contained Godot 4.7 host consumes one validated `mam.runtime/v1` request, atomically writes readiness and final response files, dispatches movement, camera, or the separate `targeting/basic-lock-on` fixture, and exits. Terminal output is bounded diagnostics, never protocol.
 
 The camera scene contains a deterministic target, follow anchor, yaw and pitch pivots, `ShapeCast3D` sphere probe, `Camera3D`, controlled collision wall, ground, simple meshes, and light. It has no imported assets or plugins. Explicit preloads make cold-checkout execution independent of generated script-class caches. Headless fixed-step measurements are authoritative.
 
@@ -8,4 +8,4 @@ Camera behavior uses direct bounded orbit updates, position half-life on camera 
 
 Godot is not a definition store. It receives the complete already validated profile in the atomic request and never reads or writes canonical camera JSON. `.godot/` and runtime sessions are the only internal generated paths.
 
-Not implemented: persistent sessions, targeting, lock-on, target switching, enemies, combat camera, screen shake, camera zones, cutscenes, photo mode, visual-editor controls, animation, audio, VFX, weapons, damage, multiplayer, or networking.
+The targeting scene uses marker nodes and dedicated-mask controlled walls with real ray queries; markers have no gameplay semantics. Not implemented: persistent sessions, enemies, combat systems, screen shake, camera zones, cutscenes, photo mode, visual-editor controls, animation, audio, VFX, weapons, damage, multiplayer, or networking.
