@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/stamina/v1.schema.json",
+  "title": "mam-engine stamina profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "maxStamina", "startingStamina"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "stamina-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "maxStamina": { "type": "number" },
+    "startingStamina": { "type": "number" }
+  }
+}

@@ -7,6 +7,8 @@ import { validateOffensiveActionDefinition } from "../../domain/offensiveAction/
 import type { OffensiveActionProfile } from "../../domain/offensiveAction/offensiveActionTypes";
 import { validateHealthDefinition } from "../../domain/health/healthValidation";
 import type { HealthProfile } from "../../domain/health/healthTypes";
+import { validateStaminaDefinition } from "../../domain/stamina/staminaValidation";
+import type { StaminaProfile } from "../../domain/stamina/staminaTypes";
 import { validateMovementDefinition } from "../../domain/movement/movementValidation";
 import type { MovementProfile } from "../../domain/movement/movementTypes";
 import { validateTargetingDefinition } from "../../domain/targeting/targetingValidation";
@@ -16,7 +18,7 @@ import type { OperationError } from "../../shared/operationResult";
 import type { ContentVerification } from "../persistence/transactionalFileReplace";
 
 export type { DefinitionKind } from "../../domain/definitions/definitionTypes";
-export type SupportedDefinition = MovementProfile | CameraProfile | TargetingProfile | DefensiveActionProfile | OffensiveActionProfile | HealthProfile;
+export type SupportedDefinition = MovementProfile | CameraProfile | TargetingProfile | DefensiveActionProfile | OffensiveActionProfile | HealthProfile | StaminaProfile;
 
 export interface DefinitionValidationResult {
   valid: boolean;
@@ -52,12 +54,16 @@ export function validateDefinition(value: unknown): DefinitionValidationResult {
     const result = validateHealthDefinition(value);
     return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
   }
+  if (kind === "stamina-profile") {
+    const result = validateStaminaDefinition(value);
+    return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
+  }
   return {
     valid: false,
     kind: null,
     definition: null,
     schemaVersion: schemaVersion(value),
-    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile, camera-profile, targeting-profile, defensive-action-profile, offensive-action-profile, or health-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile", "targeting-profile", "defensive-action-profile", "offensive-action-profile", "health-profile"] }]
+    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile, camera-profile, targeting-profile, defensive-action-profile, offensive-action-profile, health-profile, or stamina-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile", "targeting-profile", "defensive-action-profile", "offensive-action-profile", "health-profile", "stamina-profile"] }]
   };
 }
 
