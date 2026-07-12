@@ -73,13 +73,32 @@ static func _validate_targeting_plan(plan: Dictionary) -> Array[String]:
 	for event in plan.events:
 		if typeof(event) != TYPE_DICTIONARY or not _finite_number(event.get("step")) or int(event.get("step", 0)) < 1 or int(event.get("step", 0)) > steps or absf(float(event.get("step", 0)) - int(event.get("step", 0))) > 0.0 or not ["request-acquire", "set-obstruction", "set-targetable", "move-target", "request-switch"].has(event.get("type")): errors.append("invalid targeting event"); continue
 		if ["set-obstruction", "set-targetable", "move-target"].has(event.type) and not ids.has(event.get("targetId")): errors.append("invalid targeting event target")
+		var event_type := str(event.get("type", ""))
 		var allowed: Array = ["step", "type"]
-		if event.type == "set-obstruction": allowed += ["targetId", "obstruction"]; if not ["none", "controlled-wall"].has(event.get("obstruction")): errors.append("invalid obstruction event")
-		elif event.type == "set-targetable": allowed += ["targetId", "targetable"]; if typeof(event.get("targetable")) != TYPE_BOOL: errors.append("invalid targetable event")
-		elif event.type == "move-target": allowed += ["targetId", "targetPoint"]; if not _valid_vector(event.get("targetPoint")) or _same_point(event.get("targetPoint"), plan.get("origin")): errors.append("invalid move event")
-		elif event.type == "request-switch": allowed += ["direction"]; if not ["left", "right"].has(event.get("direction")): errors.append("invalid switch event")
+
+		if event.type == "set-obstruction":
+			allowed += ["targetId", "obstruction"]
+			if not ["none", "controlled-wall"].has(event.get("obstruction")):
+				errors.append("invalid obstruction event")
+
+		elif event.type == "set-targetable":
+			allowed += ["targetId", "targetable"]
+			if typeof(event.get("targetable")) != TYPE_BOOL:
+				errors.append("invalid targetable event")
+
+		elif event.type == "move-target":
+			allowed += ["targetId", "targetPoint"]
+			if not _valid_vector(event.get("targetPoint")) or _same_point(event.get("targetPoint"), plan.get("origin")):
+				errors.append("invalid move event")
+
+		elif event.type == "request-switch":
+			allowed += ["direction"]
+			if not ["left", "right"].has(event.get("direction")):
+				errors.append("invalid switch event")
+
 		for key in event:
-			if not allowed.has(key): errors.append("unsupported targeting event field")
+			if not allowed.has(key):
+				errors.append("unsupported targeting event field: " + str(key))
 		var event_key := "%s:%s:%s" % [event.step, event.type, event.get("targetId", "")]
 		if event_keys.has(event_key): errors.append("duplicate targeting event")
 		event_keys[event_key] = true
