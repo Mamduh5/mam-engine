@@ -1,0 +1,7 @@
+import { simulateOffensiveAction } from "../../domain/offensiveAction/offensiveActionSimulation";
+import { auditChangedFiles, captureWorkspaceState } from "../../infrastructure/files/changedFileAudit";
+import { ErrorCodes } from "../../shared/errorCodes";
+import { operationResult, type OperationResult } from "../../shared/operationResult";
+import { isLoadedOffensiveAction, loadValidOffensiveAction } from "./offensiveActionOperationSupport";
+
+export async function simulateOffensiveActionFile(workspaceRoot: string, inputFile: string, fixedDelta?: number): Promise<OperationResult> { const command = "offensive-action.simulate"; const input = { file: inputFile, ...(fixedDelta === undefined ? {} : { fixedDelta }) }; const before = await captureWorkspaceState(workspaceRoot); const loaded = await loadValidOffensiveAction(workspaceRoot, inputFile); if (!isLoadedOffensiveAction(loaded)) return operationResult({ command, status: "failed", input, errors: loaded.errors }); const simulation = simulateOffensiveAction(loaded.profile, fixedDelta); const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), []); if (!audit.ok) return operationResult({ command, status: "failed", input, errors: [{ code: ErrorCodes.OffensiveActionWriteBlocked, message: "Read-only offensive action simulation changed unexpected files", details: { unexpectedFiles: audit.unexpectedFiles } }], changedFiles: audit.changedFiles }); return operationResult({ command, status: "passed", input: { ...input, file: loaded.relativePath }, data: simulation }); }

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/offensive-action/v1.schema.json",
+  "title": "mam-engine offensive action profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "durationSeconds", "staminaCost", "movementDistance", "damage", "activeStartSeconds", "activeEndSeconds", "cooldownSeconds"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "offensive-action-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "durationSeconds": { "type": "number" },
+    "staminaCost": { "type": "number" },
+    "movementDistance": { "type": "number" },
+    "damage": { "type": "number" },
+    "activeStartSeconds": { "type": "number" },
+    "activeEndSeconds": { "type": "number" },
+    "cooldownSeconds": { "type": "number" }
+  }
+}

@@ -1,0 +1,11 @@
+import { validateOffensiveActionDefinition } from "../../domain/offensiveAction/offensiveActionValidation";
+import type { OffensiveActionProfile } from "../../domain/offensiveAction/offensiveActionTypes";
+import { resolveWorkspacePath } from "../../infrastructure/files/changedFileAudit";
+import { JsonFileReadError, readJsonFile } from "../../infrastructure/files/jsonFileStore";
+import { ErrorCodes } from "../../shared/errorCodes";
+import type { OperationError } from "../../shared/operationResult";
+
+export interface LoadedOffensiveAction { absolutePath: string; relativePath: string; content: string; profile: OffensiveActionProfile }
+export interface LoadOffensiveActionFailure { errors: OperationError[]; absolutePath?: string; relativePath?: string }
+export async function loadValidOffensiveAction(workspaceRoot: string, inputFile: string): Promise<LoadedOffensiveAction | LoadOffensiveActionFailure> { let resolved: { absolutePath: string; relativePath: string }; try { resolved = resolveWorkspacePath(workspaceRoot, inputFile); } catch (caught) { return { errors: [{ code: ErrorCodes.OffensiveActionWriteBlocked, path: inputFile, message: caught instanceof Error ? caught.message : String(caught) }] }; } let read: Awaited<ReturnType<typeof readJsonFile>>; try { read = await readJsonFile(resolved.absolutePath); } catch (caught) { if (caught instanceof JsonFileReadError) { const code = caught.kind === "not_found" ? ErrorCodes.OffensiveActionFileNotFound : caught.kind === "invalid_json" ? ErrorCodes.OffensiveActionJsonInvalid : ErrorCodes.OffensiveActionFileReadFailed; return { ...resolved, errors: [{ code, path: resolved.relativePath, message: `Offensive action file ${caught.kind === "not_found" ? "was not found" : caught.kind === "invalid_json" ? "contains invalid JSON" : "could not be read"}` }] }; } throw caught; } const validation = validateOffensiveActionDefinition(read.value); return validation.valid && validation.profile ? { ...resolved, content: read.content, profile: validation.profile } : { ...resolved, errors: validation.errors }; }
+export function isLoadedOffensiveAction(value: LoadedOffensiveAction | LoadOffensiveActionFailure): value is LoadedOffensiveAction { return "profile" in value; }

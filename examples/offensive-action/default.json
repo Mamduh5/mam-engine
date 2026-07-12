@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "offensive-action-profile",
+  "id": "default-light-attack",
+  "displayName": "Default Light Attack",
+  "durationSeconds": 0.5,
+  "staminaCost": 10,
+  "movementDistance": 1.2,
+  "damage": 20,
+  "activeStartSeconds": 0.15,
+  "activeEndSeconds": 0.3,
+  "cooldownSeconds": 0.35
+}

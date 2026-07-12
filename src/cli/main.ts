@@ -24,6 +24,10 @@ import { setDefensiveActionValue } from "../application/defensiveAction/setDefen
 import { simulateDefensiveActionFile } from "../application/defensiveAction/simulateDefensiveAction";
 import { validateDefensiveActionFile } from "../application/defensiveAction/validateDefensiveAction";
 import { runDefensiveActionRuntimeTest } from "../application/runtime/runDefensiveActionRuntimeTest";
+import { inspectOffensiveAction } from "../application/offensiveAction/inspectOffensiveAction";
+import { setOffensiveActionValue } from "../application/offensiveAction/setOffensiveActionValue";
+import { simulateOffensiveActionFile } from "../application/offensiveAction/simulateOffensiveAction";
+import { validateOffensiveActionFile } from "../application/offensiveAction/validateOffensiveAction";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -34,6 +38,7 @@ export interface CliApplicationDependencies {
   setCameraValue: typeof setCameraValue;
   setTargetingValue: typeof setTargetingValue;
   setDefensiveActionValue: typeof setDefensiveActionValue;
+  setOffensiveActionValue: typeof setOffensiveActionValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -43,7 +48,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -96,6 +101,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "offensive-action.inspect": return inspectOffensiveAction(workspaceRoot, command.file);
+    case "offensive-action.validate": return validateOffensiveActionFile(workspaceRoot, command.file);
+    case "offensive-action.simulate": return simulateOffensiveActionFile(workspaceRoot, command.file, command.fixedDelta);
+    case "offensive-action.set": return dependencies.setOffensiveActionValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "defensive-action.inspect": return inspectDefensiveAction(workspaceRoot, command.file);
     case "defensive-action.validate": return validateDefensiveActionFile(workspaceRoot, command.file);
     case "defensive-action.simulate": return simulateDefensiveActionFile(workspaceRoot, command.file, command.fixedDelta);

@@ -13,6 +13,7 @@
     "examples/camera",
     "examples/targeting",
     "examples/defensive-action",
+    "examples/offensive-action",
     "docs/targeting-editor-v0.1.md",
     "docs/decisions/0007-targeting-runtime-and-camera-framing.md",
     "runtime/godot/project.godot",
@@ -20,6 +21,7 @@
     "runtime/godot/scenes",
     "runtime/godot/scripts",
     "schemas/defensive-action",
+    "schemas/offensive-action",
     "fixtures/movement"
   ],
   "scripts": {
