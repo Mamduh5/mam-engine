@@ -22,9 +22,13 @@ Camera profile v1, schema and semantic validation, deterministic camera math/sim
 
 The controlled Godot `camera/basic-third-person` fixture consumes the complete validated profile, measures all six camera scenarios, applies lens values, uses real collision probing, compares against domain simulations, and runs headlessly in CI. It does not become a second authoring source. **Camera Editor v0.1 is complete.**
 
-### Phase 2B — Targeting (not started)
+### Phase 2B.1 — Targeting domain foundation (complete)
 
-Add target acquisition and selection contracts only after camera runtime scope is explicitly authorized. No targeting data model, runtime behavior, or combat semantics are included in Phase 2A.1.
+Canonical targeting rules, schema/semantic validation, deterministic candidate eligibility/scoring, stable ties, retention/grace/reacquisition, directional switching/cooldown, safe CLI authoring, and kind-aware snapshots are complete. Candidates remain scenario data rather than authored profile state.
+
+### Phase 2B.2 — Runtime targeting and target-driven camera framing (not started)
+
+Add controlled runtime targeting evidence and target-driven camera framing only after separate authorization. Phase 2B.1 adds no Godot targeting behavior, enemies, or combat semantics.
 
 ## Phase 3 — Dodge and defensive actions
 

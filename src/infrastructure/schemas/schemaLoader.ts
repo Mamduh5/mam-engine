@@ -14,3 +14,8 @@ export function loadCameraV1Schema(): object {
   const schemaPath = path.join(packageRoot(), "schemas", "camera", "v1.schema.json");
   return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
 }
+
+export function loadTargetingV1Schema(): object {
+  const schemaPath = path.join(packageRoot(), "schemas", "targeting", "v1.schema.json");
+  return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
+}

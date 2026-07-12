@@ -58,6 +58,8 @@ Every fixed defect receives the smallest test at the owning layer. Cross-layer r
 
 Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. `npm run test:camera-runtime` runs focused camera runtime tests. Type checking plus the full Node suite runs through `npm run check`. Godot integration runs through `npm run test:godot`, with `npm run test:godot:camera` available for the camera file. Local absence is reported as skipped; pinned CI must pass rather than skip.
 
+Targeting Phase 2B.1 remains in the Node tier. Focused tests cover strict targeting schema/semantics, candidate context integrity, scoring/ties, retention/grace/reacquisition, switching/cooldown, CLI/persistence, and cross-kind rollback. The unchanged Godot suite is a regression gate only and contains no targeting cases.
+
 If Godot is unavailable, the fast suite can pass while Godot-required checks are reported as not run because of the environment. They must not be claimed as passing or silently omitted.
 
 ## Visual inspection

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "targeting-profile",
+  "id": "default-targeting",
+  "displayName": "Default Targeting",
+  "acquisition": {
+    "maximumDistance": 30,
+    "maximumAngleDegrees": 60,
+    "requireLineOfSight": true
+  },
+  "scoring": {
+    "distanceWeight": 0.45,
+    "angleWeight": 0.45,
+    "priorityWeight": 0.1
+  },
+  "retention": {
+    "maximumDistanceMultiplier": 1.2,
+    "additionalAngleDegrees": 15,
+    "lostTargetGraceSeconds": 0.5,
+    "autoReacquire": true
+  },
+  "switching": {
+    "enabled": true,
+    "cooldownSeconds": 0.2,
+    "maximumAngleDegrees": 120,
+    "minimumSeparationDegrees": 2
+  }
+}

@@ -45,9 +45,11 @@ The `mam.runtime/v1` Godot protocol is implemented using atomic files under an i
 
 The runtime protocol is the versioned JSON boundary between engine/application services and the Godot runtime adapter. Transport is process-per-run with complete request, readiness, and response JSON files. Standard streams are bounded diagnostic evidence and are never parsed as protocol.
 
-Protocol version `mam.runtime/v1` below is a design contract for Phase 1B. Examples are illustrative, not evidence of a running runtime.
+Protocol version `mam.runtime/v1` below is the implemented movement/camera process contract. Examples illustrate the live contract; real integration tests provide execution evidence.
 
 Camera requests include `definitionKind: "camera-profile"`, `definitionSchemaVersion: 1`, the complete normalized profile, and a scenario containing one of `orbit`, `pitch-clamp`, `recenter`, `follow`, `collision`, or `basis`. Unsupported kinds, schema versions, profiles, scenarios, commands, fixtures, correlations, invalid fixed deltas, and non-finite values are rejected before execution. Runtime responses retain the same envelope and include typed camera metrics plus lens readback; terminal prose is never parsed.
+
+Targeting Phase 2B.1 does not extend `mam.runtime/v1`. Target candidates, acquisition, retention, and switching are engine-independent domain simulations only. A targeting runtime fixture and target-driven camera framing remain Phase 2B.2 work.
 
 ## Request envelope
 

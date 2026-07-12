@@ -2,7 +2,9 @@
 
 The executable CLI is implemented under [`src/cli/`](../src/cli/). `package.json` exposes `dist/src/cli/main.js` as `mam`, including a Node shebang for installed use on Windows and other supported Node platforms.
 
-The local parser supports movement inspection, validation, simulation, transactional set operations, snapshot creation/listing, and reversible rollback without a CLI-framework dependency. Every command accepts `--json`; machine-readable output uses protocol version 1 and normal user errors return stable codes without stack traces.
+The local parser supports movement, camera, and targeting inspection, validation, deterministic simulation, transactional set operations, snapshot creation/listing, and reversible rollback without a CLI-framework dependency. Every command accepts `--json`; machine-readable output uses protocol version 1 and normal user errors return stable codes without stack traces.
+
+Targeting supports `inspect`, `validate`, nine named domain-only simulation scenarios, and safe `set`. Candidate lists are built-in scenario inputs rather than a second persisted file format. Targeting commands never start Godot.
 
 Failed persistent commands remain top-level `failed` even when recovery restores the original target. Their JSON data identifies `failureStage` and typed recovery evidence. Rollback JSON returns both the selected `sourceSnapshotId` and newly created `preRollbackSnapshotId`; top-level `snapshotId` means the pre-rollback safety snapshot.
 

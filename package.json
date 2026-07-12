@@ -11,6 +11,8 @@
     "dist/src",
     "schemas",
     "examples/camera",
+    "examples/targeting",
+    "docs/targeting-editor-v0.1.md",
     "runtime/godot/project.godot",
     "runtime/godot/README.md",
     "runtime/godot/scenes",

@@ -26,15 +26,15 @@ Snapshots, rollback, and changed-file safety surround every persistent operation
 
 Parses `mam` movement and snapshot commands, invokes application services, emits a versioned operation-result envelope, and maps failures to exit codes. It contains no movement or persistence policy and uses no CLI framework.
 
-### Engine and application services - Phase 1A.1 movement foundation implemented
+### Engine and application services - shared movement, camera, targeting, and snapshot services implemented
 
 Coordinate movement inspect, validate, transactional set, and simulate plus snapshot create, list, reversible rollback, and changed-file audits. A shared transactional replacement service owns post-write hash/validation checks, scope audit, exact-content recovery, and recovery evidence. Runtime launch and fixture orchestration remain Phase 1B.
 
-### Schemas and definitions - movement v1 implemented
+### Schemas and definitions - movement, camera, and targeting v1 implemented
 
 The movement v1 JSON Schema defines canonical authored data, identifiers, supported modes, required fields, and unknown-field rejection. Semantic validation supplies cross-field and numeric rules. Stored definitions are data, not executable source patches.
 
-### Validation - implemented for movement v1
+### Validation - implemented for movement, camera, and targeting v1
 
 Ajv performs structural checks and project-owned domain code performs semantic checks. Errors have stable codes and precise dotted paths. Invalid definitions cannot be simulated, snapshotted, or persisted.
 
@@ -51,6 +51,8 @@ Translates validated definitions and fixture commands into Godot execution, then
 Provide controlled worlds, initial state, inputs, clocks, and expected measurements for one vertical slice. A fixture cannot add a private authoring model.
 
 The runtime dispatcher validates `mam.runtime/v1` and selects `movement/basic-ground` or `camera/basic-third-person`. Both use the same atomic request/readiness/response transport, bounded process owner, session store, correlation checks, and changed-file audit. The camera fixture receives the normalized camera profile in the request; it never reads the source definition path.
+
+Targeting Phase 2B.1 stops at the domain/application boundary. Candidate lists and current lock state are ephemeral simulation inputs, never canonical definition fields. No targeting fixture or target-driven camera request exists until Phase 2B.2.
 
 ### Reports - CLI operation envelope implemented
 

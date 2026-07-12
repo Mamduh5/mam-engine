@@ -7,6 +7,7 @@ import { rm } from "node:fs/promises";
 
 import type { MovementProfile } from "../src/domain/movement/movementTypes";
 import type { CameraProfile } from "../src/domain/camera/cameraTypes";
+import type { TargetingProfile } from "../src/domain/targeting/targetingTypes";
 
 export function projectRoot(): string {
   return path.resolve(__dirname, "../..");
@@ -18,6 +19,18 @@ export async function defaultProfile(): Promise<MovementProfile> {
 
 export async function defaultCameraProfile(): Promise<CameraProfile> {
   return JSON.parse(await readFile(path.join(projectRoot(), "examples", "camera", "default.json"), "utf8")) as CameraProfile;
+}
+
+export async function defaultTargetingProfile(): Promise<TargetingProfile> {
+  return JSON.parse(await readFile(path.join(projectRoot(), "examples", "targeting", "default.json"), "utf8")) as TargetingProfile;
+}
+
+export async function createTargetingTestWorkspace(context: TestContext): Promise<{ root: string; targetingFile: string; relativeFile: string; cameraFile: string; cameraRelativeFile: string; movementFile: string; movementRelativeFile: string }> {
+  const root = await mkdtemp(path.join(tmpdir(), "mam-targeting-test-")); context.after(async () => rm(root, { recursive: true, force: true }));
+  const relativeFile = "examples/targeting/default.json"; const cameraRelativeFile = "examples/camera/default.json"; const movementRelativeFile = "examples/movement/default.json";
+  const targetingFile = path.join(root, ...relativeFile.split("/")); const cameraFile = path.join(root, ...cameraRelativeFile.split("/")); const movementFile = path.join(root, ...movementRelativeFile.split("/"));
+  for (const [destination, source] of [[targetingFile, relativeFile], [cameraFile, cameraRelativeFile], [movementFile, movementRelativeFile]] as const) { await mkdir(path.dirname(destination), { recursive: true }); await writeFile(destination, await readFile(path.join(projectRoot(), ...source.split("/")), "utf8"), "utf8"); }
+  await writeFile(path.join(root, "unrelated.txt"), "unchanged\n", "utf8"); return { root, targetingFile, relativeFile, cameraFile, cameraRelativeFile, movementFile, movementRelativeFile };
 }
 
 export async function createTestWorkspace(context: TestContext): Promise<{ root: string; movementFile: string; relativeFile: string }> {

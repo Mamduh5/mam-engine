@@ -3,12 +3,14 @@ import type { CameraProfile } from "../../domain/camera/cameraTypes";
 import type { DefinitionKind } from "../../domain/definitions/definitionTypes";
 import { validateMovementDefinition } from "../../domain/movement/movementValidation";
 import type { MovementProfile } from "../../domain/movement/movementTypes";
+import { validateTargetingDefinition } from "../../domain/targeting/targetingValidation";
+import type { TargetingProfile } from "../../domain/targeting/targetingTypes";
 import { ErrorCodes } from "../../shared/errorCodes";
 import type { OperationError } from "../../shared/operationResult";
 import type { ContentVerification } from "../persistence/transactionalFileReplace";
 
 export type { DefinitionKind } from "../../domain/definitions/definitionTypes";
-export type SupportedDefinition = MovementProfile | CameraProfile;
+export type SupportedDefinition = MovementProfile | CameraProfile | TargetingProfile;
 
 export interface DefinitionValidationResult {
   valid: boolean;
@@ -28,12 +30,16 @@ export function validateDefinition(value: unknown): DefinitionValidationResult {
     const result = validateCameraDefinition(value);
     return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
   }
+  if (kind === "targeting-profile") {
+    const result = validateTargetingDefinition(value);
+    return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
+  }
   return {
     valid: false,
     kind: null,
     definition: null,
     schemaVersion: schemaVersion(value),
-    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile or camera-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile"] }]
+    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile, camera-profile, or targeting-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile", "targeting-profile"] }]
   };
 }
 

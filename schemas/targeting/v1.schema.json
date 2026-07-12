@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/targeting/v1.schema.json",
+  "title": "mam-engine targeting profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "acquisition", "scoring", "retention", "switching"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "targeting-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "acquisition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maximumDistance", "maximumAngleDegrees", "requireLineOfSight"],
+      "properties": { "maximumDistance": { "type": "number" }, "maximumAngleDegrees": { "type": "number" }, "requireLineOfSight": { "type": "boolean" } }
+    },
+    "scoring": {
+      "type": "object", "additionalProperties": false,
+      "required": ["distanceWeight", "angleWeight", "priorityWeight"],
+      "properties": { "distanceWeight": { "type": "number" }, "angleWeight": { "type": "number" }, "priorityWeight": { "type": "number" } }
+    },
+    "retention": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maximumDistanceMultiplier", "additionalAngleDegrees", "lostTargetGraceSeconds", "autoReacquire"],
+      "properties": { "maximumDistanceMultiplier": { "type": "number" }, "additionalAngleDegrees": { "type": "number" }, "lostTargetGraceSeconds": { "type": "number" }, "autoReacquire": { "type": "boolean" } }
+    },
+    "switching": {
+      "type": "object", "additionalProperties": false,
+      "required": ["enabled", "cooldownSeconds", "maximumAngleDegrees", "minimumSeparationDegrees"],
+      "properties": { "enabled": { "type": "boolean" }, "cooldownSeconds": { "type": "number" }, "maximumAngleDegrees": { "type": "number" }, "minimumSeparationDegrees": { "type": "number" } }
+    }
+  }
+}

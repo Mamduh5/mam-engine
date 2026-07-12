@@ -14,6 +14,10 @@ import { rollbackSnapshot } from "../application/snapshots/rollbackSnapshot";
 import { checkRuntime } from "../application/runtime/checkRuntime";
 import { runMovementRuntimeTest } from "../application/runtime/runMovementRuntimeTest";
 import { runCameraRuntimeTest } from "../application/runtime/runCameraRuntimeTest";
+import { inspectTargeting } from "../application/targeting/inspectTargeting";
+import { setTargetingValue } from "../application/targeting/setTargetingValue";
+import { simulateTargetingFile } from "../application/targeting/simulateTargeting";
+import { validateTargetingFile } from "../application/targeting/validateTargeting";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -22,6 +26,7 @@ import { writeResult } from "./output";
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
   setCameraValue: typeof setCameraValue;
+  setTargetingValue: typeof setTargetingValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -31,7 +36,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -89,6 +94,10 @@ async function dispatch(
     case "camera.simulate": return simulateCameraFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);
     case "camera.runtime-test": return runCameraRuntimeTest(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "camera.set": return dependencies.setCameraValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
+    case "targeting.inspect": return inspectTargeting(workspaceRoot, command.file);
+    case "targeting.validate": return validateTargetingFile(workspaceRoot, command.file);
+    case "targeting.simulate": return simulateTargetingFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);
+    case "targeting.set": return dependencies.setTargetingValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "movement.inspect":
       return inspectMovement(workspaceRoot, command.file);
     case "movement.validate":

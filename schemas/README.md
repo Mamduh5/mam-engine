@@ -4,4 +4,6 @@
 
 Ajv performs structural validation. Project-owned semantic validation then enforces speed ordering, positive rates, stamina relationships, dodge limits, and invulnerability-window timing. Ajv diagnostics are normalized into stable `mam-engine` errors rather than exposed as the only public format.
 
+[`camera/v1.schema.json`](camera/v1.schema.json) is the completed Camera Editor v0.1 profile contract. [`targeting/v1.schema.json`](targeting/v1.schema.json) adds Phase 2B.1 acquisition, scoring, retention, and switching rules with the same strict unknown-field policy and project-owned semantic validation. Runtime target candidates and current lock state are deliberately absent from the persisted targeting schema.
+
 Godot consumes this definition in Phase 1B but may not replace it with scene or resource defaults. [`runtime/v1-request.schema.json`](runtime/v1-request.schema.json) and [`runtime/v1-response.schema.json`](runtime/v1-response.schema.json) publish the canonical file-transport envelopes for `mam.runtime/v1`.

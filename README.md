@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 and Camera Editor v0.1 (through Phase 2A.2) are complete.** Both validated profile kinds have controlled process-per-run Godot 4.7-stable runtime proof. Targeting and combat are not implemented.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Phase 2B.1 domain foundation are complete.** Movement and camera have controlled Godot 4.7-stable runtime proof; targeting remains engine-independent until Phase 2B.2.
 
 ## Implemented through Phase 2A.2
 
@@ -24,6 +24,7 @@ The long-term target is a Dauntless-style action hunting game. **Movement Editor
 - Read-only camera inspect, validate, and simulate operations; safe camera dotted-path edits with dry runs, snapshots, exact recovery, and kind-aware rollback isolation.
 - A `camera/basic-third-person` Godot fixture consuming the complete validated camera profile for orbit, pitch clamp, move-then-settle follow, delayed recenter, real spatial collision compression/recovery, camera-relative basis, and lens application.
 - Structured camera runtime metrics and named domain/runtime tolerances, including real cold-cache Godot integration tests.
+- Targeting profile v1 validation and safe authoring, deterministic acquisition/scoring, stable ties, retention/grace/reacquisition, and directional switching/cooldown simulations.
 
 ## Why CLI first
 
@@ -61,6 +62,11 @@ mam camera simulate <file> --scenario <orbit|pitch-clamp|recenter|follow|collisi
 mam camera runtime-test <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--godot <path>] [--keep-session] [--json]
 mam camera set <file> <property-path> <json-value> [--dry-run] [--json]
 
+mam targeting inspect <file> [--json]
+mam targeting validate <file> [--json]
+mam targeting simulate <file> --scenario <acquire|eligibility|tie-break|retention|loss|reacquire|switch-left|switch-right|switch-cooldown> [--seconds <number>] [--fixed-delta <number>] [--json]
+mam targeting set <file> <property-path> <json-value> [--dry-run] [--json]
+
 mam snapshot create <file> [--json]
 mam snapshot list [--json]
 mam snapshot rollback <snapshot-id> [--json]
@@ -77,6 +83,7 @@ npm run mam -- camera inspect examples/camera/default.json --json
 npm run mam -- camera simulate examples/camera/default.json --scenario follow --json
 npm run mam -- camera runtime-test examples/camera/default.json --scenario collision --json
 npm run mam -- camera set examples/camera/default.json follow.distance 6.5 --dry-run --json
+npm run mam -- targeting simulate examples/targeting/default.json --scenario acquire --json
 ```
 
 Snapshots are stored under ignored `.mam-engine/snapshots/`. A real set validates first, snapshots immediately before writing, writes atomically, verifies hash and validation, then audits actual changes. If post-write verification fails, the operation restores and verifies the exact snapshot content while retaining the original failure and snapshot.
@@ -92,7 +99,8 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [`src/infrastructure/`](src/infrastructure/files/changedFileAudit.ts) - JSON, schema, audit, and snapshot adapters.
 - [`schemas/movement/`](schemas/movement/v1.schema.json) - canonical movement profile v1 schema.
 - [`examples/movement/`](examples/movement/default.json) - prototype defaults, not final game balance.
-- [`schemas/camera/`](schemas/camera/v1.schema.json) and [`examples/camera/`](examples/camera/default.json) - canonical Camera Editor Phase 2A.1 profile contract and prototype default.
+- [`schemas/camera/`](schemas/camera/v1.schema.json) and [`examples/camera/`](examples/camera/default.json) - canonical Camera Editor v0.1 through Phase 2A.2 profile contract and prototype default.
+- [`schemas/targeting/`](schemas/targeting/v1.schema.json) and [`examples/targeting/`](examples/targeting/default.json) - Phase 2B.1 targeting rules and prototype default.
 - [`tests/`](tests/README.md) - engine-independent automated verification.
 - [`runtime/godot/`](runtime/godot/README.md) and [`fixtures/movement/`](fixtures/movement/README.md) - controlled Phase 1B runtime and fixture.
 
@@ -101,8 +109,8 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - No persistent live runtime session, live editing, visual camera editor, or explicit interactive shutdown command exists.
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
-- There is no targeting, combat, enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Phase 2B targeting, defensive-action, and combat remain separate roadmap work.
+- There is no targeting runtime, target-driven camera, combat, enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
+- Phase 2B.2 runtime targeting, defensive-action, and combat remain separate roadmap work.
 
 ## Documentation
 
@@ -110,7 +118,8 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [Architecture](docs/architecture.md)
 - [Codex contract](docs/codex-contract.md)
 - [Movement Editor v0.1](docs/movement-editor-v0.1.md)
-- [Camera Editor Phase 2A.1](docs/camera-editor-v0.1.md)
+- [Camera Editor v0.1 through Phase 2A.2](docs/camera-editor-v0.1.md)
+- [Targeting Editor Phase 2B.1](docs/targeting-editor-v0.1.md)
 - [Runtime and CLI protocols](docs/runtime-protocol.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Roadmap](docs/roadmap.md)
