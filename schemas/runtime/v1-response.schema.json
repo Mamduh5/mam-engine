@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "enum": ["runtime.fixture.ready", "runtime.fixture.run"] },
-    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on"] },
+    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge"] },
     "correlationId": { "type": "string", "minLength": 1 },
     "status": { "enum": ["ready", "ok", "rejected", "failed", "timed_out"] },
     "metrics": { "type": "object" },

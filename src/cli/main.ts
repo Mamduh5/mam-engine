@@ -23,6 +23,7 @@ import { inspectDefensiveAction } from "../application/defensiveAction/inspectDe
 import { setDefensiveActionValue } from "../application/defensiveAction/setDefensiveActionValue";
 import { simulateDefensiveActionFile } from "../application/defensiveAction/simulateDefensiveAction";
 import { validateDefensiveActionFile } from "../application/defensiveAction/validateDefensiveAction";
+import { runDefensiveActionRuntimeTest } from "../application/runtime/runDefensiveActionRuntimeTest";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -98,6 +99,7 @@ async function dispatch(
     case "defensive-action.inspect": return inspectDefensiveAction(workspaceRoot, command.file);
     case "defensive-action.validate": return validateDefensiveActionFile(workspaceRoot, command.file);
     case "defensive-action.simulate": return simulateDefensiveActionFile(workspaceRoot, command.file, command.fixedDelta);
+    case "defensive-action.runtime-test": return runDefensiveActionRuntimeTest(workspaceRoot, command.file, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "defensive-action.set": return dependencies.setDefensiveActionValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "camera.inspect": return inspectCamera(workspaceRoot, command.file);
     case "camera.validate": return validateCameraFile(workspaceRoot, command.file);

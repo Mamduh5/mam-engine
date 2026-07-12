@@ -4,11 +4,13 @@ extends RefCounted
 const MovementProfileRuntime = preload("res://scripts/movement_profile.gd")
 const CameraProfileRuntime = preload("res://scripts/camera_profile.gd")
 const TargetingProfileRuntime = preload("res://scripts/targeting_profile.gd")
+const DefensiveActionProfileRuntime = preload("res://scripts/defensive_action_profile.gd")
 const SCHEMA_VERSION := "mam.runtime/v1"
 const COMMAND_ID := "runtime.fixture.run"
 const MOVEMENT_FIXTURE_ID := "movement/basic-ground"
 const CAMERA_FIXTURE_ID := "camera/basic-third-person"
 const TARGETING_FIXTURE_ID := "targeting/basic-lock-on"
+const DEFENSIVE_ACTION_FIXTURE_ID := "defensive-action/basic-dodge"
 const MOVEMENT_SCENARIOS := ["accelerate", "stop", "sprint", "dodge", "turn"]
 const CAMERA_SCENARIOS := ["orbit", "pitch-clamp", "recenter", "follow", "collision", "basis"]
 const TARGETING_SCENARIOS := ["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]
@@ -19,7 +21,7 @@ static func validate_request(request: Variant) -> Array[String]:
 	if request.get("schemaVersion") != SCHEMA_VERSION: errors.append("unsupported protocol version")
 	if request.get("commandId") != COMMAND_ID: errors.append("unknown command ID")
 	var fixture_id: Variant = request.get("fixtureId")
-	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
+	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
 	if typeof(request.get("correlationId")) != TYPE_STRING or request.get("correlationId").is_empty(): errors.append("missing correlation ID")
 	if not _finite_number(request.get("timeoutMs")) or float(request.get("timeoutMs", 0)) <= 0.0 or float(request.get("timeoutMs", 0)) > 60000.0: errors.append("invalid timeout")
 	var payload: Variant = request.get("payload")
@@ -37,6 +39,10 @@ static func validate_request(request: Variant) -> Array[String]:
 		if payload.get("definitionSchemaVersion") != 1: errors.append("unsupported camera schema version")
 		errors.append_array(CameraProfileRuntime.validate(payload.get("profile")))
 		if not CAMERA_SCENARIOS.has(scenario.get("id")): errors.append("unsupported camera scenario")
+	elif fixture_id == DEFENSIVE_ACTION_FIXTURE_ID:
+		if payload.get("definitionKind") != "defensive-action-profile" or payload.get("definitionSchemaVersion") != 1: errors.append("unsupported defensive action definition")
+		errors.append_array(DefensiveActionProfileRuntime.validate(payload.get("profile")))
+		if scenario.get("id") != "default": errors.append("unsupported defensive action scenario")
 	else:
 		if payload.get("definitionKind") != "targeting-profile" or payload.get("definitionSchemaVersion") != 1: errors.append("unsupported targeting definition")
 		if payload.get("cameraDefinitionKind") != "camera-profile" or payload.get("cameraDefinitionSchemaVersion") != 1: errors.append("unsupported targeting camera definition")

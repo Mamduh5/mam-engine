@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "const": "runtime.fixture.run" },
-    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on"] },
+    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge"] },
     "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
     "requestedAt": { "type": "string" },
     "timeoutMs": { "type": "number", "exclusiveMinimum": 0, "maximum": 60000 },
@@ -26,6 +26,10 @@
     {
       "if": { "properties": { "fixtureId": { "const": "targeting/basic-lock-on" } } },
       "then": { "properties": { "payload": { "$ref": "#/$defs/targetingPayload" } } }
+    },
+    {
+      "if": { "properties": { "fixtureId": { "const": "defensive-action/basic-dodge" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/defensiveActionPayload" } } }
     }
   ],
   "$defs": {
@@ -67,6 +71,26 @@
             "durationSeconds": { "type": "number", "minimum": 0, "maximum": 60 },
             "fixedDeltaSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
             "variant": { "enum": ["default", "disabled", "below-threshold", "manual-input"] }
+          }
+        }
+      }
+    },
+    "defensiveActionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definitionKind", "definitionSchemaVersion", "profile", "scenario"],
+      "properties": {
+        "definitionKind": { "const": "defensive-action-profile" },
+        "definitionSchemaVersion": { "const": 1 },
+        "profile": { "$ref": "../defensive-action/v1.schema.json" },
+        "scenario": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "durationSeconds", "fixedDeltaSeconds"],
+          "properties": {
+            "id": { "const": "default" },
+            "durationSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+            "fixedDeltaSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
           }
         }
       }

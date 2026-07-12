@@ -1,6 +1,7 @@
 import type { CameraProfile, CameraScenario } from "../camera/cameraTypes";
 import type { MovementProfile, MovementScenario } from "../movement/movementTypes";
 import type { TargetingProfile } from "../targeting/targetingTypes";
+import type { DefensiveActionProfile } from "../defensiveAction/defensiveActionTypes";
 import type { TargetingRuntimeScenarioRequest } from "./targetingRuntimePlan";
 export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
@@ -8,6 +9,7 @@ export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
 export const MOVEMENT_FIXTURE_ID = "movement/basic-ground" as const;
 export const CAMERA_FIXTURE_ID = "camera/basic-third-person" as const;
 export const TARGETING_FIXTURE_ID = "targeting/basic-lock-on" as const;
+export const DEFENSIVE_ACTION_FIXTURE_ID = "defensive-action/basic-dodge" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -72,7 +74,22 @@ export interface TargetingRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest;
+export interface DefensiveActionRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof DEFENSIVE_ACTION_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    definitionKind: "defensive-action-profile";
+    definitionSchemaVersion: 1;
+    profile: DefensiveActionProfile;
+    scenario: { id: "default"; durationSeconds: number; fixedDeltaSeconds: number };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 
