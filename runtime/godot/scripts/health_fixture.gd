@@ -16,8 +16,11 @@ func run_scenario(scenario: Dictionary) -> Dictionary:
 	return result
 
 static func resolve_damage(health: Dictionary, action: Dictionary) -> Dictionary:
+	return resolve_damage_value(health, float(action.damage))
+
+static func resolve_damage_value(health: Dictionary, damage: float) -> Dictionary:
 	var starting_health := float(health.startingHealth)
-	var incoming_damage := float(action.damage)
+	var incoming_damage := damage
 	var applied_damage: float = min(starting_health, incoming_damage)
 	var remaining_health: float = max(0.0, starting_health - applied_damage)
 	var overkill_damage := incoming_damage - applied_damage

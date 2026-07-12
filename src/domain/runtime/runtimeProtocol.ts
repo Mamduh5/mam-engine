@@ -17,6 +17,7 @@ export const OFFENSIVE_ACTION_FIXTURE_ID = "offensive-action/basic-light-attack"
 export const HEALTH_FIXTURE_ID = "health/basic-confirmed-hit" as const;
 export const COMBAT_FIXTURE_ID = "combat/basic-exchange" as const;
 export const STAMINA_FIXTURE_ID = "stamina/basic-action-cost" as const;
+export const STAMINA_COMBAT_FIXTURE_ID = "combat/stamina-gated-exchange" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -165,7 +166,30 @@ export interface StaminaRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest;
+export type StaminaCombatRuntimeScenario = "accepted" | "insufficient-stamina";
+
+export interface StaminaCombatRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof STAMINA_COMBAT_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    staminaDefinitionKind: "stamina-profile";
+    staminaDefinitionSchemaVersion: 1;
+    staminaProfile: StaminaProfile;
+    healthDefinitionKind: "health-profile";
+    healthDefinitionSchemaVersion: 1;
+    healthProfile: HealthProfile;
+    offensiveActionDefinitionKind: "offensive-action-profile";
+    offensiveActionDefinitionSchemaVersion: 1;
+    offensiveActionProfile: OffensiveActionProfile;
+    scenario: { id: StaminaCombatRuntimeScenario; durationSeconds: number; fixedDeltaSeconds: number };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 
