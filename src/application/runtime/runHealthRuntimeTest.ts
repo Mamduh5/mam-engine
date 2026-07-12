@@ -1,0 +1,13 @@
+import { removeRuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
+import { ErrorCodes } from "../../shared/errorCodes";
+import { operationResult, type OperationResult } from "../../shared/operationResult";
+import { isLoadedHealth, loadValidHealth } from "../health/healthOperationSupport";
+import { isLoadedOffensiveAction, loadValidOffensiveAction } from "../offensiveAction/offensiveActionOperationSupport";
+import { runtimeFailure } from "./checkRuntime";
+import { compareHealthRuntime } from "./compareHealthRuntime";
+import { runHealthFixture, type RunHealthFixtureOptions } from "./runHealthFixture";
+
+export async function runHealthRuntimeTest(workspaceRoot: string, healthFile: string, offensiveActionFile: string, options: RunHealthFixtureOptions = {}): Promise<OperationResult> {
+  const command = "health.runtime-test"; const input = { healthFile, offensiveActionFile }; const health = await loadValidHealth(workspaceRoot, healthFile); if (!isLoadedHealth(health)) return operationResult({ command, status: "failed", input, errors: health.errors }); const action = await loadValidOffensiveAction(workspaceRoot, offensiveActionFile); if (!isLoadedOffensiveAction(action)) return operationResult({ command, status: "failed", input: { ...input, healthFile: health.relativePath }, errors: action.errors });
+  try { const run = await runHealthFixture(workspaceRoot, health.profile, action.profile, { ...options, keepSession: true }); const comparison = compareHealthRuntime(run.simulation, run.response.metrics); if (comparison.passed && options.keepSession !== true) { await removeRuntimeSession(run.runtimeSession); run.session = { retained: false, path: null }; } const data = { runtime: { fixtureId: run.request.fixtureId, scenarioId: "confirmed-hit", godotVersion: run.executable.version.reportedVersion, metrics: run.response.metrics, evidence: run.response.evidence, process: run.process }, simulation: run.simulation, comparison, session: run.session, internalArtifacts: run.internalArtifacts }; if (!comparison.passed) return operationResult({ command, status: "failed", input: { healthFile: health.relativePath, offensiveActionFile: action.relativePath }, data, errors: [{ code: ErrorCodes.RuntimeMetricToleranceExceeded, message: "Health runtime metrics differ from the TypeScript simulation", details: { failedMetrics: comparison.metrics.filter((metric) => !metric.passed) } }] }); return operationResult({ command, status: "passed", input: { healthFile: health.relativePath, offensiveActionFile: action.relativePath }, data }); } catch (caught) { return runtimeFailure(command, caught, input); }
+}

@@ -1,0 +1,29 @@
+class_name HealthFixture
+extends Node
+
+var health_profile: Dictionary
+var action_profile: Dictionary
+
+func configure(health: Dictionary, action: Dictionary) -> void:
+	health_profile = health
+	action_profile = action
+
+func run_scenario(scenario: Dictionary) -> Dictionary:
+	if scenario.id != "confirmed-hit": return {}
+	await get_tree().physics_frame
+	var starting_health := float(health_profile.startingHealth)
+	var incoming_damage := float(action_profile.damage)
+	var applied_damage: float = min(starting_health, incoming_damage)
+	var remaining_health: float = max(0.0, starting_health - applied_damage)
+	var overkill_damage := incoming_damage - applied_damage
+	var defeated := remaining_health == 0.0
+	return {
+		"startingHealth": starting_health,
+		"incomingDamage": incoming_damage,
+		"appliedDamage": applied_damage,
+		"remainingHealth": remaining_health,
+		"overkillDamage": overkill_damage,
+		"defeated": defeated,
+		"finalTargetState": "defeated" if defeated else "alive",
+		"physicsSteps": 1
+	}

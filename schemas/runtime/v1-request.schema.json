@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "const": "runtime.fixture.run" },
-    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack"] },
+    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack", "health/basic-confirmed-hit"] },
     "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
     "requestedAt": { "type": "string" },
     "timeoutMs": { "type": "number", "exclusiveMinimum": 0, "maximum": 60000 },
@@ -34,6 +34,10 @@
     {
       "if": { "properties": { "fixtureId": { "const": "offensive-action/basic-light-attack" } } },
       "then": { "properties": { "payload": { "$ref": "#/$defs/offensiveActionPayload" } } }
+    },
+    {
+      "if": { "properties": { "fixtureId": { "const": "health/basic-confirmed-hit" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/healthPayload" } } }
     }
   ],
   "$defs": {
@@ -113,6 +117,29 @@
           "required": ["id", "durationSeconds", "fixedDeltaSeconds"],
           "properties": {
             "id": { "const": "default" },
+            "durationSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+            "fixedDeltaSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+    "healthPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definitionKind", "definitionSchemaVersion", "profile", "offensiveActionDefinitionKind", "offensiveActionDefinitionSchemaVersion", "offensiveActionProfile", "scenario"],
+      "properties": {
+        "definitionKind": { "const": "health-profile" },
+        "definitionSchemaVersion": { "const": 1 },
+        "profile": { "$ref": "../health/v1.schema.json" },
+        "offensiveActionDefinitionKind": { "const": "offensive-action-profile" },
+        "offensiveActionDefinitionSchemaVersion": { "const": 1 },
+        "offensiveActionProfile": { "$ref": "../offensive-action/v1.schema.json" },
+        "scenario": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "durationSeconds", "fixedDeltaSeconds"],
+          "properties": {
+            "id": { "const": "confirmed-hit" },
             "durationSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
             "fixedDeltaSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
           }

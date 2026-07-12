@@ -3,6 +3,7 @@ import type { MovementProfile, MovementScenario } from "../movement/movementType
 import type { TargetingProfile } from "../targeting/targetingTypes";
 import type { DefensiveActionProfile } from "../defensiveAction/defensiveActionTypes";
 import type { OffensiveActionProfile } from "../offensiveAction/offensiveActionTypes";
+import type { HealthProfile } from "../health/healthTypes";
 import type { TargetingRuntimeScenarioRequest } from "./targetingRuntimePlan";
 export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
@@ -12,6 +13,7 @@ export const CAMERA_FIXTURE_ID = "camera/basic-third-person" as const;
 export const TARGETING_FIXTURE_ID = "targeting/basic-lock-on" as const;
 export const DEFENSIVE_ACTION_FIXTURE_ID = "defensive-action/basic-dodge" as const;
 export const OFFENSIVE_ACTION_FIXTURE_ID = "offensive-action/basic-light-attack" as const;
+export const HEALTH_FIXTURE_ID = "health/basic-confirmed-hit" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -106,7 +108,25 @@ export interface OffensiveActionRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest;
+export interface HealthRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof HEALTH_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    definitionKind: "health-profile";
+    definitionSchemaVersion: 1;
+    profile: HealthProfile;
+    offensiveActionDefinitionKind: "offensive-action-profile";
+    offensiveActionDefinitionSchemaVersion: 1;
+    offensiveActionProfile: OffensiveActionProfile;
+    scenario: { id: "confirmed-hit"; durationSeconds: number; fixedDeltaSeconds: number };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

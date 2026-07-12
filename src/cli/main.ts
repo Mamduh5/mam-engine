@@ -33,6 +33,7 @@ import { inspectHealth } from "../application/health/inspectHealth";
 import { setHealthValue } from "../application/health/setHealthValue";
 import { simulateHitFiles } from "../application/health/simulateHit";
 import { validateHealthFile } from "../application/health/validateHealth";
+import { runHealthRuntimeTest } from "../application/runtime/runHealthRuntimeTest";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -110,6 +111,7 @@ async function dispatch(
     case "health.inspect": return inspectHealth(workspaceRoot, command.file);
     case "health.validate": return validateHealthFile(workspaceRoot, command.file);
     case "health.simulate-hit": return simulateHitFiles(workspaceRoot, command.healthFile, command.offensiveActionFile);
+    case "health.runtime-test": return runHealthRuntimeTest(workspaceRoot, command.healthFile, command.offensiveActionFile, { godot: command.godot, keepSession: command.keepSession });
     case "health.set": return dependencies.setHealthValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "offensive-action.inspect": return inspectOffensiveAction(workspaceRoot, command.file);
     case "offensive-action.validate": return validateOffensiveActionFile(workspaceRoot, command.file);
