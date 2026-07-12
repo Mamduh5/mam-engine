@@ -7,6 +7,7 @@ const TargetingProfileRuntime = preload("res://scripts/targeting_profile.gd")
 const DefensiveActionProfileRuntime = preload("res://scripts/defensive_action_profile.gd")
 const OffensiveActionProfileRuntime = preload("res://scripts/offensive_action_profile.gd")
 const HealthProfileRuntime = preload("res://scripts/health_profile.gd")
+const StaminaProfileRuntime = preload("res://scripts/stamina_profile.gd")
 const OffensiveActionFixtureRuntime = preload("res://scripts/offensive_action_fixture.gd")
 const SCHEMA_VERSION := "mam.runtime/v1"
 const COMMAND_ID := "runtime.fixture.run"
@@ -17,6 +18,7 @@ const DEFENSIVE_ACTION_FIXTURE_ID := "defensive-action/basic-dodge"
 const OFFENSIVE_ACTION_FIXTURE_ID := "offensive-action/basic-light-attack"
 const HEALTH_FIXTURE_ID := "health/basic-confirmed-hit"
 const COMBAT_FIXTURE_ID := "combat/basic-exchange"
+const STAMINA_FIXTURE_ID := "stamina/basic-action-cost"
 const MOVEMENT_SCENARIOS := ["accelerate", "stop", "sprint", "dodge", "turn"]
 const CAMERA_SCENARIOS := ["orbit", "pitch-clamp", "recenter", "follow", "collision", "basis"]
 const TARGETING_SCENARIOS := ["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]
@@ -27,7 +29,7 @@ static func validate_request(request: Variant) -> Array[String]:
 	if request.get("schemaVersion") != SCHEMA_VERSION: errors.append("unsupported protocol version")
 	if request.get("commandId") != COMMAND_ID: errors.append("unknown command ID")
 	var fixture_id: Variant = request.get("fixtureId")
-	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
+	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
 	if typeof(request.get("correlationId")) != TYPE_STRING or request.get("correlationId").is_empty(): errors.append("missing correlation ID")
 	if not _finite_number(request.get("timeoutMs")) or float(request.get("timeoutMs", 0)) <= 0.0 or float(request.get("timeoutMs", 0)) > 60000.0: errors.append("invalid timeout")
 	var payload: Variant = request.get("payload")
@@ -69,6 +71,14 @@ static func validate_request(request: Variant) -> Array[String]:
 			var end_step := OffensiveActionFixtureRuntime.active_end_step(payload.offensiveActionProfile, float(scenario.fixedDeltaSeconds))
 			var total_steps := OffensiveActionFixtureRuntime.lifecycle_steps(payload.offensiveActionProfile, float(scenario.fixedDeltaSeconds))
 			if start_step > end_step or start_step > total_steps: errors.append("combat active window has no valid step")
+	elif fixture_id == STAMINA_FIXTURE_ID:
+		if payload.get("staminaDefinitionKind") != "stamina-profile" or payload.get("staminaDefinitionSchemaVersion") != 1: errors.append("unsupported stamina definition")
+		errors.append_array(StaminaProfileRuntime.validate(payload.get("staminaProfile")))
+		if payload.get("actionDefinitionSchemaVersion") != 1: errors.append("unsupported stamina action schema version")
+		if payload.get("actionDefinitionKind") == "offensive-action-profile": errors.append_array(OffensiveActionProfileRuntime.validate(payload.get("actionProfile")))
+		elif payload.get("actionDefinitionKind") == "defensive-action-profile": errors.append_array(DefensiveActionProfileRuntime.validate(payload.get("actionProfile")))
+		else: errors.append("unsupported stamina action definition")
+		if scenario.get("id") != "action-cost": errors.append("unsupported stamina scenario")
 	else:
 		if payload.get("definitionKind") != "targeting-profile" or payload.get("definitionSchemaVersion") != 1: errors.append("unsupported targeting definition")
 		if payload.get("cameraDefinitionKind") != "camera-profile" or payload.get("cameraDefinitionSchemaVersion") != 1: errors.append("unsupported targeting camera definition")

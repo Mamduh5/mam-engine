@@ -10,6 +10,7 @@ const DefensiveActionFixtureScene = preload("res://scenes/defensive_action_fixtu
 const OffensiveActionFixtureScene = preload("res://scenes/offensive_action_fixture.tscn")
 const HealthFixtureScene = preload("res://scenes/health_fixture.tscn")
 const CombatFixtureScene = preload("res://scenes/combat_fixture.tscn")
+const StaminaFixtureScene = preload("res://scenes/stamina_fixture.tscn")
 
 func _ready() -> void:
 	var paths := _parse_paths(OS.get_cmdline_user_args())
@@ -55,9 +56,14 @@ func _execute(paths: Dictionary) -> void:
 		fixture = CombatFixtureScene.instantiate()
 		add_child(fixture)
 		fixture_scene = "res://scenes/combat_fixture.tscn"
+	elif request.fixtureId == RuntimeProtocol.STAMINA_FIXTURE_ID:
+		fixture = StaminaFixtureScene.instantiate()
+		add_child(fixture)
+		fixture_scene = "res://scenes/stamina_fixture.tscn"
 	if request.fixtureId == RuntimeProtocol.TARGETING_FIXTURE_ID: fixture.configure(request.payload.profile, request.payload.cameraProfile)
 	elif request.fixtureId == RuntimeProtocol.HEALTH_FIXTURE_ID: fixture.configure(request.payload.profile, request.payload.offensiveActionProfile)
 	elif request.fixtureId == RuntimeProtocol.COMBAT_FIXTURE_ID: fixture.configure(request.payload.healthProfile, request.payload.offensiveActionProfile)
+	elif request.fixtureId == RuntimeProtocol.STAMINA_FIXTURE_ID: fixture.configure(request.payload.staminaProfile, request.payload.actionProfile)
 	else: fixture.configure(request.payload.profile)
 	var metrics: Dictionary = await fixture.run_scenario(request.payload.scenario)
 	var response := RuntimeProtocol.response(request, "runtime.fixture.run", "ok", metrics)

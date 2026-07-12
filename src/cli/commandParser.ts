@@ -9,6 +9,7 @@ export type ParsedCommand =
   | { kind: "stamina.inspect"; file: string; json: boolean }
   | { kind: "stamina.validate"; file: string; json: boolean }
   | { kind: "stamina.simulate-action"; staminaFile: string; actionFile: string; json: boolean }
+  | { kind: "stamina.runtime-test"; staminaFile: string; actionFile: string; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "stamina.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "combat.simulate-exchange"; healthFile: string; offensiveActionFile: string; json: boolean }
   | { kind: "combat.runtime-test"; healthFile: string; offensiveActionFile: string; godot?: string; keepSession: boolean; json: boolean }
@@ -92,6 +93,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
 function parseStaminaCommand(action: string, args: string[]): ParsedCommand {
   if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `stamina ${action} requires exactly one file argument`); return { kind: `stamina.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "simulate-action") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 2, "stamina simulate-action requires <stamina-file> <action-file>"); return { kind: "stamina.simulate-action", staminaFile: parsed.positional[0] as string, actionFile: parsed.positional[1] as string, json: parsed.flags.has("--json") }; }
+  if (action === "runtime-test") { const parsed = parseArguments(args, new Set(["--json", "--godot", "--keep-session"]), new Set(["--godot"])); requirePositionals(parsed, 2, "stamina runtime-test requires <stamina-file> <action-file>"); const godot = parsed.flags.get("--godot"); return { kind: "stamina.runtime-test", staminaFile: parsed.positional[0] as string, actionFile: parsed.positional[1] as string, ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") }; }
   if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "stamina set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("stamina set <json-value> must be valid JSON"); } return { kind: "stamina.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
   throw new CliParseError(`Unknown stamina command '${action}'`);
 }

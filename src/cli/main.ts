@@ -40,6 +40,7 @@ import { inspectStamina } from "../application/stamina/inspectStamina";
 import { setStaminaValue } from "../application/stamina/setStaminaValue";
 import { simulateStaminaActionFiles } from "../application/stamina/simulateStaminaAction";
 import { validateStaminaFile } from "../application/stamina/validateStamina";
+import { runStaminaRuntimeTest } from "../application/runtime/runStaminaRuntimeTest";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -118,6 +119,7 @@ async function dispatch(
     case "stamina.inspect": return inspectStamina(workspaceRoot, command.file);
     case "stamina.validate": return validateStaminaFile(workspaceRoot, command.file);
     case "stamina.simulate-action": return simulateStaminaActionFiles(workspaceRoot, command.staminaFile, command.actionFile);
+    case "stamina.runtime-test": return runStaminaRuntimeTest(workspaceRoot, command.staminaFile, command.actionFile, { godot: command.godot, keepSession: command.keepSession });
     case "stamina.set": return dependencies.setStaminaValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "combat.simulate-exchange": return simulateCombatExchangeFiles(workspaceRoot, command.healthFile, command.offensiveActionFile);
     case "combat.runtime-test": return runCombatRuntimeTest(workspaceRoot, command.healthFile, command.offensiveActionFile, { godot: command.godot, keepSession: command.keepSession });
