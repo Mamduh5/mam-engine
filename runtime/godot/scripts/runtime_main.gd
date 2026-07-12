@@ -7,6 +7,7 @@ const AtomicJsonFile = preload("res://scripts/atomic_json_file.gd")
 const CameraFixtureScene = preload("res://scenes/camera_fixture.tscn")
 const TargetingFixtureScene = preload("res://scenes/targeting_fixture.tscn")
 const DefensiveActionFixtureScene = preload("res://scenes/defensive_action_fixture.tscn")
+const OffensiveActionFixtureScene = preload("res://scenes/offensive_action_fixture.tscn")
 
 func _ready() -> void:
 	var paths := _parse_paths(OS.get_cmdline_user_args())
@@ -40,6 +41,10 @@ func _execute(paths: Dictionary) -> void:
 		fixture = DefensiveActionFixtureScene.instantiate()
 		add_child(fixture)
 		fixture_scene = "res://scenes/defensive_action_fixture.tscn"
+	elif request.fixtureId == RuntimeProtocol.OFFENSIVE_ACTION_FIXTURE_ID:
+		fixture = OffensiveActionFixtureScene.instantiate()
+		add_child(fixture)
+		fixture_scene = "res://scenes/offensive_action_fixture.tscn"
 	if request.fixtureId == RuntimeProtocol.TARGETING_FIXTURE_ID: fixture.configure(request.payload.profile, request.payload.cameraProfile)
 	else: fixture.configure(request.payload.profile)
 	var metrics: Dictionary = await fixture.run_scenario(request.payload.scenario)

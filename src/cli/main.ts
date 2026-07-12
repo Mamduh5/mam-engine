@@ -28,6 +28,7 @@ import { inspectOffensiveAction } from "../application/offensiveAction/inspectOf
 import { setOffensiveActionValue } from "../application/offensiveAction/setOffensiveActionValue";
 import { simulateOffensiveActionFile } from "../application/offensiveAction/simulateOffensiveAction";
 import { validateOffensiveActionFile } from "../application/offensiveAction/validateOffensiveAction";
+import { runOffensiveActionRuntimeTest } from "../application/runtime/runOffensiveActionRuntimeTest";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -104,6 +105,7 @@ async function dispatch(
     case "offensive-action.inspect": return inspectOffensiveAction(workspaceRoot, command.file);
     case "offensive-action.validate": return validateOffensiveActionFile(workspaceRoot, command.file);
     case "offensive-action.simulate": return simulateOffensiveActionFile(workspaceRoot, command.file, command.fixedDelta);
+    case "offensive-action.runtime-test": return runOffensiveActionRuntimeTest(workspaceRoot, command.file, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "offensive-action.set": return dependencies.setOffensiveActionValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "defensive-action.inspect": return inspectDefensiveAction(workspaceRoot, command.file);
     case "defensive-action.validate": return validateDefensiveActionFile(workspaceRoot, command.file);
