@@ -29,6 +29,10 @@ import { setOffensiveActionValue } from "../application/offensiveAction/setOffen
 import { simulateOffensiveActionFile } from "../application/offensiveAction/simulateOffensiveAction";
 import { validateOffensiveActionFile } from "../application/offensiveAction/validateOffensiveAction";
 import { runOffensiveActionRuntimeTest } from "../application/runtime/runOffensiveActionRuntimeTest";
+import { inspectHealth } from "../application/health/inspectHealth";
+import { setHealthValue } from "../application/health/setHealthValue";
+import { simulateHitFiles } from "../application/health/simulateHit";
+import { validateHealthFile } from "../application/health/validateHealth";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -40,6 +44,7 @@ export interface CliApplicationDependencies {
   setTargetingValue: typeof setTargetingValue;
   setDefensiveActionValue: typeof setDefensiveActionValue;
   setOffensiveActionValue: typeof setOffensiveActionValue;
+  setHealthValue: typeof setHealthValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -49,7 +54,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -102,6 +107,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "health.inspect": return inspectHealth(workspaceRoot, command.file);
+    case "health.validate": return validateHealthFile(workspaceRoot, command.file);
+    case "health.simulate-hit": return simulateHitFiles(workspaceRoot, command.healthFile, command.offensiveActionFile);
+    case "health.set": return dependencies.setHealthValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "offensive-action.inspect": return inspectOffensiveAction(workspaceRoot, command.file);
     case "offensive-action.validate": return validateOffensiveActionFile(workspaceRoot, command.file);
     case "offensive-action.simulate": return simulateOffensiveActionFile(workspaceRoot, command.file, command.fixedDelta);

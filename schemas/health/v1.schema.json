@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/health/v1.schema.json",
+  "title": "mam-engine health profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "maxHealth", "startingHealth"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "health-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "maxHealth": { "type": "number" },
+    "startingHealth": { "type": "number" }
+  }
+}

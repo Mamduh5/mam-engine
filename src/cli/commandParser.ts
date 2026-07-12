@@ -6,6 +6,10 @@ import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "health.inspect"; file: string; json: boolean }
+  | { kind: "health.validate"; file: string; json: boolean }
+  | { kind: "health.simulate-hit"; healthFile: string; offensiveActionFile: string; json: boolean }
+  | { kind: "health.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "offensive-action.inspect"; file: string; json: boolean }
   | { kind: "offensive-action.validate"; file: string; json: boolean }
   | { kind: "offensive-action.simulate"; file: string; fixedDelta?: number; json: boolean }
@@ -63,6 +67,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
   if (group === "targeting") return parseTargetingCommand(action, remaining);
   if (group === "defensive-action") return parseDefensiveActionCommand(action, remaining);
   if (group === "offensive-action") return parseOffensiveActionCommand(action, remaining);
+  if (group === "health") return parseHealthCommand(action, remaining);
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
   }
@@ -73,6 +78,13 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseHealthCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `health ${action} requires exactly one file argument`); return { kind: `health.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
+  if (action === "simulate-hit") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 2, "health simulate-hit requires <health-file> <offensive-action-file>"); return { kind: "health.simulate-hit", healthFile: parsed.positional[0] as string, offensiveActionFile: parsed.positional[1] as string, json: parsed.flags.has("--json") }; }
+  if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "health set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("health set <json-value> must be valid JSON"); } return { kind: "health.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
+  throw new CliParseError(`Unknown health command '${action}'`);
 }
 
 function parseOffensiveActionCommand(action: string, args: string[]): ParsedCommand {

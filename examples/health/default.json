@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "health-profile",
+  "id": "default-target-health",
+  "displayName": "Default Target Health",
+  "maxHealth": 100,
+  "startingHealth": 100
+}

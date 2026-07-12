@@ -1,12 +1,13 @@
 import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020";
 
-import { loadCameraV1Schema, loadDefensiveActionV1Schema, loadMovementV1Schema, loadOffensiveActionV1Schema, loadTargetingV1Schema } from "./schemaLoader";
+import { loadCameraV1Schema, loadDefensiveActionV1Schema, loadHealthV1Schema, loadMovementV1Schema, loadOffensiveActionV1Schema, loadTargetingV1Schema } from "./schemaLoader";
 
 let movementValidator: ValidateFunction | undefined;
 let cameraValidator: ValidateFunction | undefined;
 let targetingValidator: ValidateFunction | undefined;
 let defensiveActionValidator: ValidateFunction | undefined;
 let offensiveActionValidator: ValidateFunction | undefined;
+let healthValidator: ValidateFunction | undefined;
 
 export function validateMovementSchema(value: unknown): ErrorObject[] {
   movementValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadMovementV1Schema());
@@ -36,4 +37,10 @@ export function validateOffensiveActionSchema(value: unknown): ErrorObject[] {
   offensiveActionValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadOffensiveActionV1Schema());
   const valid = offensiveActionValidator(value);
   return valid ? [] : [...(offensiveActionValidator.errors ?? [])];
+}
+
+export function validateHealthSchema(value: unknown): ErrorObject[] {
+  healthValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadHealthV1Schema());
+  const valid = healthValidator(value);
+  return valid ? [] : [...(healthValidator.errors ?? [])];
 }

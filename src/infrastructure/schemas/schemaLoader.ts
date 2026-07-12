@@ -29,3 +29,8 @@ export function loadOffensiveActionV1Schema(): object {
   const schemaPath = path.join(packageRoot(), "schemas", "offensive-action", "v1.schema.json");
   return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
 }
+
+export function loadHealthV1Schema(): object {
+  const schemaPath = path.join(packageRoot(), "schemas", "health", "v1.schema.json");
+  return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
+}
