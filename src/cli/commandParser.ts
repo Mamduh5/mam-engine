@@ -12,6 +12,7 @@ export type ParsedCommand =
   | { kind: "stamina.runtime-test"; staminaFile: string; actionFile: string; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "stamina.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "combat.simulate-exchange"; healthFile: string; offensiveActionFile: string; json: boolean }
+  | { kind: "combat.simulate-stamina-exchange"; staminaFile: string; healthFile: string; offensiveActionFile: string; json: boolean }
   | { kind: "combat.runtime-test"; healthFile: string; offensiveActionFile: string; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "health.inspect"; file: string; json: boolean }
   | { kind: "health.validate"; file: string; json: boolean }
@@ -103,6 +104,11 @@ function parseCombatCommand(action: string, args: string[]): ParsedCommand {
     const parsed = parseArguments(args, new Set(["--json"]));
     requirePositionals(parsed, 2, "combat simulate-exchange requires <health-file> <offensive-action-file>");
     return { kind: "combat.simulate-exchange", healthFile: parsed.positional[0] as string, offensiveActionFile: parsed.positional[1] as string, json: parsed.flags.has("--json") };
+  }
+  if (action === "simulate-stamina-exchange") {
+    const parsed = parseArguments(args, new Set(["--json"]));
+    requirePositionals(parsed, 3, "combat simulate-stamina-exchange requires <stamina-file> <health-file> <offensive-action-file>");
+    return { kind: "combat.simulate-stamina-exchange", staminaFile: parsed.positional[0] as string, healthFile: parsed.positional[1] as string, offensiveActionFile: parsed.positional[2] as string, json: parsed.flags.has("--json") };
   }
   if (action === "runtime-test") {
     const parsed = parseArguments(args, new Set(["--json", "--godot", "--keep-session"]), new Set(["--godot"]));
