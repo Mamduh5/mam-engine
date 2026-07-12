@@ -99,7 +99,7 @@ Never stage runtime sessions, `.godot` caches, logs, executables, archives, or t
 ECONOMY mode is the default:
 
 ```text
-implement → focused check → diff check → report
+implement → focused check → status review → report
 ```
 
 RELEASE mode is used only when explicitly requested:
