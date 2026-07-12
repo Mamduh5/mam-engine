@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import { rm } from "node:fs/promises";
+import path from "node:path";
+import test from "node:test";
+
+import { compareCameraRuntime } from "../../src/application/runtime/compareCameraRuntime";
+import { runCameraFixture } from "../../src/application/runtime/runCameraFixture";
+import { runCameraRuntimeTest } from "../../src/application/runtime/runCameraRuntimeTest";
+import { discoverGodot } from "../../src/infrastructure/runtime/godotDiscovery";
+import { defaultCameraProfile, projectRoot } from "../testUtils";
+
+const availability = discoverGodot().then(() => null, (error: Error) => error.message);
+async function requireGodot(context: { skip(message?: string): void }): Promise<boolean> { const reason = await availability; if (reason) { context.skip(`Godot unavailable: ${reason}`); return false; } return true; }
+async function publicScenario(context: { skip(message?: string): void }, scenario: "orbit" | "pitch-clamp" | "recenter" | "follow" | "collision" | "basis") { if (!await requireGodot(context)) return null; const result = await runCameraRuntimeTest(projectRoot(), "examples/camera/default.json", scenario, undefined, undefined); assert.equal(result.status, "passed", JSON.stringify(result)); assert.deepEqual(result.changedFiles, []); assert.equal((result.data as any).runtime.process.exitCode, 0); assert.equal((result.data as any).runtime.fixtureId, "camera/basic-third-person"); assert.equal((result.data as any).session.retained, false); return result; }
+
+test("real Godot camera cold-cache readiness", async (context) => { if (!await requireGodot(context)) return; await rm(path.join(projectRoot(), "runtime", "godot", ".godot"), { recursive: true, force: true }); await publicScenario(context, "basis"); });
+test("real Godot camera orbit matches domain simulation", async (context) => { await publicScenario(context, "orbit"); });
+test("real Godot camera pitch clamp matches domain simulation", async (context) => { const result = await publicScenario(context, "pitch-clamp"); if (result) { const metrics = (result.data as any).runtime.metrics; assert.equal(metrics.positiveClampReached, true); assert.equal(metrics.negativeClampReached, true); } });
+test("real Godot camera recenter matches domain simulation", async (context) => { await publicScenario(context, "recenter"); });
+test("real Godot camera disabled recenter remains unchanged", async (context) => { if (!await requireGodot(context)) return; const profile = await defaultCameraProfile(); const run = await runCameraFixture(projectRoot(), profile, "recenter", undefined, { variant: "disabled" }); assert.equal(compareCameraRuntime(run.simulation, run.response.metrics, { ...profile, recenter: { ...profile.recenter, enabled: false } }).passed, true); assert.equal(run.response.metrics.finalYawErrorDegrees, 120); });
+test("real Godot camera below-threshold recenter remains unchanged", async (context) => { if (!await requireGodot(context)) return; const profile = await defaultCameraProfile(); const run = await runCameraFixture(projectRoot(), profile, "recenter", undefined, { variant: "below-threshold" }); assert.equal(compareCameraRuntime(run.simulation, run.response.metrics, profile).passed, true); assert.equal(run.response.metrics.finalYawErrorDegrees, 120); });
+test("real Godot camera manual orbit resets recenter delay", async (context) => { if (!await requireGodot(context)) return; const profile = await defaultCameraProfile(); const run = await runCameraFixture(projectRoot(), profile, "recenter", 1, { variant: "manual-input" }); assert.equal(compareCameraRuntime(run.simulation, run.response.metrics, profile).passed, true); assert.equal(run.response.metrics.recenterStartSeconds, null); });
+test("real Godot camera follow motion and settling match", async (context) => { const result = await publicScenario(context, "follow"); if (result) { const metrics = (result.data as any).runtime.metrics; assert(metrics.finalFollowError < metrics.maximumFollowError); } });
+test("real Godot camera collision compression and recovery match", async (context) => { const result = await publicScenario(context, "collision"); if (result) assert.equal((result.data as any).runtime.metrics.collisionDetected, true); });
+test("real Godot camera collision disabled does not compress", async (context) => { if (!await requireGodot(context)) return; const profile = await defaultCameraProfile(); profile.collision.enabled = false; const run = await runCameraFixture(projectRoot(), profile, "collision", undefined); assert.equal(compareCameraRuntime(run.simulation, run.response.metrics, profile).passed, true); assert.equal(run.response.metrics.collisionDetected, false); assert.equal(run.response.metrics.compressedDistance, profile.follow.distance); });
+test("real Godot camera basis matches domain convention", async (context) => { await publicScenario(context, "basis"); });
+test("real Godot camera lens applies authored values", async (context) => { const result = await publicScenario(context, "orbit"); if (!result) return; const profile = await defaultCameraProfile(); const lens = (result.data as any).runtime.metrics.lens; assert(Math.abs(lens.fieldOfViewDegrees - profile.lens.fieldOfViewDegrees) <= 0.001); assert(Math.abs(lens.nearClipDistance - profile.lens.nearClipDistance) <= 0.001); assert(Math.abs(lens.farClipDistance - profile.lens.farClipDistance) <= 0.001); });

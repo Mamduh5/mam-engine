@@ -13,6 +13,7 @@ import { listSnapshots } from "../application/snapshots/listSnapshots";
 import { rollbackSnapshot } from "../application/snapshots/rollbackSnapshot";
 import { checkRuntime } from "../application/runtime/checkRuntime";
 import { runMovementRuntimeTest } from "../application/runtime/runMovementRuntimeTest";
+import { runCameraRuntimeTest } from "../application/runtime/runCameraRuntimeTest";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -86,6 +87,7 @@ async function dispatch(
     case "camera.inspect": return inspectCamera(workspaceRoot, command.file);
     case "camera.validate": return validateCameraFile(workspaceRoot, command.file);
     case "camera.simulate": return simulateCameraFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);
+    case "camera.runtime-test": return runCameraRuntimeTest(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "camera.set": return dependencies.setCameraValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "movement.inspect":
       return inspectMovement(workspaceRoot, command.file);

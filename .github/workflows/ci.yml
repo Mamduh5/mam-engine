@@ -89,5 +89,5 @@ jobs:
       - name: Verify pinned Godot runtime
         run: npm run mam -- runtime check --json
 
-      - name: Run real Godot integration suite
+      - name: Run real movement and camera Godot integration suite
         run: npm run test:godot

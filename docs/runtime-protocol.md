@@ -2,7 +2,7 @@
 
 ## Current implementation status
 
-Movement Editor v0.1 implements both the Codex-facing CLI operation envelope and the process-per-run Godot runtime transport described later in this document. Camera Editor Phase 2A.1 uses the same CLI operation envelope for read-only inspect/validate/simulate and safe set operations, but does not implement a camera Godot transport or fixture. Every `mam ... --json` command returns:
+Movement Editor v0.1 and Camera Editor Phase 2A.2 implement both the Codex-facing CLI operation envelope and the shared process-per-run Godot runtime transport. Every `mam ... --json` command returns:
 
 ```json
 {
@@ -39,13 +39,15 @@ Phase 1A.1 extends failed persistence data backward-compatibly:
 
 Recovery status is `not_required`, `restored`, or `failed`. The requested operation remains top-level `failed` after successful recovery, so exit status remains non-zero. Successful rollback data includes `sourceSnapshotId` and `preRollbackSnapshotId`; top-level `snapshotId` is the pre-rollback safety snapshot.
 
-The `mam.runtime/v1` Godot protocol below is implemented in Phase 1B using atomic files under an isolated runtime session directory.
+The `mam.runtime/v1` Godot protocol is implemented using atomic files under an isolated runtime session directory. It dispatches validated fixture IDs `movement/basic-ground` and `camera/basic-third-person`; unknown fixtures remain rejected.
 
 ## Purpose
 
 The runtime protocol is the versioned JSON boundary between engine/application services and the Godot runtime adapter. Transport is process-per-run with complete request, readiness, and response JSON files. Standard streams are bounded diagnostic evidence and are never parsed as protocol.
 
 Protocol version `mam.runtime/v1` below is a design contract for Phase 1B. Examples are illustrative, not evidence of a running runtime.
+
+Camera requests include `definitionKind: "camera-profile"`, `definitionSchemaVersion: 1`, the complete normalized profile, and a scenario containing one of `orbit`, `pitch-clamp`, `recenter`, `follow`, `collision`, or `basis`. Unsupported kinds, schema versions, profiles, scenarios, commands, fixtures, correlations, invalid fixed deltas, and non-finite values are rejected before execution. Runtime responses retain the same envelope and include typed camera metrics plus lens readback; terminal prose is never parsed.
 
 ## Request envelope
 

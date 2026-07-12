@@ -7,6 +7,7 @@ export type ParsedCommand =
   | { kind: "camera.inspect"; file: string; json: boolean }
   | { kind: "camera.validate"; file: string; json: boolean }
   | { kind: "camera.simulate"; file: string; scenario: CameraScenario; seconds?: number; fixedDelta?: number; json: boolean }
+  | { kind: "camera.runtime-test"; file: string; scenario: CameraScenario; seconds?: number; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "camera.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "movement.inspect"; file: string; json: boolean }
   | { kind: "movement.validate"; file: string; json: boolean }
@@ -65,6 +66,14 @@ function parseCameraCommand(action: string, args: string[]): ParsedCommand {
     const seconds = optionalPositiveNumber(parsed.flags.get("--seconds"), "--seconds");
     const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta");
     return { kind: "camera.simulate", file: parsed.positional[0] as string, scenario: scenario as CameraScenario, ...(seconds === undefined ? {} : { seconds }), ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") };
+  }
+  if (action === "runtime-test") {
+    const parsed = parseArguments(args, new Set(["--json", "--scenario", "--seconds", "--fixed-delta", "--godot", "--keep-session"]), new Set(["--scenario", "--seconds", "--fixed-delta", "--godot"]));
+    requirePositionals(parsed, 1, "camera runtime-test requires exactly one file argument");
+    const scenario = parsed.flags.get("--scenario");
+    if (typeof scenario !== "string" || !cameraScenarios.has(scenario as CameraScenario)) throw new CliParseError("--scenario must be one of: orbit, pitch-clamp, recenter, follow, collision, basis", ErrorCodes.CameraRuntimeScenarioUnsupported);
+    const seconds = optionalPositiveNumber(parsed.flags.get("--seconds"), "--seconds"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); const godot = parsed.flags.get("--godot");
+    return { kind: "camera.runtime-test", file: parsed.positional[0] as string, scenario: scenario as CameraScenario, ...(seconds === undefined ? {} : { seconds }), ...(fixedDelta === undefined ? {} : { fixedDelta }), ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") };
   }
   if (action === "set") {
     const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "camera set requires <file> <property-path> <json-value>");

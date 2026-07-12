@@ -131,7 +131,7 @@ export function simulateCollision(profile: CameraProfile, seconds: number, delta
     }
     minimum = Math.min(minimum, distance);
   }
-  return rounded({ desiredDistance: desired, minimumObservedDistance: minimum, compressedDistance: compressed, finalRecoveredDistance: distance, compressionRatio: compressed / desired, recoveryDurationSeconds: Math.max(0, (steps - obstructionSteps) * delta), physicsSteps: steps, fixedDeltaSeconds: delta });
+  return rounded({ desiredDistance: desired, minimumObservedDistance: minimum, compressedDistance: compressed, finalRecoveredDistance: distance, compressionRatio: compressed / desired, recoveryDurationSeconds: Math.max(0, (steps - obstructionSteps) * delta), physicsSteps: steps, fixedDeltaSeconds: delta, collisionDetected: profile.collision.enabled });
 }
 
 export function simulateBasis() {

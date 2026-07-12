@@ -1,0 +1,57 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource path="res://scripts/camera_fixture.gd" type="Script" id="1"]
+
+[sub_resource type="CapsuleMesh" id="TargetMesh"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="BoxShape3D" id="GroundShape"]
+size = Vector3(20, 0.2, 20)
+
+[sub_resource type="BoxMesh" id="GroundMesh"]
+size = Vector3(20, 0.2, 20)
+
+[sub_resource type="BoxShape3D" id="WallShape"]
+size = Vector3(10, 10, 0.02)
+
+[sub_resource type="BoxMesh" id="WallMesh"]
+size = Vector3(10, 10, 0.02)
+
+[sub_resource type="SphereShape3D" id="ProbePlaceholder"]
+radius = 0.25
+
+[node name="CameraFixture" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Target" type="Node3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Target"]
+position = Vector3(0, 0.9, 0)
+mesh = SubResource("TargetMesh")
+
+[node name="FollowAnchor" type="Node3D" parent="."]
+[node name="YawPivot" type="Node3D" parent="FollowAnchor"]
+[node name="PitchPivot" type="Node3D" parent="FollowAnchor/YawPivot"]
+[node name="Camera3D" type="Camera3D" parent="FollowAnchor/YawPivot/PitchPivot"]
+current = true
+
+[node name="CollisionProbe" type="ShapeCast3D" parent="."]
+shape = SubResource("ProbePlaceholder")
+collision_mask = 1
+
+[node name="Ground" type="StaticBody3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+position = Vector3(0, -0.1, 0)
+shape = SubResource("GroundShape")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+position = Vector3(0, -0.1, 0)
+mesh = SubResource("GroundMesh")
+
+[node name="CollisionWall" type="StaticBody3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CollisionWall"]
+shape = SubResource("WallShape")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionWall"]
+mesh = SubResource("WallMesh")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -35, 0)

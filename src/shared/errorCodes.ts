@@ -35,6 +35,7 @@ export const ErrorCodes = {
   CameraWriteScopeAuditFailed: "CAMERA_WRITE_SCOPE_AUDIT_FAILED",
   CameraWriteRecoveryFailed: "CAMERA_WRITE_RECOVERY_FAILED",
   CameraScenarioUnsupported: "CAMERA_SCENARIO_UNSUPPORTED",
+  CameraRuntimeScenarioUnsupported: "CAMERA_RUNTIME_SCENARIO_UNSUPPORTED",
   DefinitionFileNotFound: "DEFINITION_FILE_NOT_FOUND",
   DefinitionFileInvalid: "DEFINITION_FILE_INVALID",
   DefinitionKindUnsupported: "DEFINITION_KIND_UNSUPPORTED",

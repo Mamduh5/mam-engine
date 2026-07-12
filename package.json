@@ -22,7 +22,9 @@
     "lint": "tsc --noEmit -p tsconfig.json",
     "test": "npm run test:unit",
     "test:unit": "npm run build && node --test dist/tests/*.test.js",
+    "test:camera-runtime": "npm run build && node --test dist/tests/camera-runtime-*.test.js",
     "test:godot": "npm run build && node --test dist/tests/godot/*.integration.js",
+    "test:godot:camera": "npm run build && node --test dist/tests/godot/camera-runtime.integration.js",
     "check": "npm run lint && npm test",
     "check:all": "npm run check && npm run test:godot",
     "mam": "npm run build --silent && node dist/src/cli/main.js"

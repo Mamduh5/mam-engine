@@ -18,9 +18,9 @@ Add camera definitions, camera-relative intent, target acquisition/selection con
 
 Camera profile v1, schema and semantic validation, deterministic camera math/simulations, inspect/validate/simulate/set CLI operations, kind-aware snapshot safety, and Node tests are complete. The follow scenario moves for its first fixed-step half and settles for its second, preserving half-life and repeatability evidence. This phase is engine-independent and does not modify Godot runtime files.
 
-### Phase 2A.2 — Camera runtime fixture (not started)
+### Phase 2A.2 — Camera runtime fixture (complete)
 
-Add only a controlled Godot camera adapter and fixture measurement after the Phase 2A.1 contract is stable. It must consume the authored profile and publish measured evidence without becoming a second authoring source.
+The controlled Godot `camera/basic-third-person` fixture consumes the complete validated profile, measures all six camera scenarios, applies lens values, uses real collision probing, compares against domain simulations, and runs headlessly in CI. It does not become a second authoring source. **Camera Editor v0.1 is complete.**
 
 ### Phase 2B — Targeting (not started)
 

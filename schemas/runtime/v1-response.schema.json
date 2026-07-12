@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "enum": ["runtime.fixture.ready", "runtime.fixture.run"] },
-    "fixtureId": { "const": "movement/basic-ground" },
+    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person"] },
     "correlationId": { "type": "string", "minLength": 1 },
     "status": { "enum": ["ready", "ok", "rejected", "failed", "timed_out"] },
     "metrics": { "type": "object" },

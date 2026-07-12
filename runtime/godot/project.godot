@@ -1,8 +1,8 @@
-; Movement Editor Phase 1B controlled fixture host.
+; Movement and Camera Editor controlled fixture host.
 config_version=5
 
 [application]
-config/name="mam-engine movement runtime fixture"
+config/name="mam-engine runtime fixtures"
 run/main_scene="res://scenes/movement_fixture.tscn"
 
 [display]

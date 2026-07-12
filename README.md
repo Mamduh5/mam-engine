@@ -2,9 +2,9 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 and Camera Editor Phase 2A.1 are complete.** The transactionally safe movement foundation has a controlled process-per-run Godot 4.7-stable runtime proof. Camera Editor Phase 2A.1 is an engine-independent CLI/domain foundation; it does not add camera runtime proof, targeting, or combat.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1 and Camera Editor v0.1 (through Phase 2A.2) are complete.** Both validated profile kinds have controlled process-per-run Godot 4.7-stable runtime proof. Targeting and combat are not implemented.
 
-## Implemented through Phase 2A.1
+## Implemented through Phase 2A.2
 
 - A Node.js/TypeScript `mam` CLI with versioned JSON results.
 - JSON Schema and semantic validation for movement profile v1.
@@ -22,6 +22,8 @@ The long-term target is a Dauntless-style action hunting game. **Movement Editor
 - Camera profile v1 schema and semantic validation for orbit, follow, recenter, collision, and lens settings.
 - Deterministic camera orbit, pitch-clamp, recenter, follow, collision, and basis simulations; follow scenarios include a fixed-step settling interval after target motion.
 - Read-only camera inspect, validate, and simulate operations; safe camera dotted-path edits with dry runs, snapshots, exact recovery, and kind-aware rollback isolation.
+- A `camera/basic-third-person` Godot fixture consuming the complete validated camera profile for orbit, pitch clamp, move-then-settle follow, delayed recenter, real spatial collision compression/recovery, camera-relative basis, and lens application.
+- Structured camera runtime metrics and named domain/runtime tolerances, including real cold-cache Godot integration tests.
 
 ## Why CLI first
 
@@ -56,6 +58,7 @@ mam movement set <file> <property-path> <json-value> [--dry-run] [--json]
 mam camera inspect <file> [--json]
 mam camera validate <file> [--json]
 mam camera simulate <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--json]
+mam camera runtime-test <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--godot <path>] [--keep-session] [--json]
 mam camera set <file> <property-path> <json-value> [--dry-run] [--json]
 
 mam snapshot create <file> [--json]
@@ -72,6 +75,7 @@ npm run mam -- movement set examples/movement/default.json ground.runSpeed 6.5 -
 npm run mam -- movement set examples/movement/default.json ground.orientationMode '"camera_relative"' --json
 npm run mam -- camera inspect examples/camera/default.json --json
 npm run mam -- camera simulate examples/camera/default.json --scenario follow --json
+npm run mam -- camera runtime-test examples/camera/default.json --scenario collision --json
 npm run mam -- camera set examples/camera/default.json follow.distance 6.5 --dry-run --json
 ```
 
@@ -94,11 +98,11 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 
 ## Current limitations
 
-- No persistent live runtime session, live editing, visual camera editor, camera Godot adapter/fixture, or explicit interactive shutdown command exists.
+- No persistent live runtime session, live editing, visual camera editor, or explicit interactive shutdown command exists.
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - There is no targeting, combat, enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Camera runtime work, targeting, defensive-action, and combat remain separate roadmap work.
+- Phase 2B targeting, defensive-action, and combat remain separate roadmap work.
 
 ## Documentation
 

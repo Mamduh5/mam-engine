@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { compareCameraRuntime } from "../src/application/runtime/compareCameraRuntime";
+import { simulateCamera } from "../src/domain/camera/cameraSimulation";
+import { defaultCameraProfile } from "./testUtils";
+
+async function values(scenario: Parameters<typeof simulateCamera>[1]) { const profile = await defaultCameraProfile(); const simulation = simulateCamera(profile, scenario); const runtime = structuredClone(simulation.metrics) as Record<string, any>; runtime.lens = structuredClone(profile.lens); return { profile, simulation, runtime }; }
+test("camera angle comparison passes inside and fails outside tolerance", async () => { const item = await values("orbit"); item.runtime.finalPitchDegrees += 0.2; assert.equal(compareCameraRuntime(item.simulation, item.runtime, item.profile).passed, true); item.runtime.finalPitchDegrees += 0.1; assert.equal(compareCameraRuntime(item.simulation, item.runtime, item.profile).passed, false); });
+test("camera distance and time comparisons enforce tolerances", async () => { const item = await values("follow"); item.runtime.finalFollowError += 0.04; item.runtime.durationSeconds += 1 / 60; assert.equal(compareCameraRuntime(item.simulation, item.runtime, item.profile).passed, true); item.runtime.finalFollowError += 0.02; assert.equal(compareCameraRuntime(item.simulation, item.runtime, item.profile).passed, false); });
+test("camera position component mismatch fails", async () => { const item = await values("follow"); item.runtime.finalCameraPosition.x += 0.06; assert.equal(compareCameraRuntime(item.simulation, item.runtime, item.profile).passed, false); });
+test("camera basis magnitude and orthogonality mismatches fail", async () => { const magnitude = await values("basis"); magnitude.runtime.samples[0].forwardMagnitude += 0.002; assert.equal(compareCameraRuntime(magnitude.simulation, magnitude.runtime, magnitude.profile).passed, false); const dot = await values("basis"); dot.runtime.samples[0].orthogonalityDot += 0.002; assert.equal(compareCameraRuntime(dot.simulation, dot.runtime, dot.profile).passed, false); });
+test("camera exact physics steps and lens mismatch fail stably", async () => { const steps = await values("orbit"); steps.runtime.physicsSteps += 1; const failed = compareCameraRuntime(steps.simulation, steps.runtime, steps.profile); assert.equal(failed.passed, false); assert.equal(failed.metrics.find((metric) => metric.metric === "physicsSteps")?.passed, false); const lens = await values("orbit"); lens.runtime.lens.fieldOfViewDegrees += 0.002; assert.equal(compareCameraRuntime(lens.simulation, lens.runtime, lens.profile).passed, false); });

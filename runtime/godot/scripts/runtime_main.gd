@@ -4,6 +4,7 @@ const RuntimeProtocol = preload("res://scripts/runtime_protocol.gd")
 const AtomicJsonFile = preload("res://scripts/atomic_json_file.gd")
 
 @onready var player: Variant = $Player
+const CameraFixtureScene = preload("res://scenes/camera_fixture.tscn")
 
 func _ready() -> void:
 	var paths := _parse_paths(OS.get_cmdline_user_args())
@@ -23,11 +24,17 @@ func _execute(paths: Dictionary) -> void:
 	if not AtomicJsonFile.write(paths.ready, ready):
 		get_tree().quit(3)
 		return
-	player.configure(request.payload.profile)
-	var metrics: Dictionary = await player.run_scenario(request.payload.scenario)
+	var fixture: Variant = player
+	var fixture_scene := "res://scenes/movement_fixture.tscn"
+	if request.fixtureId == RuntimeProtocol.CAMERA_FIXTURE_ID:
+		fixture = CameraFixtureScene.instantiate()
+		add_child(fixture)
+		fixture_scene = "res://scenes/camera_fixture.tscn"
+	fixture.configure(request.payload.profile)
+	var metrics: Dictionary = await fixture.run_scenario(request.payload.scenario)
 	var response := RuntimeProtocol.response(request, "runtime.fixture.run", "ok", metrics)
 	response.evidence.physicsSteps = metrics.get("physicsSteps", 0)
-	response.evidence.fixtureScene = "res://scenes/movement_fixture.tscn"
+	response.evidence.fixtureScene = fixture_scene
 	response.evidence.scenarioId = request.payload.scenario.id
 	if not AtomicJsonFile.write(paths.response, response):
 		get_tree().quit(4)

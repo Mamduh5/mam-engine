@@ -2,7 +2,7 @@
 
 Automated evidence is part of each editor/engine feature, not a final polish step. Tests should use stable structured results and measurable values, avoid reliance on terminal prose, and identify environment limitations separately from product failures.
 
-Phase 1A.1 implements the fast engine-independent layers with Node's built-in test runner. Tests compile from TypeScript and use isolated temporary workspaces for all write operations. Phase 1B implements a separate Godot-dependent integration tier while keeping normal checks runtime-independent.
+Fast engine-independent layers use Node's built-in test runner and isolated temporary workspaces for writes. Movement Phase 1B and Camera Phase 2A.2 share a separate Godot-dependent integration tier while normal checks remain runtime-independent.
 
 ## Test layers
 
@@ -24,7 +24,7 @@ Use fixed timesteps and explicit inputs to assert ordered samples and metrics. M
 
 ### Godot headless integration tests
 
-Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute named fixtures, and compare runtime metrics with named tolerances. These tests require compatible Godot 4.7 stable and run in a separate slower integration job.
+Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute movement and camera fixtures, and compare runtime metrics with named tolerances. Camera coverage includes cold cache, orbit, pitch, recenter variants, move-then-settle follow, real spatial collision enabled/disabled, basis, lens, session cleanup, and file safety. These tests require compatible Godot 4.7 stable and run in a separate slower integration job.
 
 ### Runtime fixture smoke tests
 
@@ -56,7 +56,7 @@ Every fixed defect receives the smallest test at the owning layer. Cross-layer r
 
 ## Runtime-independent versus Godot-required
 
-Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. Type checking plus the full suite runs through `npm run check`. Godot protocol integration and fixture smoke tests run through `npm run test:godot`. Local absence is reported as skipped; pinned CI must pass rather than skip.
+Schema, validator, service, CLI, deterministic simulation, changed-file, snapshot, and rollback tests run without Godot through `npm test`. `npm run test:camera-runtime` runs focused camera runtime tests. Type checking plus the full Node suite runs through `npm run check`. Godot integration runs through `npm run test:godot`, with `npm run test:godot:camera` available for the camera file. Local absence is reported as skipped; pinned CI must pass rather than skip.
 
 If Godot is unavailable, the fast suite can pass while Godot-required checks are reported as not run because of the environment. They must not be claimed as passing or silently omitted.
 

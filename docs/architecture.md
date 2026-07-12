@@ -6,10 +6,10 @@
 Codex / mam CLI (implemented) / future visual editor
                         |
                         v
-Movement and snapshot application services (implemented)
+Movement, camera, runtime, and snapshot application services (implemented)
                         |
                         v
-Movement domain, JSON Schema, semantic validation (implemented)
+Movement/camera domains, JSON Schema, semantic validation (implemented)
                         |
                         v
 Runtime protocol -> process-per-run Godot adapter -> fixture (implemented in Phase 1B)
@@ -46,9 +46,11 @@ Provides validated `mam.runtime/v1` request, readiness, and final-response files
 
 Translates validated definitions and fixture commands into Godot execution, then measures and reports outcomes. It may implement runtime integration details but may not define canonical authoring values in scenes or resources.
 
-### Fixtures - implemented in Phase 1B
+### Fixtures - movement Phase 1B and camera Phase 2A.2 implemented
 
 Provide controlled worlds, initial state, inputs, clocks, and expected measurements for one vertical slice. A fixture cannot add a private authoring model.
+
+The runtime dispatcher validates `mam.runtime/v1` and selects `movement/basic-ground` or `camera/basic-third-person`. Both use the same atomic request/readiness/response transport, bounded process owner, session store, correlation checks, and changed-file audit. The camera fixture receives the normalized camera profile in the request; it never reads the source definition path.
 
 ### Reports - CLI operation envelope implemented
 
@@ -64,7 +66,7 @@ Persistent set and rollback operations use an in-process repository-relative tar
 
 ### Automated tests and remote CI
 
-Node built-in tests verify schema, validation, simulation, transactions, recovery, locking, rollback, CLI output, runtime protocol, discovery, comparison, and process lifecycle. GitHub Actions retains the Node matrix and adds a Node 22 job that downloads and digest-verifies the exact official `4.7-stable` standard Linux artifact before real Godot integration.
+Node built-in tests verify schema, validation, simulation, transactions, recovery, locking, rollback, CLI output, runtime protocol, discovery, comparison, and process lifecycle. Real Godot tests verify both movement and camera fixtures. GitHub Actions retains the Node matrix and a Node 22 job that downloads and digest-verifies the exact official `4.7-stable` standard Linux artifact before the complete integration tier.
 
 ## Dependency rules
 

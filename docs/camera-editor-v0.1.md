@@ -1,22 +1,10 @@
-# Camera Editor Phase 2A.1
+# Camera Editor v0.1
 
 ## Status and scope
 
-Phase 2A.1 is complete. It provides an engine-independent, data-authored camera profile foundation that Codex can validate, inspect, simulate, and edit safely through the `mam` CLI. It does not add a Godot camera adapter, a runtime camera fixture, targeting, combat, or a visual editor.
+Camera Editor v0.1 is complete through Phase 2A.2. Phase 2A.1 provides the canonical `camera-profile` v1 schema, semantic validation, inspection, deterministic simulations, transactional edits, and kind-aware snapshot/rollback safety. Phase 2A.2 proves that Godot 4.7-stable consumes the same normalized profile and matches those simulations within declared tolerances.
 
-The canonical format is `camera-profile` schema version 1. The checked-in default is [examples/camera/default.json](../examples/camera/default.json); it is a prototype configuration, not final game balance.
-
-## Authored camera profile
-
-The profile contains these validated groups:
-
-- `orbit`: yaw/pitch speeds, inversion, pitch limits, and initial angles.
-- `follow`: distance, height, shoulder and look-at offsets, plus position and rotation half-lives.
-- `recenter`: enablement, delay, angular speed, and movement-input threshold.
-- `collision`: enablement, probe radius, minimum distance, and return half-life.
-- `lens`: field of view and near/far clip distances.
-
-JSON Schema rejects missing and unknown fields. Semantic validation rejects non-finite values, invalid ranges, invalid half-lives, invalid collision geometry, and cross-field inconsistencies. Yaw is normalized into `[-180, 180)`.
+The checked-in default remains [examples/camera/default.json](../examples/camera/default.json). Runtime testing is read-only: Godot receives the complete profile through `mam.runtime/v1`, does not read the canonical file, creates no snapshot, and may generate only ignored runtime session and Godot cache artifacts.
 
 ## Commands
 
@@ -24,19 +12,22 @@ JSON Schema rejects missing and unknown fields. Semantic validation rejects non-
 mam camera inspect <file> [--json]
 mam camera validate <file> [--json]
 mam camera simulate <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--json]
+mam camera runtime-test <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--godot <path>] [--keep-session] [--json]
 mam camera set <file> <property-path> <json-value> [--dry-run] [--json]
 ```
 
-`inspect`, `validate`, and `simulate` are read-only and audit that they changed no repository files. `set` validates the full candidate, supports dry runs, writes atomically, creates a kind-aware snapshot, verifies the persisted result, and restricts changed files to the target and snapshot paths. Snapshot create, list, and rollback remain shared commands and preserve definition kind, so a movement snapshot cannot overwrite a camera profile or vice versa.
+## Runtime behavior
 
-## Deterministic simulations
+`camera/basic-third-person` applies authored orbit speeds/inversion/limits/initial angles, follow distance and offsets, position and rotation half-lives, optional delayed recenter, collision probe radius/minimum distance/return half-life, and lens values. Public yaw remains `[-180, 180)` with 0 degrees = negative Z, 90 = negative X, -90 = positive X, and 180 = positive Z.
 
-All camera simulations use a supplied fixed delta, defaulting to 1/60 second, and report deterministic rounded metrics. The scenarios cover orbit travel, pitch limits, delayed recentering, follow smoothing, collision compression/recovery, and horizontal camera basis.
+Orbit input is updated directly at the authored bounded speed. Follow position uses `target + (current - target) * 2^(-delta/halfLife)` and snaps when half-life is zero. Orientation-follow uses `rotationHalfLifeSeconds`; recenter uses its own shortest-angle bounded angular speed and never borrows rotation smoothing. The follow scenario moves the target for the first fixed-step half, stops it for the second, and measures settling.
 
-The `follow` scenario starts the target and camera at their configured follow offset. The target moves at 1 unit per second for the first half of its fixed physics steps and stops for the second half. The camera continues to use the configured position half-life during both intervals. Its report retains these metrics: `durationSeconds`, `initialFollowError`, `maximumFollowError`, `finalFollowError`, `finalCameraPosition`, `finalTargetPosition`, `physicsSteps`, and `fixedDeltaSeconds`. The settling interval intentionally makes final follow error smaller than the maximum trailing error.
+Collision uses a real sphere `ShapeCast3D` from the look-at origin toward the desired camera boom. A controlled wall compresses distance with probe-radius and minimum-distance accounting, is disabled at a deterministic step, and recovery uses the authored return half-life. When collision is disabled, the same obstruction does not compress the camera.
 
-The half-life functions are frame-rate independent for a stationary target: applying equivalent elapsed time at different fixed deltas gives the same remaining-error decay. The follow scenario additionally verifies matching target travel, error growth during the motion interval, error decay during the settling interval, and exact repeatability.
+Every scenario reports structured metrics plus effective `Camera3D` FOV, near clip, and far clip. Comparison tolerances are: angle 0.25 degrees, distance and position component 0.05 units, time one fixed step plus `1e-9`, basis magnitude and orthogonality 0.001, steps and booleans exact, and lens 0.001.
 
 ## Verification boundary
 
-The Node test suite covers profile/schema and semantic validation, camera math, deterministic simulations, read-only inspection, CLI output, safe edits, kind-aware snapshots, rollback isolation, and error behavior. It is not runtime proof. Camera runtime behavior, camera collision geometry in Godot, target acquisition/selection, and target-driven camera behavior remain later work.
+Focused Node tests cover camera runtime request/response validation, metric shape, comparison failures, pre-spawn validation, and CLI envelopes. Real headless tests cover cold cache, orbit, pitch clamp, default/disabled/below-threshold/manual-input recenter behavior, follow motion/settling, enabled/disabled collision, basis, lens readback, clean exit, session cleanup, and zero canonical file changes.
+
+Still not implemented: targeting, lock-on, target switching, enemy framing, enemies, combat camera, attacks, weapons, damage, animation, root motion, screen shake, camera zones, cutscenes, photo mode, audio, VFX, multiplayer, networking, persistent live sessions, arbitrary game adapters, or a visual editor.
