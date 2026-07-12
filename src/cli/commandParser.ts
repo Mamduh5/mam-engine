@@ -6,6 +6,10 @@ import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "defensive-action.inspect"; file: string; json: boolean }
+  | { kind: "defensive-action.validate"; file: string; json: boolean }
+  | { kind: "defensive-action.simulate"; file: string; fixedDelta?: number; json: boolean }
+  | { kind: "defensive-action.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "camera.inspect"; file: string; json: boolean }
   | { kind: "camera.validate"; file: string; json: boolean }
   | { kind: "camera.simulate"; file: string; scenario: CameraScenario; seconds?: number; fixedDelta?: number; json: boolean }
@@ -51,6 +55,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
   }
   if (group === "camera") return parseCameraCommand(action, remaining);
   if (group === "targeting") return parseTargetingCommand(action, remaining);
+  if (group === "defensive-action") return parseDefensiveActionCommand(action, remaining);
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
   }
@@ -61,6 +66,13 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseDefensiveActionCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `defensive-action ${action} requires exactly one file argument`); return { kind: `defensive-action.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
+  if (action === "simulate") { const parsed = parseArguments(args, new Set(["--json", "--fixed-delta"]), new Set(["--fixed-delta"])); requirePositionals(parsed, 1, "defensive-action simulate requires exactly one file argument"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); return { kind: "defensive-action.simulate", file: parsed.positional[0] as string, ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") }; }
+  if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "defensive-action set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("defensive-action set <json-value> must be valid JSON"); } return { kind: "defensive-action.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
+  throw new CliParseError(`Unknown defensive-action command '${action}'`);
 }
 
 function parseTargetingCommand(action: string, args: string[]): ParsedCommand {

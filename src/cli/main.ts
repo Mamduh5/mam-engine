@@ -19,6 +19,10 @@ import { inspectTargeting } from "../application/targeting/inspectTargeting";
 import { setTargetingValue } from "../application/targeting/setTargetingValue";
 import { simulateTargetingFile } from "../application/targeting/simulateTargeting";
 import { validateTargetingFile } from "../application/targeting/validateTargeting";
+import { inspectDefensiveAction } from "../application/defensiveAction/inspectDefensiveAction";
+import { setDefensiveActionValue } from "../application/defensiveAction/setDefensiveActionValue";
+import { simulateDefensiveActionFile } from "../application/defensiveAction/simulateDefensiveAction";
+import { validateDefensiveActionFile } from "../application/defensiveAction/validateDefensiveAction";
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
@@ -28,6 +32,7 @@ export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
   setCameraValue: typeof setCameraValue;
   setTargetingValue: typeof setTargetingValue;
+  setDefensiveActionValue: typeof setDefensiveActionValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -37,7 +42,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -90,6 +95,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "defensive-action.inspect": return inspectDefensiveAction(workspaceRoot, command.file);
+    case "defensive-action.validate": return validateDefensiveActionFile(workspaceRoot, command.file);
+    case "defensive-action.simulate": return simulateDefensiveActionFile(workspaceRoot, command.file, command.fixedDelta);
+    case "defensive-action.set": return dependencies.setDefensiveActionValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "camera.inspect": return inspectCamera(workspaceRoot, command.file);
     case "camera.validate": return validateCameraFile(workspaceRoot, command.file);
     case "camera.simulate": return simulateCameraFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);

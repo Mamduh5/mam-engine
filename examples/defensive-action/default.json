@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "defensive-action-profile",
+  "id": "default-dodge",
+  "displayName": "Default Dodge",
+  "durationSeconds": 0.6,
+  "staminaCost": 25,
+  "movementDistance": 4,
+  "invulnerabilityStartSeconds": 0.1,
+  "invulnerabilityEndSeconds": 0.35,
+  "cooldownSeconds": 0.4
+}

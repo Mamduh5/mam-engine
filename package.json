@@ -12,12 +12,14 @@
     "schemas",
     "examples/camera",
     "examples/targeting",
+    "examples/defensive-action",
     "docs/targeting-editor-v0.1.md",
     "docs/decisions/0007-targeting-runtime-and-camera-framing.md",
     "runtime/godot/project.godot",
     "runtime/godot/README.md",
     "runtime/godot/scenes",
     "runtime/godot/scripts",
+    "schemas/defensive-action",
     "fixtures/movement"
   ],
   "scripts": {
