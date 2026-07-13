@@ -17,6 +17,6 @@ if (mode === "no-ready") {
     else if (mode === "delayed-ready") setTimeout(() => { write(value("--response"), envelope("runtime.fixture.run", "ok")); process.exit(0); }, 50);
     else { write(value("--response"), envelope("runtime.fixture.run", "ok")); process.exit(mode === "nonzero" ? 9 : 0); }
   };
-  if (mode === "delayed-ready") setTimeout(complete, 300);
+  if (mode === "delayed-ready") setTimeout(complete, 1250);
   else complete();
 }

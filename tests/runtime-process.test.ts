@@ -21,7 +21,8 @@ async function run(context: TestContext, mode: string, options: Record<string, u
 
 test("process runner observes readiness, clean exit, and bounded output", async (context) => { const { result } = await run(context, "large"); assert.equal(result.readyObserved, true); assert.equal(result.exitCode, 0); assert.equal(result.outputTruncated, true); });
 test("process runner allows a cold start before applying the execution deadline", async (context) => {
-  const { result } = await run(context, "delayed-ready", { readinessTimeoutMs: 1_000, executionTimeoutMs: 200 });
+  // Readiness intentionally takes longer than the execution timeout, proving the deadline starts only after readiness.
+  const { result } = await run(context, "delayed-ready", { readinessTimeoutMs: 3_000, executionTimeoutMs: 1_000 });
   assert.equal(result.readyObserved, true);
   assert.equal(result.timedOut, false);
   assert.equal(result.exitCode, 0);
