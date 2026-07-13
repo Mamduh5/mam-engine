@@ -4,6 +4,7 @@ import type { TargetingScenario } from "../domain/targeting/targetingTypes";
 import type { TargetingRuntimeScenario } from "../domain/runtime/targetingRuntimePlan";
 import type { StaminaCombatRuntimeScenario } from "../domain/runtime/runtimeProtocol";
 import type { ContactVolumeRuntimeScenario } from "../domain/runtime/runtimeProtocol";
+import type { DamageReactionRuntimeScenario } from "../domain/runtime/runtimeProtocol";
 import type { TargetedCombatExchangeScenario } from "../domain/combat/targetedCombatExchangeSimulation";
 import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
@@ -12,6 +13,7 @@ export type ParsedCommand =
   | { kind: "damage-reaction.inspect"; file: string; json: boolean }
   | { kind: "damage-reaction.validate"; file: string; json: boolean }
   | { kind: "damage-reaction.simulate-hit"; reactionFile: string; healthFile: string; offensiveActionFile: string; targetActionWasActive: boolean; json: boolean }
+  | { kind: "damage-reaction.runtime-test"; reactionFile: string; healthFile: string; offensiveActionFile: string; scenario: DamageReactionRuntimeScenario; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "damage-reaction.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "contact-volume.inspect"; file: string; json: boolean }
   | { kind: "contact-volume.validate"; file: string; json: boolean }
@@ -117,6 +119,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
 function parseDamageReactionCommand(action: string, args: string[]): ParsedCommand {
   if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `damage-reaction ${action} requires exactly one file argument`); return { kind: `damage-reaction.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "simulate-hit") { const parsed = parseArguments(args, new Set(["--json", "--target-action-active"])); requirePositionals(parsed, 3, "damage-reaction simulate-hit requires <reaction-file> <health-file> <offensive-action-file>"); return { kind: "damage-reaction.simulate-hit", reactionFile: parsed.positional[0] as string, healthFile: parsed.positional[1] as string, offensiveActionFile: parsed.positional[2] as string, targetActionWasActive: parsed.flags.has("--target-action-active"), json: parsed.flags.has("--json") }; }
+  if (action === "runtime-test") { const parsed = parseArguments(args, new Set(["--json", "--scenario", "--fixed-delta", "--godot", "--keep-session"]), new Set(["--scenario", "--fixed-delta", "--godot"])); requirePositionals(parsed, 3, "damage-reaction runtime-test requires <reaction-file> <health-file> <offensive-action-file>"); const scenario = parsed.flags.get("--scenario"); if (scenario !== "hit-continues" && scenario !== "stagger-interrupts" && scenario !== "defeat-interrupts") throw new CliParseError("--scenario is required and must be one of: hit-continues, stagger-interrupts, defeat-interrupts"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); if (fixedDelta !== undefined && fixedDelta > 1) throw new CliParseError("--fixed-delta must be at most 1"); const godot = parsed.flags.get("--godot"); return { kind: "damage-reaction.runtime-test", reactionFile: parsed.positional[0] as string, healthFile: parsed.positional[1] as string, offensiveActionFile: parsed.positional[2] as string, scenario, ...(fixedDelta === undefined ? {} : { fixedDelta }), ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") }; }
   if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "damage-reaction set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("damage-reaction set <json-value> must be valid JSON"); } return { kind: "damage-reaction.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
   throw new CliParseError(`Unknown damage-reaction command '${action}'`);
 }

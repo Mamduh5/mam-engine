@@ -12,10 +12,12 @@ import { simulateTargetedCombatExchange } from "../combat/targetedCombatExchange
 import { validateActionTimelineDefinition } from "../actionTimeline/actionTimelineValidation";
 import { simulateContact } from "../contactVolume/contactVolumeSimulation";
 import { validateContactVolumeDefinition } from "../contactVolume/contactVolumeValidation";
+import { simulateDamageReactionHit } from "../damageReaction/damageReactionSimulation";
+import { validateDamageReactionDefinition } from "../damageReaction/damageReactionValidation";
 import { validateCameraRuntimeMetrics } from "./cameraRuntimeMetrics";
 import { validateTargetingRuntimePlan } from "./targetingRuntimePlan";
 import { validateTargetingRuntimeMetrics } from "./targetingRuntimeMetrics";
-import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
+import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
 
 export interface ProtocolValidation<T> { valid: boolean; value?: T; errors: string[] }
 
@@ -24,7 +26,7 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   if (!isRecord(value)) return { valid: false, errors: ["request must be an object"] };
   if (value.schemaVersion !== RUNTIME_SCHEMA_VERSION) errors.push("unsupported schemaVersion");
   if (value.commandId !== RUNTIME_RUN_COMMAND) errors.push("unknown commandId");
-  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID && value.fixtureId !== CONTACT_VOLUME_FIXTURE_ID) errors.push("unknown fixtureId");
+  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID && value.fixtureId !== CONTACT_VOLUME_FIXTURE_ID && value.fixtureId !== DAMAGE_REACTION_FIXTURE_ID) errors.push("unknown fixtureId");
   if (typeof value.correlationId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.correlationId)) errors.push("correlationId is missing or unsafe");
   if (typeof value.requestedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value.requestedAt) || !Number.isFinite(Date.parse(value.requestedAt))) errors.push("requestedAt must be an ISO timestamp");
   if (!finiteInRange(value.timeoutMs, 1, 60_000)) errors.push("timeoutMs must be finite and bounded");
@@ -40,8 +42,30 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   else if (value.fixtureId === TARGETED_COMBAT_FIXTURE_ID) validateTargetedCombatPayload(value.payload, errors);
   else if (value.fixtureId === ACTION_TIMELINE_FIXTURE_ID) validateActionTimelinePayload(value.payload, errors);
   else if (value.fixtureId === CONTACT_VOLUME_FIXTURE_ID) validateContactVolumePayload(value.payload, errors);
+  else if (value.fixtureId === DAMAGE_REACTION_FIXTURE_ID) validateDamageReactionPayload(value.payload, errors);
   else if (value.fixtureId === MOVEMENT_FIXTURE_ID) validateMovementPayload(value.payload, errors);
   return errors.length === 0 ? { valid: true, value: value as unknown as RuntimeRequest, errors } : { valid: false, errors };
+}
+
+function validateDamageReactionPayload(payload: Record<string, any>, errors: string[]): void {
+  if (payload.reactionDefinitionKind !== "damage-reaction-profile" || payload.reactionDefinitionSchemaVersion !== 1) errors.push("unsupported damage reaction definition");
+  if (payload.healthDefinitionKind !== "health-profile" || payload.healthDefinitionSchemaVersion !== 1) errors.push("unsupported damage reaction health definition");
+  if (payload.offensiveActionDefinitionKind !== "offensive-action-profile" || payload.offensiveActionDefinitionSchemaVersion !== 1) errors.push("unsupported damage reaction offensive action definition");
+  const reaction = validateDamageReactionDefinition(payload.reactionProfile); if (!reaction.valid) errors.push(...reaction.errors.map((error) => error.message));
+  const health = validateHealthDefinition(payload.healthProfile); if (!health.valid) errors.push(...health.errors.map((error) => error.message));
+  const action = validateOffensiveActionDefinition(payload.offensiveActionProfile); if (!action.valid) errors.push(...action.errors.map((error) => error.message));
+  const scenario = payload.scenario; if (!isRecord(scenario)) { errors.push("scenario must be an object"); return; }
+  if (!["hit-continues", "stagger-interrupts", "defeat-interrupts"].includes(String(scenario.id))) errors.push("unsupported damage reaction scenario");
+  if (scenario.targetActionWasActive !== true) errors.push("damage reaction scenario requires an active target action");
+  if (!finiteInRange(scenario.durationSeconds, 0, 60)) errors.push("durationSeconds must be finite and bounded");
+  if (!finiteInRange(scenario.fixedDeltaSeconds, Number.EPSILON, 1)) errors.push("fixedDeltaSeconds must be finite and bounded");
+  if (reaction.valid && reaction.profile && health.valid && health.profile && action.valid && action.profile && finiteInRange(scenario.fixedDeltaSeconds, Number.EPSILON, 1)) {
+    const simulation = simulateDamageReactionHit(reaction.profile, health.profile, action.profile, true, scenario.fixedDeltaSeconds);
+    if (scenario.durationSeconds !== simulation.reactionTotalSteps * scenario.fixedDeltaSeconds) errors.push("scenario duration must match damage reaction simulation");
+    if (scenario.id === "hit-continues" && (simulation.reactionType !== "hit" || simulation.finalTargetActionState !== "continuing")) errors.push("hit-continues scenario requires a continuing hit reaction");
+    if (scenario.id === "stagger-interrupts" && (simulation.reactionType !== "stagger" || !simulation.targetActionInterrupted)) errors.push("stagger-interrupts scenario requires an interrupting stagger");
+    if (scenario.id === "defeat-interrupts" && (simulation.reactionType !== "defeat" || !simulation.targetActionInterrupted)) errors.push("defeat-interrupts scenario requires an interrupting defeat");
+  }
 }
 
 function validateContactVolumePayload(payload: Record<string, any>, errors: string[]): void {

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "damage-reaction-profile",
+  "id": "stagger-damage-reaction",
+  "displayName": "Stagger Damage Reaction",
+  "staggerThreshold": 20,
+  "hitReactionDurationSeconds": 0.2,
+  "staggerDurationSeconds": 0.6
+}

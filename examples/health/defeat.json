@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "health-profile",
+  "id": "defeat-health",
+  "displayName": "Defeat Health",
+  "maxHealth": 100,
+  "startingHealth": 15
+}

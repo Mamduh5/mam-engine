@@ -63,6 +63,7 @@ import { inspectDamageReaction } from "../application/damageReaction/inspectDama
 import { setDamageReactionValue } from "../application/damageReaction/setDamageReactionValue";
 import { simulateDamageReactionFiles } from "../application/damageReaction/simulateDamageReaction";
 import { validateDamageReactionFile } from "../application/damageReaction/validateDamageReaction";
+import { runDamageReactionRuntimeTest } from "../application/runtime/runDamageReactionRuntimeTest";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -140,6 +141,7 @@ async function dispatch(
     case "damage-reaction.inspect": return inspectDamageReaction(workspaceRoot, command.file);
     case "damage-reaction.validate": return validateDamageReactionFile(workspaceRoot, command.file);
     case "damage-reaction.simulate-hit": return simulateDamageReactionFiles(workspaceRoot, command.reactionFile, command.healthFile, command.offensiveActionFile, command.targetActionWasActive);
+    case "damage-reaction.runtime-test": return runDamageReactionRuntimeTest(workspaceRoot, command.reactionFile, command.healthFile, command.offensiveActionFile, command.scenario, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "damage-reaction.set": return dependencies.setDamageReactionValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "contact-volume.inspect": return inspectContactVolume(workspaceRoot, command.file);
     case "contact-volume.validate": return validateContactVolumeFile(workspaceRoot, command.file);

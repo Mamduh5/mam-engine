@@ -42,9 +42,9 @@ Canonical Phase 4 timeline authoring and real Godot animation-event synchronizat
 
 Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. **Exit condition met:** authored volumes and windows produce deterministic contact reports; no damage, reactions, stagger, weapons, or enemies are claimed complete.
 
-## Phase 6 — Damage, reactions, stagger, and interrupts
+## Phase 6 — Damage, reactions, stagger, and interrupts (complete)
 
-Canonical Phase 6A domain reaction, stagger, and interrupt resolution is complete; real Godot runtime proof remains pending, so the full Phase 6 exit condition is not yet met. **Exit condition:** damage, reaction, stagger, and interrupt rules pass deterministic resolution tests and runtime-fixture measurements with stable reports.
+Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. **Exit condition met:** damage, reaction, stagger, and interrupt rules pass deterministic resolution tests and runtime-fixture measurements with stable reports; weapons, enemies, and encounters are not claimed complete.
 
 ## Phase 7 — First weapon
 
