@@ -44,7 +44,7 @@ Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, determ
 
 ## Phase 6 — Damage, reactions, stagger, and interrupts
 
-Introduce validated combat resolution and reaction state transitions. **Exit condition:** damage, reaction, stagger, and interrupt rules pass deterministic resolution tests and runtime-fixture measurements with stable reports.
+Canonical Phase 6A domain reaction, stagger, and interrupt resolution is complete; real Godot runtime proof remains pending, so the full Phase 6 exit condition is not yet met. **Exit condition:** damage, reaction, stagger, and interrupt rules pass deterministic resolution tests and runtime-fixture measurements with stable reports.
 
 ## Phase 7 — First weapon
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/damage-reaction/v1.schema.json",
+  "title": "mam-engine damage reaction profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "staggerThreshold", "hitReactionDurationSeconds", "staggerDurationSeconds"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "damage-reaction-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "staggerThreshold": { "type": "number" },
+    "hitReactionDurationSeconds": { "type": "number" },
+    "staggerDurationSeconds": { "type": "number" }
+  }
+}

@@ -9,6 +9,10 @@ import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "damage-reaction.inspect"; file: string; json: boolean }
+  | { kind: "damage-reaction.validate"; file: string; json: boolean }
+  | { kind: "damage-reaction.simulate-hit"; reactionFile: string; healthFile: string; offensiveActionFile: string; targetActionWasActive: boolean; json: boolean }
+  | { kind: "damage-reaction.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "contact-volume.inspect"; file: string; json: boolean }
   | { kind: "contact-volume.validate"; file: string; json: boolean }
   | { kind: "contact-volume.simulate-contact"; hitboxFile: string; hurtboxFile: string; fixedDelta?: number; json: boolean }
@@ -96,6 +100,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
   if (group === "stamina") return parseStaminaCommand(action, remaining);
   if (group === "action-timeline") return parseActionTimelineCommand(action, remaining);
   if (group === "contact-volume") return parseContactVolumeCommand(action, remaining);
+  if (group === "damage-reaction") return parseDamageReactionCommand(action, remaining);
   if (group === "combat") return parseCombatCommand(action, remaining);
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
@@ -107,6 +112,13 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseDamageReactionCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `damage-reaction ${action} requires exactly one file argument`); return { kind: `damage-reaction.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
+  if (action === "simulate-hit") { const parsed = parseArguments(args, new Set(["--json", "--target-action-active"])); requirePositionals(parsed, 3, "damage-reaction simulate-hit requires <reaction-file> <health-file> <offensive-action-file>"); return { kind: "damage-reaction.simulate-hit", reactionFile: parsed.positional[0] as string, healthFile: parsed.positional[1] as string, offensiveActionFile: parsed.positional[2] as string, targetActionWasActive: parsed.flags.has("--target-action-active"), json: parsed.flags.has("--json") }; }
+  if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "damage-reaction set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("damage-reaction set <json-value> must be valid JSON"); } return { kind: "damage-reaction.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
+  throw new CliParseError(`Unknown damage-reaction command '${action}'`);
 }
 
 function parseContactVolumeCommand(action: string, args: string[]): ParsedCommand {

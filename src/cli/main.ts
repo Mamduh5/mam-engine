@@ -59,6 +59,10 @@ import { setContactVolumeValue } from "../application/contactVolume/setContactVo
 import { simulateContactVolumeFiles } from "../application/contactVolume/simulateContactVolume";
 import { validateContactVolumeFile } from "../application/contactVolume/validateContactVolume";
 import { runContactVolumeRuntimeTest } from "../application/runtime/runContactVolumeRuntimeTest";
+import { inspectDamageReaction } from "../application/damageReaction/inspectDamageReaction";
+import { setDamageReactionValue } from "../application/damageReaction/setDamageReactionValue";
+import { simulateDamageReactionFiles } from "../application/damageReaction/simulateDamageReaction";
+import { validateDamageReactionFile } from "../application/damageReaction/validateDamageReaction";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -70,6 +74,7 @@ export interface CliApplicationDependencies {
   setStaminaValue: typeof setStaminaValue;
   setActionTimelineValue: typeof setActionTimelineValue;
   setContactVolumeValue: typeof setContactVolumeValue;
+  setDamageReactionValue: typeof setDamageReactionValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -79,7 +84,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -132,6 +137,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "damage-reaction.inspect": return inspectDamageReaction(workspaceRoot, command.file);
+    case "damage-reaction.validate": return validateDamageReactionFile(workspaceRoot, command.file);
+    case "damage-reaction.simulate-hit": return simulateDamageReactionFiles(workspaceRoot, command.reactionFile, command.healthFile, command.offensiveActionFile, command.targetActionWasActive);
+    case "damage-reaction.set": return dependencies.setDamageReactionValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "contact-volume.inspect": return inspectContactVolume(workspaceRoot, command.file);
     case "contact-volume.validate": return validateContactVolumeFile(workspaceRoot, command.file);
     case "contact-volume.simulate-contact": return simulateContactVolumeFiles(workspaceRoot, command.hitboxFile, command.hurtboxFile, command.fixedDelta);

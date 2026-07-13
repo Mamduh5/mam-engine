@@ -18,6 +18,7 @@
     "examples/stamina",
     "examples/action-timeline",
     "examples/contact-volume",
+    "examples/damage-reaction",
     "docs/targeting-editor-v0.1.md",
     "docs/decisions/0007-targeting-runtime-and-camera-framing.md",
     "runtime/godot/project.godot",
@@ -30,6 +31,7 @@
     "schemas/stamina",
     "schemas/action-timeline",
     "schemas/contact-volume",
+    "schemas/damage-reaction",
     "fixtures/movement"
   ],
   "scripts": {

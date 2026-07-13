@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6A domain reaction, stagger, and interrupt resolution is complete; real Godot runtime proof remains pending.
 
 ## Implemented through Phase 2A.2
 
@@ -112,7 +112,7 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, and canonical Phase 5 spherical contact-volume proofs exist; damage reactions, stagger, weapons, enemies, and later combat composition remain roadmap work.
+- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, and canonical Phase 5 spherical contact-volume proofs exist; Phase 6A reaction/stagger/interrupt domain resolution is complete, while its Godot proof, weapons, enemies, and later combat composition remain roadmap work.
 
 ## Documentation
 
