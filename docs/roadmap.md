@@ -54,9 +54,9 @@ Canonical Phase 7 is complete: the definition-driven training weapon now compose
 
 Canonical Phase 8 is complete: the training behemoth's behavior cycle, telegraph timing, target points, targetability, and real Godot hurtbox construction are proven against the TypeScript simulation. **Exit condition met:** behavior and telegraph sequences are authorable, deterministic where specified, measurable, and regression tested; no complete encounter or boss fight is claimed.
 
-## Phase 9 — First complete boss encounter (Phase 9A complete)
+## Phase 9 — First complete boss encounter (Phase 9B complete)
 
-Canonical Phase 9A hunter and arena authoring contracts are complete, including referenced hunter state and validated arena placement. Encounter orchestration and Godot proof remain pending, so full Phase 9 is not complete. **Exit condition:** the encounter runs from validated definitions through headless and interactive fixtures with objective completion/failure reports and recovery tests.
+Canonical Phase 9A hunter and arena authoring contracts and Phase 9B deterministic encounter orchestration are complete, including persistent per-round stamina and enemy-health state with explicit objective and failure reports. Godot encounter proof remains pending, so full Phase 9 is not complete. **Exit condition:** the encounter runs from validated definitions through headless and interactive fixtures with objective completion/failure reports and recovery tests.
 
 ## Phase 10 — Visual editor client
 

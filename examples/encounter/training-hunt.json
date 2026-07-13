@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "encounter-profile",
+  "id": "training-hunt",
+  "displayName": "Training Hunt",
+  "hunterFile": "examples/hunter/training-hunter.json",
+  "weaponFile": "examples/weapon/default.json",
+  "enemyFile": "examples/large-enemy/training-behemoth.json",
+  "arenaFile": "examples/arena/training-arena.json",
+  "maxRounds": 6
+}

@@ -30,9 +30,11 @@ import { validateHunterDefinition } from "../../domain/hunter/hunterValidation";
 import type { HunterProfile } from "../../domain/hunter/hunterTypes";
 import { validateArenaDefinition } from "../../domain/arena/arenaValidation";
 import type { ArenaProfile } from "../../domain/arena/arenaTypes";
+import { validateEncounterDefinition } from "../../domain/encounter/encounterValidation";
+import type { EncounterProfile } from "../../domain/encounter/encounterTypes";
 
 export type { DefinitionKind } from "../../domain/definitions/definitionTypes";
-export type SupportedDefinition = MovementProfile | CameraProfile | TargetingProfile | DefensiveActionProfile | OffensiveActionProfile | HealthProfile | StaminaProfile | ActionTimelineProfile | ContactVolumeProfile | DamageReactionProfile | WeaponProfile | LargeEnemyProfile | HunterProfile | ArenaProfile;
+export type SupportedDefinition = MovementProfile | CameraProfile | TargetingProfile | DefensiveActionProfile | OffensiveActionProfile | HealthProfile | StaminaProfile | ActionTimelineProfile | ContactVolumeProfile | DamageReactionProfile | WeaponProfile | LargeEnemyProfile | HunterProfile | ArenaProfile | EncounterProfile;
 
 export interface DefinitionValidationResult {
   valid: boolean;
@@ -100,12 +102,16 @@ export function validateDefinition(value: unknown): DefinitionValidationResult {
     const result = validateArenaDefinition(value);
     return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
   }
+  if (kind === "encounter-profile") {
+    const result = validateEncounterDefinition(value);
+    return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
+  }
   return {
     valid: false,
     kind: null,
     definition: null,
     schemaVersion: schemaVersion(value),
-    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile, camera-profile, targeting-profile, defensive-action-profile, offensive-action-profile, health-profile, stamina-profile, action-timeline-profile, contact-volume-profile, damage-reaction-profile, weapon-profile, large-enemy-profile, hunter-profile, or arena-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile", "targeting-profile", "defensive-action-profile", "offensive-action-profile", "health-profile", "stamina-profile", "action-timeline-profile", "contact-volume-profile", "damage-reaction-profile", "weapon-profile", "large-enemy-profile", "hunter-profile", "arena-profile"] }]
+    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile, camera-profile, targeting-profile, defensive-action-profile, offensive-action-profile, health-profile, stamina-profile, action-timeline-profile, contact-volume-profile, damage-reaction-profile, weapon-profile, large-enemy-profile, hunter-profile, arena-profile, or encounter-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile", "targeting-profile", "defensive-action-profile", "offensive-action-profile", "health-profile", "stamina-profile", "action-timeline-profile", "contact-volume-profile", "damage-reaction-profile", "weapon-profile", "large-enemy-profile", "hunter-profile", "arena-profile", "encounter-profile"] }]
   };
 }
 

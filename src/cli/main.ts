@@ -80,6 +80,10 @@ import { validateHunterFile } from "../application/hunter/validateHunter";
 import { inspectArena } from "../application/arena/inspectArena";
 import { setArenaValue } from "../application/arena/setArenaValue";
 import { validateArenaFile } from "../application/arena/validateArena";
+import { inspectEncounter } from "../application/encounter/inspectEncounter";
+import { setEncounterValue } from "../application/encounter/setEncounterValue";
+import { simulateEncounterFile } from "../application/encounter/simulateEncounter";
+import { validateEncounterFile } from "../application/encounter/validateEncounter";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -96,6 +100,7 @@ export interface CliApplicationDependencies {
   setLargeEnemyValue: typeof setLargeEnemyValue;
   setHunterValue: typeof setHunterValue;
   setArenaValue: typeof setArenaValue;
+  setEncounterValue: typeof setEncounterValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -105,7 +110,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, setWeaponValue, setLargeEnemyValue, setHunterValue, setArenaValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, setWeaponValue, setLargeEnemyValue, setHunterValue, setArenaValue, setEncounterValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -158,6 +163,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "encounter.inspect": return inspectEncounter(workspaceRoot, command.file);
+    case "encounter.validate": return validateEncounterFile(workspaceRoot, command.file);
+    case "encounter.simulate": return simulateEncounterFile(workspaceRoot, command.file, command.scenario, command.fixedDelta);
+    case "encounter.set": return dependencies.setEncounterValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "hunter.inspect": return inspectHunter(workspaceRoot, command.file);
     case "hunter.validate": return validateHunterFile(workspaceRoot, command.file);
     case "hunter.set": return dependencies.setHunterValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);

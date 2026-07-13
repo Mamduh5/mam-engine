@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/encounter/v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "hunterFile", "weaponFile", "enemyFile", "arenaFile", "maxRounds"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "encounter-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "hunterFile": { "type": "string", "minLength": 1 },
+    "weaponFile": { "type": "string", "minLength": 1 },
+    "enemyFile": { "type": "string", "minLength": 1 },
+    "arenaFile": { "type": "string", "minLength": 1 },
+    "maxRounds": { "type": "integer", "minimum": 1 }
+  }
+}
