@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "stamina-profile",
+  "id": "insufficient-weapon-stamina",
+  "displayName": "Insufficient Weapon Stamina",
+  "maxStamina": 100,
+  "startingStamina": 5
+}

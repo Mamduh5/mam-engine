@@ -68,6 +68,7 @@ import { inspectWeapon } from "../application/weapon/inspectWeapon";
 import { setWeaponValue } from "../application/weapon/setWeaponValue";
 import { simulateWeaponStrikeFiles } from "../application/weapon/simulateWeaponStrike";
 import { validateWeaponFile } from "../application/weapon/validateWeapon";
+import { runWeaponRuntimeTest } from "../application/runtime/runWeaponRuntimeTest";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -146,6 +147,7 @@ async function dispatch(
     case "weapon.inspect": return inspectWeapon(workspaceRoot, command.file);
     case "weapon.validate": return validateWeaponFile(workspaceRoot, command.file);
     case "weapon.simulate-strike": return simulateWeaponStrikeFiles(workspaceRoot, command.weaponFile, command.staminaFile, command.healthFile, command.hurtboxFile, command.reactionFile, command.fixedDelta);
+    case "weapon.runtime-test": return runWeaponRuntimeTest(workspaceRoot, command.weaponFile, command.staminaFile, command.healthFile, command.hurtboxFile, command.reactionFile, command.scenario, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "weapon.set": return dependencies.setWeaponValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "damage-reaction.inspect": return inspectDamageReaction(workspaceRoot, command.file);
     case "damage-reaction.validate": return validateDamageReactionFile(workspaceRoot, command.file);

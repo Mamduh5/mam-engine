@@ -5,6 +5,7 @@ import type { TargetingRuntimeScenario } from "../domain/runtime/targetingRuntim
 import type { StaminaCombatRuntimeScenario } from "../domain/runtime/runtimeProtocol";
 import type { ContactVolumeRuntimeScenario } from "../domain/runtime/runtimeProtocol";
 import type { DamageReactionRuntimeScenario } from "../domain/runtime/runtimeProtocol";
+import type { WeaponRuntimeScenario } from "../domain/runtime/runtimeProtocol";
 import type { TargetedCombatExchangeScenario } from "../domain/combat/targetedCombatExchangeSimulation";
 import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
@@ -13,6 +14,7 @@ export type ParsedCommand =
   | { kind: "weapon.inspect"; file: string; json: boolean }
   | { kind: "weapon.validate"; file: string; json: boolean }
   | { kind: "weapon.simulate-strike"; weaponFile: string; staminaFile: string; healthFile: string; hurtboxFile: string; reactionFile: string; fixedDelta?: number; json: boolean }
+  | { kind: "weapon.runtime-test"; weaponFile: string; staminaFile: string; healthFile: string; hurtboxFile: string; reactionFile: string; scenario: WeaponRuntimeScenario; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "weapon.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "damage-reaction.inspect"; file: string; json: boolean }
   | { kind: "damage-reaction.validate"; file: string; json: boolean }
@@ -124,6 +126,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
 function parseWeaponCommand(action: string, args: string[]): ParsedCommand {
   if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `weapon ${action} requires exactly one file argument`); return { kind: `weapon.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "simulate-strike") { const parsed = parseArguments(args, new Set(["--json", "--fixed-delta"]), new Set(["--fixed-delta"])); requirePositionals(parsed, 5, "weapon simulate-strike requires <weapon-file> <stamina-file> <health-file> <hurtbox-file> <reaction-file>"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); return { kind: "weapon.simulate-strike", weaponFile: parsed.positional[0] as string, staminaFile: parsed.positional[1] as string, healthFile: parsed.positional[2] as string, hurtboxFile: parsed.positional[3] as string, reactionFile: parsed.positional[4] as string, ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") }; }
+  if (action === "runtime-test") { const parsed = parseArguments(args, new Set(["--json", "--scenario", "--fixed-delta", "--godot", "--keep-session"]), new Set(["--scenario", "--fixed-delta", "--godot"])); requirePositionals(parsed, 5, "weapon runtime-test requires <weapon-file> <stamina-file> <health-file> <hurtbox-file> <reaction-file>"); const scenario = parsed.flags.get("--scenario"); if (scenario !== "successful-strike" && scenario !== "insufficient-stamina") throw new CliParseError("--scenario is required and must be one of: successful-strike, insufficient-stamina"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); if (fixedDelta !== undefined && fixedDelta > 1) throw new CliParseError("--fixed-delta must be at most 1"); const godot = parsed.flags.get("--godot"); return { kind: "weapon.runtime-test", weaponFile: parsed.positional[0] as string, staminaFile: parsed.positional[1] as string, healthFile: parsed.positional[2] as string, hurtboxFile: parsed.positional[3] as string, reactionFile: parsed.positional[4] as string, scenario, ...(fixedDelta === undefined ? {} : { fixedDelta }), ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") }; }
   if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "weapon set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("weapon set <json-value> must be valid JSON"); } return { kind: "weapon.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
   throw new CliParseError(`Unknown weapon command '${action}'`);
 }

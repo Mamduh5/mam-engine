@@ -10,6 +10,7 @@ import type { TargetedCombatExchangeScenario } from "../combat/targetedCombatExc
 import type { ActionTimelineProfile } from "../actionTimeline/actionTimelineTypes";
 import type { ContactVolumeProfile } from "../contactVolume/contactVolumeTypes";
 import type { DamageReactionProfile } from "../damageReaction/damageReactionTypes";
+import type { ResolvedWeaponDefinitionPaths, WeaponProfile } from "../weapon/weaponTypes";
 export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
 export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
@@ -26,6 +27,7 @@ export const TARGETED_COMBAT_FIXTURE_ID = "combat/targeted-stamina-exchange" as 
 export const ACTION_TIMELINE_FIXTURE_ID = "action-timeline/basic-animation-events" as const;
 export const CONTACT_VOLUME_FIXTURE_ID = "contact-volume/basic-sphere-overlap" as const;
 export const DAMAGE_REACTION_FIXTURE_ID = "damage-reaction/basic-resolution" as const;
+export const WEAPON_FIXTURE_ID = "weapon/training-strike" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -279,7 +281,46 @@ export interface DamageReactionRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest | ContactVolumeRuntimeRequest | DamageReactionRuntimeRequest;
+export type WeaponRuntimeScenario = "successful-strike" | "insufficient-stamina";
+
+export interface WeaponRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof WEAPON_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    weaponDefinitionKind: "weapon-profile";
+    weaponDefinitionSchemaVersion: 1;
+    weaponProfile: WeaponProfile;
+    resolvedDefinitionPaths: ResolvedWeaponDefinitionPaths;
+    offensiveActionDefinitionKind: "offensive-action-profile";
+    offensiveActionDefinitionSchemaVersion: 1;
+    offensiveActionProfile: OffensiveActionProfile;
+    actionTimelineDefinitionKind: "action-timeline-profile";
+    actionTimelineDefinitionSchemaVersion: 1;
+    actionTimelineProfile: ActionTimelineProfile;
+    hitboxDefinitionKind: "contact-volume-profile";
+    hitboxDefinitionSchemaVersion: 1;
+    hitboxProfile: ContactVolumeProfile;
+    staminaDefinitionKind: "stamina-profile";
+    staminaDefinitionSchemaVersion: 1;
+    staminaProfile: StaminaProfile;
+    healthDefinitionKind: "health-profile";
+    healthDefinitionSchemaVersion: 1;
+    healthProfile: HealthProfile;
+    hurtboxDefinitionKind: "contact-volume-profile";
+    hurtboxDefinitionSchemaVersion: 1;
+    hurtboxProfile: ContactVolumeProfile;
+    reactionDefinitionKind: "damage-reaction-profile";
+    reactionDefinitionSchemaVersion: 1;
+    reactionProfile: DamageReactionProfile;
+    scenario: { id: WeaponRuntimeScenario; durationSeconds: number; fixedDeltaSeconds: number; targetActionWasActive: true };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest | ContactVolumeRuntimeRequest | DamageReactionRuntimeRequest | WeaponRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

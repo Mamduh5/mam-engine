@@ -14,10 +14,10 @@ func configure(hitbox_value: Dictionary, hurtbox_value: Dictionary) -> void:
 func run_scenario(scenario: Dictionary) -> Dictionary:
 	if not ["overlapping-active", "window-miss"].has(scenario.id): return {}
 	var delta: float = float(scenario.fixedDeltaSeconds)
-	var hitbox_start_step: int = _authored_step(float(hitbox_profile.activeStartSeconds), delta)
-	var hitbox_end_step: int = _authored_step(float(hitbox_profile.activeEndSeconds), delta)
-	var hurtbox_start_step: int = _authored_step(float(hurtbox_profile.activeStartSeconds), delta)
-	var hurtbox_end_step: int = _authored_step(float(hurtbox_profile.activeEndSeconds), delta)
+	var hitbox_start_step: int = authored_step(float(hitbox_profile.activeStartSeconds), delta)
+	var hitbox_end_step: int = authored_step(float(hitbox_profile.activeEndSeconds), delta)
+	var hurtbox_start_step: int = authored_step(float(hurtbox_profile.activeStartSeconds), delta)
+	var hurtbox_end_step: int = authored_step(float(hurtbox_profile.activeEndSeconds), delta)
 	var total_steps: int = maxi(hitbox_end_step, hurtbox_end_step)
 	var hitbox_area: Area3D = _create_area("Hitbox", hitbox_profile, 1, 2)
 	var hurtbox_area: Area3D = _create_area("Hurtbox", hurtbox_profile, 2, 1)
@@ -78,4 +78,4 @@ func _settle_physics() -> void:
 	await get_tree().physics_frame
 	physics_frames_advanced += 1
 
-func _authored_step(seconds: float, delta: float) -> int: return maxi(1, ceili(seconds / delta - EPSILON))
+static func authored_step(seconds: float, delta: float) -> int: return maxi(1, ceili(seconds / delta - EPSILON))
