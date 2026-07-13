@@ -1,14 +1,15 @@
 class_name MovementFixtureBody
 extends CharacterBody3D
 
-var profile: Dictionary
+const MovementCore = preload("res://addons/mam_engine/runtime/mam_movement_core.gd")
 const EPSILON := 0.000000000001
+var profile: Dictionary
+var core: RefCounted
 
 func configure(value: Dictionary) -> void:
-	profile = value
-	position = Vector3(0, 0.9, 0)
-	velocity = Vector3.ZERO
-	rotation = Vector3.ZERO
+	if core != null: core.unbind()
+	profile = value; position = Vector3(0, 0.9, 0); velocity = Vector3.ZERO; rotation = Vector3.ZERO
+	core = MovementCore.new(); core.bind(self, profile)
 
 func run_scenario(scenario: Dictionary) -> Dictionary:
 	match scenario.id:
@@ -19,111 +20,50 @@ func run_scenario(scenario: Dictionary) -> Dictionary:
 		"turn": return await _turn(scenario)
 	return {}
 
-func _direction(camera_yaw_degrees: float) -> Vector3:
-	return Basis(Vector3.UP, deg_to_rad(camera_yaw_degrees)) * Vector3.FORWARD
-
-func _move_horizontal(direction: Vector3, speed: float, delta: float) -> void:
-	velocity.x = direction.x * speed
-	velocity.z = direction.z * speed
-	velocity.y = 0.0
-	if direction.length_squared() > EPSILON:
-		var target_yaw := atan2(-direction.x, -direction.z)
-		rotation.y = rotate_toward(rotation.y, target_yaw, deg_to_rad(float(profile.ground.rotationSpeedDegrees)) * delta)
-	move_and_slide()
+func _basis(yaw: float) -> Dictionary:
+	var basis := Basis(Vector3.UP, deg_to_rad(yaw))
+	return {"forward": basis * Vector3.FORWARD, "right": basis * Vector3.RIGHT}
+func _fixture_input(move: Vector2, sprint := false, dodge := false) -> Dictionary:
+	return {"movement": move, "walk": false, "sprintHeld": sprint, "dodgePressed": dodge}
+func _step(delta: float, input: Dictionary, yaw: float) -> Dictionary:
+	await get_tree().physics_frame
+	return core.physics_step(delta, input, _basis(yaw)).data
 
 func _accelerate(scenario: Dictionary) -> Dictionary:
-	var steps := ceili(float(scenario.durationSeconds) / float(scenario.fixedDeltaSeconds) - EPSILON)
-	var speed := 0.0
-	var distance := 0.0
-	var maximum_speed := 0.0
-	var time_to_ninety_five: Variant = null
-	var direction := _direction(float(scenario.cameraYawDegrees))
+	var delta := float(scenario.fixedDeltaSeconds); var steps := ceili(float(scenario.durationSeconds) / delta - EPSILON); var start := position; var maximum := 0.0; var time_95: Variant = null; var state := {}
 	for step in range(1, steps + 1):
-		await get_tree().physics_frame
-		speed = min(float(profile.ground.runSpeed), speed + float(profile.ground.acceleration) * float(scenario.fixedDeltaSeconds))
-		distance += speed * float(scenario.fixedDeltaSeconds)
-		maximum_speed = max(maximum_speed, speed)
-		if time_to_ninety_five == null and speed >= float(profile.ground.runSpeed) * 0.95:
-			time_to_ninety_five = step * float(scenario.fixedDeltaSeconds)
-		_move_horizontal(direction, speed, float(scenario.fixedDeltaSeconds))
-	return _with_position({"durationSeconds": steps * float(scenario.fixedDeltaSeconds), "finalSpeed": speed, "maximumObservedSpeed": maximum_speed, "timeToNinetyFivePercentSeconds": time_to_ninety_five, "totalDistance": distance, "physicsSteps": steps})
+		state = await _step(delta, _fixture_input(Vector2(0, 1)), float(scenario.cameraYawDegrees)); maximum = maxf(maximum, state.horizontalSpeed)
+		if time_95 == null and state.horizontalSpeed >= float(profile.ground.runSpeed) * 0.95: time_95 = step * delta
+	return _with_position({"durationSeconds": steps * delta, "finalSpeed": state.horizontalSpeed, "maximumObservedSpeed": maximum, "timeToNinetyFivePercentSeconds": time_95, "totalDistance": start.distance_to(position), "physicsSteps": steps})
 
 func _stop(scenario: Dictionary) -> Dictionary:
-	var maximum_steps := ceili(float(scenario.durationSeconds) / float(scenario.fixedDeltaSeconds) - EPSILON)
-	var speed: float = float(profile.ground.runSpeed)
-	var distance := 0.0
-	var stopping_time: Variant = null
-	var steps := 0
-	var direction := _direction(float(scenario.cameraYawDegrees))
-	for step in range(1, maximum_steps + 1):
-		await get_tree().physics_frame
-		speed = max(0.0, speed - float(profile.ground.deceleration) * float(scenario.fixedDeltaSeconds))
-		distance += speed * float(scenario.fixedDeltaSeconds)
-		steps = step
-		_move_horizontal(direction, speed, float(scenario.fixedDeltaSeconds))
-		if speed == 0.0:
-			stopping_time = step * float(scenario.fixedDeltaSeconds)
-			break
-	return _with_position({"stoppingTimeSeconds": stopping_time, "stoppingDistance": distance, "finalSpeed": speed, "physicsSteps": steps})
+	var delta := float(scenario.fixedDeltaSeconds)
+	while Vector2(velocity.x, velocity.z).length() < float(profile.ground.runSpeed) - EPSILON: await _step(delta, _fixture_input(Vector2(0, 1)), float(scenario.cameraYawDegrees))
+	position = Vector3(0, 0.9, 0); var start := position; var max_steps := ceili(float(scenario.durationSeconds) / delta - EPSILON); var stopped: Variant = null; var state := {}; var steps := 0
+	for step in range(1, max_steps + 1):
+		state = await _step(delta, _fixture_input(Vector2.ZERO), float(scenario.cameraYawDegrees)); steps = step
+		if state.horizontalSpeed <= EPSILON: stopped = step * delta; break
+	return _with_position({"stoppingTimeSeconds": stopped, "stoppingDistance": start.distance_to(position), "finalSpeed": state.horizontalSpeed, "physicsSteps": steps})
 
 func _sprint(scenario: Dictionary) -> Dictionary:
-	var steps := ceili(float(scenario.durationSeconds) / float(scenario.fixedDeltaSeconds) - EPSILON)
-	var speed: float = float(profile.ground.runSpeed)
-	var stamina: float = float(profile.stamina.maximum)
-	var distance := 0.0
-	var consumed := 0.0
-	var unavailable: Variant = null
-	var sprinting: bool = stamina >= float(profile.stamina.minimumToStartSprint)
-	var time_since_sprint := 0.0
-	var direction := _direction(float(scenario.cameraYawDegrees))
+	var delta := float(scenario.fixedDeltaSeconds)
+	while Vector2(velocity.x, velocity.z).length() < float(profile.ground.runSpeed) - EPSILON: await _step(delta, _fixture_input(Vector2(0, 1)), float(scenario.cameraYawDegrees))
+	position = Vector3(0, 0.9, 0); var start := position; var steps := ceili(float(scenario.durationSeconds) / delta - EPSILON); var unavailable: Variant = null; var consumed := 0.0; var previous := float(profile.stamina.maximum); var state := {}
 	for step in range(1, steps + 1):
-		await get_tree().physics_frame
-		if sprinting:
-			var cost: float = min(stamina, float(profile.stamina.sprintCostPerSecond) * float(scenario.fixedDeltaSeconds))
-			stamina -= cost; consumed += cost; time_since_sprint = 0.0
-			if stamina <= EPSILON and float(profile.stamina.sprintCostPerSecond) > 0.0:
-				stamina = 0.0; sprinting = false
-				if unavailable == null: unavailable = step * float(scenario.fixedDeltaSeconds)
-		else:
-			time_since_sprint += float(scenario.fixedDeltaSeconds)
-			if time_since_sprint >= float(profile.stamina.regenerationDelaySeconds): stamina = min(float(profile.stamina.maximum), stamina + float(profile.stamina.regenerationPerSecond) * float(scenario.fixedDeltaSeconds))
-			if stamina >= float(profile.stamina.minimumToStartSprint): sprinting = true
-		var target: float = float(profile.ground.sprintSpeed) if sprinting else float(profile.ground.runSpeed)
-		var rate: float = float(profile.ground.acceleration) if target >= speed else float(profile.ground.deceleration)
-		speed = min(target, speed + rate * float(scenario.fixedDeltaSeconds)) if target >= speed else max(target, speed - rate * float(scenario.fixedDeltaSeconds))
-		distance += speed * float(scenario.fixedDeltaSeconds)
-		_move_horizontal(direction, speed, float(scenario.fixedDeltaSeconds))
-	return _with_position({"durationSeconds": steps * float(scenario.fixedDeltaSeconds), "totalDistance": distance, "finalSpeed": speed, "staminaConsumed": consumed, "finalStamina": stamina, "timeUntilSprintUnavailableSeconds": unavailable, "physicsSteps": steps})
+		state = await _step(delta, _fixture_input(Vector2(0, 1), true), float(scenario.cameraYawDegrees)); consumed += maxf(0.0, previous - float(state.stamina)); previous = state.stamina
+		if unavailable == null and not state.sprinting: unavailable = step * delta
+	return _with_position({"durationSeconds": steps * delta, "totalDistance": start.distance_to(position), "finalSpeed": state.horizontalSpeed, "staminaConsumed": consumed, "finalStamina": state.stamina, "timeUntilSprintUnavailableSeconds": unavailable, "physicsSteps": steps})
 
 func _dodge(scenario: Dictionary) -> Dictionary:
-	var steps := ceili(float(profile.dodge.durationSeconds) / float(scenario.fixedDeltaSeconds) - EPSILON)
-	var elapsed := 0.0
-	var distance := 0.0
-	var speed: float = float(profile.dodge.distance) / float(profile.dodge.durationSeconds)
-	var direction := _direction(float(scenario.cameraYawDegrees))
-	for _step in range(steps):
-		await get_tree().physics_frame
-		var delta: float = min(float(scenario.fixedDeltaSeconds), float(profile.dodge.durationSeconds) - elapsed)
-		var desired_direction := _direction(float(scenario.cameraYawDegrees))
-		direction = direction.lerp(desired_direction, float(profile.dodge.steeringMultiplier)).normalized()
-		distance += speed * delta; elapsed += delta
-		_move_horizontal(direction, speed * delta / float(scenario.fixedDeltaSeconds), float(scenario.fixedDeltaSeconds))
-	return _with_position({"configuredDistance": profile.dodge.distance, "simulatedDistance": distance, "durationSeconds": profile.dodge.durationSeconds, "invulnerabilityStartSeconds": profile.dodge.invulnerabilityStartSeconds, "invulnerabilityEndSeconds": profile.dodge.invulnerabilityEndSeconds, "invulnerabilityDurationSeconds": float(profile.dodge.invulnerabilityEndSeconds) - float(profile.dodge.invulnerabilityStartSeconds), "staminaConsumed": profile.dodge.staminaCost, "physicsSteps": steps})
+	var delta := float(scenario.fixedDeltaSeconds); var steps := ceili(float(profile.dodge.durationSeconds) / delta - EPSILON); var start := position; var state := {}
+	for step in range(steps): state = await _step(delta, _fixture_input(Vector2(0, 1), false, step == 0), float(scenario.cameraYawDegrees))
+	return _with_position({"configuredDistance": profile.dodge.distance, "simulatedDistance": start.distance_to(position), "durationSeconds": profile.dodge.durationSeconds, "invulnerabilityStartSeconds": profile.dodge.invulnerabilityStartSeconds, "invulnerabilityEndSeconds": profile.dodge.invulnerabilityEndSeconds, "invulnerabilityDurationSeconds": float(profile.dodge.invulnerabilityEndSeconds) - float(profile.dodge.invulnerabilityStartSeconds), "staminaConsumed": profile.dodge.staminaCost, "physicsSteps": steps})
 
 func _turn(scenario: Dictionary) -> Dictionary:
-	var target := 90.0
-	var yaw := 0.0
-	var steps := 0
-	var maximum_angular_speed := 0.0
-	var maximum_step: float = float(profile.ground.rotationSpeedDegrees) * float(scenario.fixedDeltaSeconds)
-	while yaw < target and steps < 10000:
-		await get_tree().physics_frame
-		var change: float = min(maximum_step, target - yaw)
-		yaw += change; steps += 1
-		maximum_angular_speed = max(maximum_angular_speed, change / float(scenario.fixedDeltaSeconds))
-		rotation.y = deg_to_rad(yaw)
-	return _with_position({"targetYawDegrees": target, "finalYawDegrees": yaw, "maximumAngularSpeedDegreesPerSecond": maximum_angular_speed, "timeToTargetYawSeconds": steps * float(scenario.fixedDeltaSeconds), "physicsSteps": steps})
+	var delta := float(scenario.fixedDeltaSeconds); var steps := 0; var previous := rotation.y; var maximum := 0.0
+	while absf(rad_to_deg(rotation.y) + 90.0) > 0.0001 and steps < 10000:
+		await _step(delta, _fixture_input(Vector2(0, 1)), -90.0); steps += 1; maximum = maxf(maximum, absf(rad_to_deg(angle_difference(previous, rotation.y))) / delta); previous = rotation.y
+	return _with_position({"targetYawDegrees": 90.0, "finalYawDegrees": absf(rad_to_deg(rotation.y)), "maximumAngularSpeedDegreesPerSecond": maximum, "timeToTargetYawSeconds": steps * delta, "physicsSteps": steps})
 
 func _with_position(metrics: Dictionary) -> Dictionary:
-	metrics.finalPosition = {"x": position.x, "y": position.y, "z": position.z}
-	return metrics
+	metrics.finalPosition = {"x": position.x, "y": position.y, "z": position.z}; return metrics

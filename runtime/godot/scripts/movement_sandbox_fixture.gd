@@ -3,24 +3,22 @@ extends Node3D
 
 const EPSILON: float = 0.000000000001
 const ARENA_RADIUS: float = 11.0
+const MovementRuntime = preload("res://addons/mam_engine/runtime/mam_movement_runtime.gd")
 
 @onready var actor: CharacterBody3D = $Player
 @onready var camera: Camera3D = $Camera3D
 @onready var status_label: Label = $Hud/Panel/Status
 
 var profile: Dictionary = {}
-var stamina: float = 0.0
-var sprinting: bool = false
-var regeneration_delay: float = 0.0
-var dodge_remaining: float = 0.0
-var dodge_direction: Vector3 = Vector3.FORWARD
-var previous_space: bool = false
+var runtime: RefCounted
+var runtime_state: Dictionary = {}
 
 func configure(value: Dictionary) -> void:
 	profile = value
-	stamina = float(profile.stamina.maximum)
 	actor.position = Vector3(0.0, 0.9, 0.0)
 	actor.velocity = Vector3.ZERO
+	runtime = MovementRuntime.new()
+	runtime_state = runtime.bind(actor, profile).data
 	_update_camera()
 
 func run_scenario(scenario: Dictionary) -> Dictionary:
@@ -39,41 +37,21 @@ func run_scenario(scenario: Dictionary) -> Dictionary:
 		await get_tree().physics_frame
 		steps += 1
 		var control: Dictionary = _control_state(steps, automated)
-		var input_direction := Vector3(float(control.x), 0.0, float(control.z))
+		var input_direction := Vector2(float(control.x), -float(control.z))
 		if input_direction.length_squared() > EPSILON:
 			input_direction = input_direction.normalized()
 			move_input_steps += 1
 		var sprint_pressed: bool = bool(control.sprint)
 		if sprint_pressed: sprint_input_steps += 1
 		var space_pressed: bool = bool(control.dodge)
-		if space_pressed and not previous_space and dodge_remaining <= 0.0 and stamina >= float(profile.dodge.staminaCost):
-			stamina -= float(profile.dodge.staminaCost)
-			regeneration_delay = float(profile.stamina.regenerationDelaySeconds)
-			dodge_remaining = float(profile.dodge.durationSeconds)
-			dodge_direction = input_direction if input_direction.length_squared() > EPSILON else Vector3.FORWARD
-			dodge_input_count += 1
-			dodge_observed = true
-		previous_space = space_pressed
 		var before: Vector3 = actor.position
-		if dodge_remaining > 0.0:
-			var dodge_speed: float = float(profile.dodge.distance) / float(profile.dodge.durationSeconds)
-			actor.velocity = dodge_direction * dodge_speed
-			dodge_remaining = maxf(0.0, dodge_remaining - fixed_delta)
-		else:
-			_update_stamina(sprint_pressed, fixed_delta)
-			var target_speed: float = float(profile.ground.sprintSpeed) if sprinting else float(profile.ground.runSpeed)
-			var desired: Vector3 = input_direction * target_speed
-			var rate: float = float(profile.ground.acceleration) if desired.length() >= actor.velocity.length() else float(profile.ground.deceleration)
-			actor.velocity = actor.velocity.move_toward(desired, rate * fixed_delta)
-			if sprinting: sprint_observed = true
-		actor.velocity.y = 0.0
-		actor.move_and_slide()
+		var step_result: Dictionary = runtime.physics_step(fixed_delta, {"movement": input_direction, "walk": false, "sprintHeld": sprint_pressed, "dodgePressed": space_pressed}, {"forward": Vector3.FORWARD, "right": Vector3.RIGHT})
+		runtime_state = step_result.data
+		if runtime_state.dodgeAccepted: dodge_input_count += 1; dodge_observed = true
+		if runtime_state.sprinting: sprint_observed = true
 		_clamp_to_arena()
 		distance_travelled += before.distance_to(actor.position)
 		maximum_speed = maxf(maximum_speed, Vector2(actor.velocity.x, actor.velocity.z).length())
-		if actor.velocity.length_squared() > EPSILON:
-			var target_yaw: float = atan2(-actor.velocity.x, -actor.velocity.z)
-			actor.rotation.y = rotate_toward(actor.rotation.y, target_yaw, deg_to_rad(float(profile.ground.rotationSpeedDegrees)) * fixed_delta)
 		_update_camera()
 		_update_hud(automated)
 		if automated and steps >= 180: break
@@ -88,7 +66,7 @@ func run_scenario(scenario: Dictionary) -> Dictionary:
 		"distanceTravelled": distance_travelled,
 		"maximumObservedSpeed": maximum_speed,
 		"startingStamina": float(profile.stamina.maximum),
-		"remainingStamina": stamina,
+		"remainingStamina": runtime_state.stamina,
 		"sprintObserved": sprint_observed,
 		"dodgeObserved": dodge_observed,
 		"moveInputSteps": move_input_steps,
@@ -107,18 +85,6 @@ func _control_state(step: int, automated: bool) -> Dictionary:
 		"dodge": Input.is_key_pressed(KEY_SPACE)
 	}
 
-func _update_stamina(sprint_pressed: bool, delta: float) -> void:
-	if sprint_pressed and (sprinting or stamina >= float(profile.stamina.minimumToStartSprint)) and stamina > 0.0:
-		sprinting = true
-		var consumed: float = minf(stamina, float(profile.stamina.sprintCostPerSecond) * delta)
-		stamina -= consumed
-		regeneration_delay = float(profile.stamina.regenerationDelaySeconds)
-		if stamina <= EPSILON: stamina = 0.0; sprinting = false
-	else:
-		sprinting = false
-		regeneration_delay = maxf(0.0, regeneration_delay - delta)
-		if regeneration_delay <= 0.0: stamina = minf(float(profile.stamina.maximum), stamina + float(profile.stamina.regenerationPerSecond) * delta)
-
 func _clamp_to_arena() -> void:
 	var horizontal := Vector2(actor.position.x, actor.position.z)
 	if horizontal.length() > ARENA_RADIUS:
@@ -132,8 +98,8 @@ func _update_camera() -> void:
 
 func _update_hud(automated: bool) -> void:
 	var speed: float = Vector2(actor.velocity.x, actor.velocity.z).length()
-	var mode: String = "DODGE" if dodge_remaining > 0.0 else ("SPRINT" if sprinting else ("MOVE" if speed > 0.01 else "IDLE"))
-	status_label.text = "WASD Move   Shift Sprint   Space Dodge   Escape Exit\nSpeed: %.2f   Stamina: %.1f / %.1f   Mode: %s%s" % [speed, stamina, float(profile.stamina.maximum), mode, "   [AUTOMATED]" if automated else ""]
+	var mode: String = str(runtime_state.get("mode", "IDLE"))
+	status_label.text = "WASD Move   Shift Sprint   Space Dodge   Escape Exit\nSpeed: %.2f   Stamina: %.1f / %.1f   Mode: %s%s" % [speed, float(runtime_state.get("stamina", 0.0)), float(profile.stamina.maximum), mode, "   [AUTOMATED]" if automated else ""]
 
 func _vector(value: Vector3) -> Dictionary:
 	return { "x": value.x, "y": value.y, "z": value.z }

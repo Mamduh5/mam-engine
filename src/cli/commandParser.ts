@@ -16,6 +16,8 @@ export type ParsedCommand =
   | { kind: "project.init"; directory?: string; json: boolean }
   | { kind: "project.validate"; json: boolean }
   | { kind: "project.play"; godot?: string; keepSession: boolean; json: boolean }
+  | { kind: "godot.consumer.install"; project?: string; json: boolean }
+  | { kind: "godot.consumer.sync"; project?: string; check: boolean; json: boolean }
   | { kind: "editor.serve"; host: string; port: number; workspace?: string; json: boolean }
   | { kind: "encounter.inspect"; file: string; json: boolean }
   | { kind: "encounter.validate"; file: string; json: boolean }
@@ -118,6 +120,7 @@ const targetingRuntimeScenarios = new Set<TargetingRuntimeScenario>(["acquire", 
 
 export const SUPPORTED_COMMAND_ACTIONS = {
   project: ["init", "validate", "play"],
+  godot: ["consumer"],
   movement: ["create", "inspect", "validate", "simulate", "set", "runtime-test"],
   camera: ["inspect", "validate", "simulate", "set", "runtime-test"],
   targeting: ["inspect", "validate", "simulate", "set", "runtime-test"],
@@ -156,6 +159,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
   }
 
   if (group === "project") return parseProjectCommand(action, remaining);
+  if (group === "godot") return parseGodotCommand(action, remaining);
   if (group === "movement") {
     return parseMovementCommand(action, remaining);
   }
@@ -185,6 +189,21 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseGodotCommand(action: string, args: string[]): ParsedCommand {
+  if (action !== "consumer") throw new CliParseError(`Unknown godot command '${action}'`);
+  const [consumerAction, ...remaining] = args;
+  if (consumerAction !== "install" && consumerAction !== "sync") {
+    throw new CliParseError("godot consumer requires either install or sync");
+  }
+  const allowed = consumerAction === "sync" ? new Set(["--project", "--check", "--json"]) : new Set(["--project", "--json"]);
+  const parsed = parseArguments(remaining, allowed, new Set(["--project"]));
+  requirePositionals(parsed, 0, `godot consumer ${consumerAction} does not accept positional arguments`);
+  const project = parsed.flags.get("--project");
+  return consumerAction === "install"
+    ? { kind: "godot.consumer.install", ...(typeof project === "string" ? { project } : {}), json: parsed.flags.has("--json") }
+    : { kind: "godot.consumer.sync", ...(typeof project === "string" ? { project } : {}), check: parsed.flags.has("--check"), json: parsed.flags.has("--json") };
 }
 
 function parseProjectCommand(action: string, args: string[]): ParsedCommand {

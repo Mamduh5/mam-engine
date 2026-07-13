@@ -26,6 +26,8 @@ Use fixed timesteps and explicit inputs to assert ordered samples and metrics. M
 
 Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute the controlled fixture categories recorded in the v0.1 capability manifest, and compare runtime metrics with named tolerances. This includes movement/camera/targeting behavior and the later scoped action, combat, weapon, large-enemy, and encounter proofs. These tests require compatible Godot 4.7 stable and run in separate slower integration jobs.
 
+The 0.2 production-consumer tier additionally packs npm, installs through the generated `.bin/mam`, creates a separate project with spaces in its path, installs/syncs twice, removes the npm prefix, and runs a consumer-owned Godot scene. It proves movement state and loader/binding failures without fixture scenes or runtime transport.
+
 ### Runtime fixture smoke tests
 
 **Phase 1B.** Prove each registered fixture loads, consumes the expected definition version, emits a report, changes no forbidden files, and exits cleanly. They require Godot and should remain narrow.

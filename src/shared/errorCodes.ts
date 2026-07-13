@@ -247,6 +247,20 @@ export const ErrorCodes = {
   RuntimeMetricToleranceExceeded: "RUNTIME_METRIC_TOLERANCE_EXCEEDED",
   FixtureUnknown: "FIXTURE_UNKNOWN",
   RuntimeScenarioUnsupported: "RUNTIME_SCENARIO_UNSUPPORTED",
+  GodotConsumerProjectInvalid: "GODOT_CONSUMER_PROJECT_INVALID",
+  GodotConsumerAssetMissing: "GODOT_CONSUMER_ASSET_MISSING",
+  GodotConsumerManifestInvalid: "GODOT_CONSUMER_MANIFEST_INVALID",
+  GodotConsumerManagedFileDrift: "GODOT_CONSUMER_MANAGED_FILE_DRIFT",
+  GodotConsumerUnownedConflict: "GODOT_CONSUMER_UNOWNED_CONFLICT",
+  GodotConsumerInstallFailed: "GODOT_CONSUMER_INSTALL_FAILED",
+  GodotConsumerRecoveryFailed: "GODOT_CONSUMER_RECOVERY_FAILED",
+  GodotConsumerAddonMissing: "GODOT_CONSUMER_ADDON_MISSING",
+  GodotConsumerAddonStale: "GODOT_CONSUMER_ADDON_STALE",
+  GodotRuntimeBundleMissing: "GODOT_RUNTIME_BUNDLE_MISSING",
+  GodotRuntimeBundleMalformed: "GODOT_RUNTIME_BUNDLE_MALFORMED",
+  GodotRuntimeBundleStale: "GODOT_RUNTIME_BUNDLE_STALE",
+  GodotRuntimeBundleWriteFailed: "GODOT_RUNTIME_BUNDLE_WRITE_FAILED",
+  GodotConsumerWriteScopeAuditFailed: "GODOT_CONSUMER_WRITE_SCOPE_AUDIT_FAILED",
   InternalError: "INTERNAL_ERROR"
 } as const;
 

@@ -41,6 +41,8 @@ Recovery status is `not_required`, `restored`, or `failed`. The requested operat
 
 The `mam.runtime/v1` Godot protocol is implemented using atomic files under an isolated runtime session directory. It dispatches validated fixture IDs `movement/basic-ground`, `camera/basic-third-person`, and `targeting/basic-lock-on`; unknown fixtures remain rejected.
 
+Production consumers use a separate transport-free contract. `mam godot consumer sync` writes `mam.godot-runtime-bundle/v1`, whose integrity-protected payload contains the validated movement profile and exact source-byte SHA-256. The loader returns `{status,data,diagnostics}` and the movement API uses explicit `bind`, `physics_step`, and `unbind`.
+
 ## Purpose
 
 The runtime protocol is the versioned JSON boundary between engine/application services and the Godot runtime adapter. Transport is process-per-run with complete request, readiness, and response JSON files. Standard streams are bounded diagnostic evidence and are never parsed as protocol.

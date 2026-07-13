@@ -8,4 +8,6 @@ Camera behavior uses direct bounded orbit updates, position half-life on camera 
 
 Godot is not a definition store. It receives the complete already validated profile in the atomic request and never reads or writes canonical camera JSON. `.godot/` and runtime sessions are the only internal generated paths.
 
+The adjacent `addons/mam_engine/` tree is the production movement consumer source. It is scene-free and transport-free. The controlled movement fixture delegates behavior to the same core; camera and targeting fixtures remain test-only.
+
 The targeting scene uses marker nodes and dedicated-mask controlled walls with real ray queries; markers have no gameplay semantics. Not implemented: persistent sessions, enemies, combat systems, screen shake, camera zones, cutscenes, photo mode, visual-editor controls, animation, audio, VFX, weapons, damage, multiplayer, or networking.

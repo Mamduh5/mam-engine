@@ -9,6 +9,10 @@ export const COMMAND_HELP: Record<CommandGroup, readonly string[]> = {
     "project validate [--json]",
     `project play ${commonRuntimeFlags}`
   ],
+  godot: [
+    "godot consumer install [--project <directory>] [--json]",
+    "godot consumer sync [--project <directory>] [--check] [--json]"
+  ],
   movement: [
     "movement create <file> [--json]",
     "movement inspect <file> [--json]",

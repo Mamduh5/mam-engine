@@ -1,5 +1,5 @@
 {
-  "releaseVersion": "0.1.0",
+  "releaseVersion": "0.2.0",
   "completedCanonicalPhases": [
     0,
     1,
@@ -32,6 +32,7 @@
   ],
   "cliCommandGroups": [
     "project",
+    "godot",
     "movement",
     "camera",
     "targeting",
@@ -93,7 +94,8 @@
     "encounter"
   ],
   "explicitlyUnsupportedCapabilities": [
-    "production-gameplay",
+    "production-camera-runtime",
+    "production-targeting-runtime",
     "asset-authoring",
     "progression",
     "multiplayer",

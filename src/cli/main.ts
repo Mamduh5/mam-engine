@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import path from "node:path";
+
 import { inspectMovement } from "../application/movement/inspectMovement";
 import { inspectCamera } from "../application/camera/inspectCamera";
 import { setCameraValue } from "../application/camera/setCameraValue";
@@ -91,6 +93,7 @@ import { runEncounterRecoveryTest } from "../application/runtime/runEncounterRec
 import { serveEditor } from "../application/editor/serveEditor";
 import { createMovementProfile, initProject, validateProject } from "../application/project/projectOperations";
 import { runProjectPlay } from "../application/runtime/runProjectPlay";
+import { installGodotConsumer, syncGodotConsumer } from "../application/godotConsumer/godotConsumerOperations";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -180,6 +183,8 @@ async function dispatch(
     case "project.init": return initProject(workspaceRoot, command.directory);
     case "project.validate": return validateProject(workspaceRoot);
     case "project.play": return runProjectPlay(workspaceRoot, { godot: command.godot, keepSession: command.keepSession });
+    case "godot.consumer.install": return installGodotConsumer(path.resolve(workspaceRoot, command.project ?? "."));
+    case "godot.consumer.sync": return syncGodotConsumer(path.resolve(workspaceRoot, command.project ?? "."), command.check);
     case "editor.serve": return serveEditor(workspaceRoot, command.host, command.port, command.workspace);
     case "encounter.inspect": return inspectEncounter(workspaceRoot, command.file);
     case "encounter.validate": return validateEncounterFile(workspaceRoot, command.file);

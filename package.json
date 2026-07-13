@@ -1,6 +1,6 @@
 {
   "name": "mam-engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Codex-native game engine and editor contracts",
   "license": "UNLICENSED",
@@ -33,6 +33,7 @@
     "runtime/godot/README.md",
     "runtime/godot/scenes",
     "runtime/godot/scripts",
+    "runtime/godot/addons/mam_engine",
     "schemas/defensive-action",
     "schemas/offensive-action",
     "schemas/health",

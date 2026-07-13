@@ -13,6 +13,7 @@ Canonical domains, JSON Schema, and semantic validation
                         |
                         v
 Runtime protocol -> process-per-run Godot adapter -> fixture (implemented in Phase 1B)
+Production bundle -> installed scene-free Godot addon -> game-owned CharacterBody3D
                         |
                         v
 Machine-readable reports
@@ -50,6 +51,10 @@ Translates validated definitions and fixture commands into Godot execution, then
 
 Provide controlled worlds, initial state, inputs, clocks, and expected measurements for one vertical slice. A fixture cannot add a private authoring model.
 
+### Production Godot consumer - movement foundation implemented in 0.2.0
+
+The CLI installs only a manifest-owned addon and generates an integrity-protected movement bundle from the canonically validated entry profile. The game owns scenes, input, camera basis, and lifecycle. One shared Godot movement core owns bound-body movement for both the production wrapper and controlled movement fixture.
+
 The runtime dispatcher validates `mam.runtime/v1` and selects one of the controlled fixture categories recorded in the v0.1 capability manifest. All use the same atomic request/readiness/response transport, bounded process owner, session store, correlation checks, and changed-file audit. Godot receives validated profiles and ephemeral scenario data rather than treating source definition paths as runtime truth.
 
 Targeting Phase 2B.2 keeps candidates, world events, and lock state as ephemeral runtime inputs. The targeting fixture performs real dedicated-mask ray queries and independently evaluates acquisition, retention, switching, and framing using existing camera fields; it adds no canonical properties or combat semantics.
@@ -77,6 +82,7 @@ Node built-in tests verify schema, validation, simulation, transactions, recover
 - Schema and domain code do not depend on Godot.
 - The Godot adapter depends on published schemas and protocol contracts, not CLI presentation.
 - Fixtures depend on the runtime adapter and validated definitions; engine logic does not depend on a particular fixture.
+- Production movement never depends on fixture scenes, process transport, npm, or the engine checkout.
 - Reports use shared protocol/domain types rather than scraping logs.
 - Persistence and runtime launch require validation first.
 - Persistent operations require an explicit allowed-file plan and a post-operation changed-file audit.

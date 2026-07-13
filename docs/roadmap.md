@@ -2,6 +2,10 @@
 
 Progress is gated by evidence, not dates. A phase exits only when its contracts, validation, machine-readable inspection, applicable deterministic behavior, runtime-fixture proof, safety behavior, and automated tests are complete. Later phase names describe direction and do not authorize early implementation.
 
+## Production consumer track
+
+ENGINE-GAP-001A is complete in 0.2.0: public install/sync commands, deterministic movement bundle, scene-free Godot addon, shared fixture/production movement core, and packed external-consumer evidence. ENGINE-GAP-001B production camera control and ENGINE-GAP-001C production targeting remain deferred; controlled camera/targeting fixtures are not production consumers.
+
 ## Phase 0 — Repository foundation and contracts (complete)
 
 Establish product scope, dependency boundaries, ownership, runtime protocol, testing approach, initial milestone, and architectural decisions. **Exit condition:** all foundation documents are internally consistent, linked, non-empty, and validated for scope; no feature is claimed as implemented.

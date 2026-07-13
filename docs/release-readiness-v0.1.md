@@ -1,4 +1,10 @@
-# v0.1 release readiness
+# v0.2 release readiness
+
+## 0.2 production consumer addition
+
+`mam-engine` 0.2.0 adds the first production Godot consumer foundation: public install/sync/check commands, a deterministic integrity-protected movement bundle, a scene-free manifest-managed addon, one shared fixture/production movement core, and a packed external consumer that runs after its npm prefix is deleted.
+
+Only grounded movement is claimed. Production camera, targeting, combat, full-hunt integration, presentation, assets, progression, multiplayer, and live editing remain unsupported.
 
 ## Release scope
 

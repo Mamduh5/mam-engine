@@ -89,7 +89,7 @@ jobs:
       - name: Verify pinned Godot runtime
         run: npm run mam -- runtime check --json
 
-      - name: Run real movement, camera, and targeting Godot integration suite
+      - name: Run real fixtures and packed production consumer integration suite
         run: npm run test:godot
 
       - name: Verify packed consumer with pinned Godot
