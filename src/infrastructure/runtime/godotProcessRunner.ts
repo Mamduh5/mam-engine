@@ -5,20 +5,26 @@ import { fileExists } from "../files/jsonFileStore";
 import type { RuntimeSession } from "./runtimeSessionStore";
 
 export interface GodotProcessResult { exitCode: number | null; signal: NodeJS.Signals | null; timedOut: boolean; readyObserved: boolean; outputTruncated: boolean }
-export interface ProcessRunnerOptions { readinessTimeoutMs?: number; executionTimeoutMs?: number; maximumOutputBytes?: number; spawnProcess?: typeof spawn; interactive?: boolean }
+export interface ProcessRunnerOptions { readinessTimeoutMs?: number; executionTimeoutMs?: number; maximumOutputBytes?: number; spawnProcess?: typeof spawn; interactive?: boolean; platform?: NodeJS.Platform }
 const DEFAULT_GODOT_READINESS_TIMEOUT_MS = 5_000;
+const DEFAULT_INTERACTIVE_GODOT_READINESS_TIMEOUT_MS = 20_000;
 const DEFAULT_GODOT_EXECUTION_TIMEOUT_MS = 15_000;
 
 export async function runGodotProcess(executable: string, projectPath: string, session: RuntimeSession, options: ProcessRunnerOptions = {}): Promise<GodotProcessResult> {
-  const readinessTimeoutMs = options.readinessTimeoutMs ?? DEFAULT_GODOT_READINESS_TIMEOUT_MS;
+  const interactive = options.interactive === true;
+  const readinessTimeoutMs = options.readinessTimeoutMs ?? (interactive ? DEFAULT_INTERACTIVE_GODOT_READINESS_TIMEOUT_MS : DEFAULT_GODOT_READINESS_TIMEOUT_MS);
   const executionTimeoutMs = options.executionTimeoutMs ?? DEFAULT_GODOT_EXECUTION_TIMEOUT_MS;
   const maximumOutputBytes = options.maximumOutputBytes ?? 1024 * 1024;
   const spawnProcess = options.spawnProcess ?? spawn;
   let child: ChildProcessWithoutNullStreams;
   try {
-    const godotArguments = [...(options.interactive === true ? [] : ["--headless"]), "--path", projectPath, "--", "--request", session.requestPath, "--ready", session.readyPath, "--response", session.responsePath];
-    const useVirtualDisplay = options.interactive === true && process.platform === "linux";
-    child = spawnProcess(useVirtualDisplay ? "xvfb-run" : executable, useVirtualDisplay ? ["-a", executable, ...godotArguments] : godotArguments, { shell: false, windowsHide: options.interactive !== true }) as ChildProcessWithoutNullStreams;
+    const useVirtualDisplay = interactive && (options.platform ?? process.platform) === "linux";
+    const godotArguments = [...(useVirtualDisplay ? ["--display-driver", "x11", "--rendering-method", "gl_compatibility"] : []), ...(interactive ? [] : ["--headless"]), "--path", projectPath, "--", "--request", session.requestPath, "--ready", session.readyPath, "--response", session.responsePath];
+    child = spawnProcess(useVirtualDisplay ? "xvfb-run" : executable, useVirtualDisplay ? ["-a", executable, ...godotArguments] : godotArguments, {
+      shell: false,
+      windowsHide: !interactive,
+      ...(useVirtualDisplay ? { env: { ...process.env, LIBGL_ALWAYS_SOFTWARE: "1" } } : {})
+    }) as ChildProcessWithoutNullStreams;
   } catch (caught) { throw new Error(`spawn:${caught instanceof Error ? caught.message : String(caught)}`); }
 
   let stdout: Buffer<ArrayBufferLike> = Buffer.alloc(0); let stderr: Buffer<ArrayBufferLike> = Buffer.alloc(0); let outputTruncated = false;
