@@ -58,6 +58,6 @@ Canonical Phase 8 is complete: the training behemoth's behavior cycle, telegraph
 
 Canonical Phase 9 is complete: the training encounter is proven through deterministic TypeScript orchestration, headless Godot execution, non-headless input events, objective success and failure reports, completed-round checkpoint recovery, and invalid-checkpoint rejection. **Exit condition met:** validated definitions drive matching headless and interactive reports with deterministic recovery evidence; production gameplay, polished UI, save games, progression, and a visual editor are not claimed complete.
 
-## Phase 10 — Visual editor client
+## Phase 10 — Visual editor client (Phase 10A complete)
 
-Build a human-facing client over the established services and protocols. **Exit condition:** the visual editor can complete supported authoring workflows without a second domain model, while CLI compatibility and headless automation remain intact.
+Phase 10A provides a loopback-only local editor foundation with read-only definition discovery, validation, reference inspection, and a static visual shell over the established services. Structured editing, transactional saves, simulation controls, and complete visual-editor workflows remain pending. **Phase 10 exit condition:** the visual editor can complete supported authoring workflows without a second domain model, while CLI compatibility and headless automation remain intact.

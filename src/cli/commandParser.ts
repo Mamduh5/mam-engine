@@ -13,6 +13,7 @@ import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "editor.serve"; host: string; port: number; workspace?: string; json: boolean }
   | { kind: "encounter.inspect"; file: string; json: boolean }
   | { kind: "encounter.validate"; file: string; json: boolean }
   | { kind: "encounter.simulate"; file: string; scenario: EncounterScenario; fixedDelta?: number; json: boolean }
@@ -135,6 +136,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
   if (group === "arena") return parseArenaCommand(action, remaining);
   if (group === "encounter") return parseEncounterCommand(action, remaining);
   if (group === "combat") return parseCombatCommand(action, remaining);
+  if (group === "editor") return parseEditorCommand(action, remaining);
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
   }
@@ -145,6 +147,18 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseEditorCommand(action: string, args: string[]): ParsedCommand {
+  if (action !== "serve") throw new CliParseError(`Unknown editor command '${action}'`);
+  const parsed = parseArguments(args, new Set(["--json", "--host", "--port", "--workspace"]), new Set(["--host", "--port", "--workspace"]));
+  requirePositionals(parsed, 0, "editor serve does not accept positional arguments");
+  const hostValue = parsed.flags.get("--host");
+  const portValue = parsed.flags.get("--port");
+  const workspaceValue = parsed.flags.get("--workspace");
+  const port = portValue === undefined ? 4310 : Number(portValue);
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new CliParseError("--port must be an integer from 1 through 65535");
+  return { kind: "editor.serve", host: typeof hostValue === "string" ? hostValue : "127.0.0.1", port, ...(typeof workspaceValue === "string" ? { workspace: workspaceValue } : {}), json: parsed.flags.has("--json") };
 }
 
 function parseEncounterCommand(action: string, args: string[]): ParsedCommand {

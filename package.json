@@ -9,6 +9,7 @@
   },
   "files": [
     "dist/src",
+    "editor",
     "schemas",
     "examples/camera",
     "examples/targeting",

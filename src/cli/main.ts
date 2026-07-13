@@ -87,6 +87,7 @@ import { validateEncounterFile } from "../application/encounter/validateEncounte
 import { runEncounterRuntimeTest } from "../application/runtime/runEncounterRuntimeTest";
 import { runEncounterInteractiveTest } from "../application/runtime/runEncounterInteractiveTest";
 import { runEncounterRecoveryTest } from "../application/runtime/runEncounterRecoveryTest";
+import { serveEditor } from "../application/editor/serveEditor";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -166,6 +167,7 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "editor.serve": return serveEditor(workspaceRoot, command.host, command.port, command.workspace);
     case "encounter.inspect": return inspectEncounter(workspaceRoot, command.file);
     case "encounter.validate": return validateEncounterFile(workspaceRoot, command.file);
     case "encounter.simulate": return simulateEncounterFile(workspaceRoot, command.file, command.scenario, command.fixedDelta);
