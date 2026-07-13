@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. Canonical Phase 7 is complete: the definition-driven training weapon is proven end to end through real Godot timeline, contact, stamina, damage, and reaction execution. Canonical Phase 8 is complete: the training behemoth's behavior cycle, telegraph timing, target points, targetability, and real Godot hurtbox construction are proven. Canonical Phase 9 is complete: the training encounter is proven through deterministic TypeScript orchestration, headless Godot execution, non-headless input, success and failure reports, completed-round checkpoint recovery, and invalid-checkpoint rejection. Canonical Phase 10A is complete: a loopback-only local editor provides read-only definition discovery and inspection; structured editing, transactional saves, simulation controls, and complete visual-editor workflows remain pending.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. Canonical Phase 7 is complete: the definition-driven training weapon is proven end to end through real Godot timeline, contact, stamina, damage, and reaction execution. Canonical Phase 8 is complete: the training behemoth's behavior cycle, telegraph timing, target points, targetability, and real Godot hurtbox construction are proven. Canonical Phase 9 is complete: the training encounter is proven through deterministic TypeScript orchestration, headless Godot execution, non-headless input, success and failure reports, completed-round checkpoint recovery, and invalid-checkpoint rejection. Canonical Phases 10A and 10B are complete: the loopback-only local editor provides definition exploration plus transactional single-property movement editing with preview, revision-conflict protection, snapshots, and undo. Other definition kinds remain read-only; simulation controls and broader visual authoring workflows remain pending.
 
 ## Implemented through Phase 2A.2
 
@@ -29,7 +29,7 @@ The long-term target is a Dauntless-style action hunting game. **Movement Editor
 
 ## Why CLI first
 
-The `mam` CLI gives automated agents stable commands, structured input and output, deterministic validation, exact changed-file reporting, and testable failure behavior. The Phase 10A read-only visual editor calls the same application services rather than replacing them.
+The `mam` CLI gives automated agents stable commands, structured input and output, deterministic validation, exact changed-file reporting, and testable failure behavior. The local visual editor calls the same application services rather than replacing them.
 
 Godot 4 is the controlled runtime host. It consumes the supplied validated definition and is not the product or canonical authoring source.
 
@@ -49,11 +49,13 @@ The package exposes the executable name `mam` through its `bin` entry. During re
 
 Every command accepts `--json`. JSON mode writes one versioned result envelope to standard output and returns a non-zero exit code on failure.
 
-Start the Phase 10A read-only local editor at `http://127.0.0.1:4310`:
+Start the local editor at `http://127.0.0.1:4310`:
 
 ```text
 npm run mam -- editor serve
 ```
+
+Phase 10B adds movement-profile editing to that local editor. Each save requires a successful dry-run preview and matching file revision, uses the existing transactional movement setter and pre-write snapshot, and can be undone through the existing rollback behavior. Other definition kinds remain read-only.
 
 ```text
 mam movement inspect <file> [--json]
@@ -115,10 +117,10 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 ## Current limitations
 
 - No persistent live runtime session, live editing, visual camera editor, or explicit interactive shutdown command exists.
-- The Phase 10A visual editor is read-only; structured editing, transactional saves, simulation controls, and complete authoring workflows remain pending.
+- The visual editor supports transactional single-property movement-profile editing only; other definition kinds remain read-only, and simulation controls plus broader authoring workflows remain pending.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, canonical Phase 8 training-behemoth runtime proofs, canonical Phase 9 training-encounter proof, and the Phase 10A read-only local editor foundation exist; production gameplay, polished UI, save games, progression, and complete visual-editor workflows are not claimed complete.
+- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, canonical Phase 8 training-behemoth runtime proofs, canonical Phase 9 training-encounter proof, and the Phase 10A/10B local editor foundation plus movement editing workflow exist; production gameplay, polished UI, save games, progression, and complete visual-editor workflows are not claimed complete.
 
 ## Documentation
 

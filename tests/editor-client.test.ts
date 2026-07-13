@@ -26,7 +26,10 @@ test("editor serves the static visual shell and packages its assets", async (con
   assert.equal((await stylesheet.text()).includes(":focus-visible"), true);
   const client = await fetch(`${server.url}/client.js`);
   assert.equal(client.status, 200);
-  assert.equal((await client.text()).includes("/api/definitions/inspect"), true);
+  const clientScript = await client.text();
+  assert.equal(clientScript.includes("/api/definitions/inspect"), true);
+  for (const control of ["Edit", "Preview", "Save", "Cancel", "Undo last save"]) assert.equal(clientScript.includes(`\"${control}\"`), true);
+  for (const route of ["/api/definitions/edit/preview", "/api/definitions/edit/save", "/api/definitions/edit/rollback"]) assert.equal(clientScript.includes(route), true);
   const head = await fetch(`${server.url}/client.js`, { method: "HEAD" });
   assert.equal(head.status, 200);
   assert.equal(await head.text(), "");

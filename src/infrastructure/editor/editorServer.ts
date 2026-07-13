@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import path from "node:path";
 
 import { discoverEditorDefinitions, EDITOR_PROTOCOL_VERSION, EditorInspectionError, inspectEditorDefinition } from "../../application/editor/editorDefinitionExplorer";
+import { EditorEditError, getMovementEditModel, previewMovementEdit, rollbackMovementEdit, saveMovementEdit } from "../../application/editor/movementEditor";
 import { SUPPORTED_DEFINITION_KINDS } from "../../application/definitions/definitionValidationRegistry";
 
 const DEFAULT_HOST = "127.0.0.1";
@@ -25,7 +26,8 @@ export async function startEditorServer(options: EditorServerOptions = {}): Prom
   if (!Number.isInteger(port) || port < 0 || port > 65_535) throw new Error("Editor server port must be an integer from 0 through 65535");
   const workspaceRoot = path.resolve(options.workspaceRoot ?? process.cwd());
   const assetRoot = options.assetRoot === undefined ? await resolveEditorAssetRoot() : path.resolve(options.assetRoot);
-  const server = createServer((request, response) => { void routeRequest(request, response, workspaceRoot, assetRoot); });
+  let serverOrigin = "";
+  const server = createServer((request, response) => { void routeRequest(request, response, workspaceRoot, assetRoot, serverOrigin); });
   const closed = new Promise<void>((resolve) => server.once("close", resolve));
   await new Promise<void>((resolve, reject) => {
     const onError = (error: Error): void => { server.off("listening", onListening); reject(error); };
@@ -37,9 +39,10 @@ export async function startEditorServer(options: EditorServerOptions = {}): Prom
   const address = server.address();
   if (address === null || typeof address === "string") throw new Error("Editor server did not expose a TCP address");
   const resolvedHost = address.address.includes(":") ? `[${address.address}]` : address.address;
+  serverOrigin = `http://${resolvedHost}:${address.port}`;
   let closing: Promise<void> | null = null;
   return {
-    url: `http://${resolvedHost}:${address.port}`,
+    url: serverOrigin,
     host: address.address,
     port: address.port,
     workspaceRoot,
@@ -52,14 +55,27 @@ export async function startEditorServer(options: EditorServerOptions = {}): Prom
   };
 }
 
-async function routeRequest(request: IncomingMessage, response: ServerResponse, workspaceRoot: string, assetRoot: string): Promise<void> {
+async function routeRequest(request: IncomingMessage, response: ServerResponse, workspaceRoot: string, assetRoot: string, serverOrigin: string): Promise<void> {
   applySecurityHeaders(response);
   const method = request.method ?? "";
-  if (method !== "GET" && method !== "HEAD") { response.setHeader("Allow", "GET, HEAD"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Only GET and HEAD are supported"), true); return; }
   let url: URL;
   try { url = new URL(request.url ?? "/", "http://localhost"); }
   catch { sendJson(response, method, 400, errorBody("EDITOR_REQUEST_INVALID", "Request URL is invalid"), true); return; }
   try {
+    if (url.pathname === "/api/definitions/edit") {
+      if (method !== "GET" && method !== "HEAD") { response.setHeader("Allow", "GET, HEAD"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Edit model accepts only GET and HEAD"), true); return; }
+      const file = url.searchParams.get("file");
+      if (file === null || file.length === 0) { sendJson(response, method, 400, errorBody("EDITOR_FILE_REQUIRED", "A workspace-relative movement file is required"), true); return; }
+      sendJson(response, method, 200, await getMovementEditModel(workspaceRoot, file), true); return;
+    }
+    if (["/api/definitions/edit/preview", "/api/definitions/edit/save", "/api/definitions/edit/rollback"].includes(url.pathname)) {
+      if (method !== "POST") { response.setHeader("Allow", "POST"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Mutation route accepts only POST"), true); return; }
+      validateMutationRequest(request, serverOrigin);
+      const body = await readMutationBody(request);
+      const result = url.pathname.endsWith("/preview") ? await previewMovementEdit(workspaceRoot, body) : url.pathname.endsWith("/save") ? await saveMovementEdit(workspaceRoot, body) : await rollbackMovementEdit(workspaceRoot, body);
+      sendJson(response, method, 200, result, true); return;
+    }
+    if (method !== "GET" && method !== "HEAD") { response.setHeader("Allow", "GET, HEAD"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Only GET and HEAD are supported"), true); return; }
     if (url.pathname === "/api/health") {
       sendJson(response, method, 200, { status: "ok", protocolVersion: EDITOR_PROTOCOL_VERSION, workspaceAvailable: await workspaceAvailable(workspaceRoot) }, true); return;
     }
@@ -77,9 +93,36 @@ async function routeRequest(request: IncomingMessage, response: ServerResponse, 
     if (asset !== undefined) { await sendStatic(response, method, path.join(assetRoot, asset.file), asset.contentType); return; }
     sendJson(response, method, 404, errorBody("EDITOR_ROUTE_NOT_FOUND", "Route was not found"), url.pathname.startsWith("/api/"));
   } catch (caught) {
+    if (caught instanceof EditorEditError) { sendJson(response, method, caught.status, errorBody(caught.code, caught.message, caught.validationFindings), true); return; }
     if (caught instanceof EditorInspectionError) { sendJson(response, method, inspectionStatus(caught.code), errorBody(caught.code, caught.message), true); return; }
     sendJson(response, method, 500, errorBody("EDITOR_INTERNAL_ERROR", "Editor request could not be completed"), url.pathname.startsWith("/api/"));
   }
+}
+
+function validateMutationRequest(request: IncomingMessage, serverOrigin: string): void {
+  const contentType = request.headers["content-type"]?.split(";", 1)[0]?.trim().toLowerCase();
+  if (contentType !== "application/json") throw new EditorEditError("EDITOR_CONTENT_TYPE_INVALID", "Mutation requests require application/json", 415);
+  const host = request.headers.host;
+  if (host === undefined) throw new EditorEditError("EDITOR_HOST_INVALID", "Mutation request Host must be loopback", 403);
+  let hostname: string;
+  try { hostname = new URL(`http://${host}`).hostname.replace(/^\[|\]$/g, ""); }
+  catch { throw new EditorEditError("EDITOR_HOST_INVALID", "Mutation request Host must be loopback", 403); }
+  if (!loopbackHosts.has(hostname)) throw new EditorEditError("EDITOR_HOST_INVALID", "Mutation request Host must be loopback", 403);
+  const origin = request.headers.origin;
+  if (origin !== undefined && origin !== serverOrigin) throw new EditorEditError("EDITOR_ORIGIN_INVALID", "Mutation request Origin must match the editor origin", 403);
+}
+
+async function readMutationBody(request: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of request) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buffer.length;
+    if (size > 64 * 1024) { request.resume(); throw new EditorEditError("EDITOR_BODY_TOO_LARGE", "Mutation request body exceeds 64 KiB", 413); }
+    chunks.push(buffer);
+  }
+  try { return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown; }
+  catch { throw new EditorEditError("EDITOR_JSON_INVALID", "Mutation request body contains malformed JSON", 400); }
 }
 
 async function sendStatic(response: ServerResponse, method: string, file: string, contentType: string): Promise<void> {
@@ -120,4 +163,4 @@ async function resolveEditorAssetRoot(): Promise<string> {
 }
 
 function inspectionStatus(code: string): number { return code === "EDITOR_DEFINITION_NOT_FOUND" ? 404 : code === "EDITOR_DEFINITION_INVALID_JSON" ? 422 : 400; }
-function errorBody(code: string, message: string): { error: { code: string; message: string } } { return { error: { code, message } }; }
+function errorBody(code: string, message: string, validationFindings: unknown[] = []): { error: { code: string; message: string; validationFindings?: unknown[] } } { return { error: { code, message, ...(validationFindings.length === 0 ? {} : { validationFindings }) } }; }

@@ -49,6 +49,20 @@ main { min-width: 0; padding: 26px clamp(20px, 4vw, 48px); overflow: auto; }
 .definition-meta { margin: 0; color: var(--muted); font-size: .78rem; overflow-wrap: anywhere; }
 .status-badge { padding: 6px 9px; border: 1px solid currentColor; border-radius: 999px; color: var(--bad); font-size: .72rem; }
 .status-badge.valid { color: var(--good); }
+.status-badge.dirty { color: #f2cc60; }
+.heading-status, .inspector-actions, .edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+.heading-status { flex-direction: column; align-items: flex-end; }
+.editor-button { padding: 7px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-raised); color: inherit; cursor: pointer; }
+.editor-button.primary { border-color: #368ac7; background: #173451; }
+.editor-button:hover:not(:disabled) { border-color: var(--accent); }
+.editor-button:disabled { cursor: not-allowed; opacity: .45; }
+.editor-notice { padding: 10px 12px; border: 1px solid #386d52; border-radius: 4px; background: #14271d; color: #a9e7c2; font-size: .78rem; overflow-wrap: anywhere; }
+.edit-form { max-width: 720px; display: grid; gap: 9px; }
+.edit-form label { color: var(--muted); font-size: .76rem; }
+.edit-form select, .edit-form input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 4px; background: #0f141b; color: inherit; }
+.edit-form input[type="checkbox"] { width: auto; min-width: 20px; min-height: 20px; }
+.original-value { margin: 0 0 10px; color: #c5d0dc; font-size: .76rem; overflow-wrap: anywhere; }
+.edit-findings { min-height: 36px; padding: 7px 0; }
 .inspector-section { margin-top: 24px; }
 .inspector-section h2 { margin: 0 0 10px; font-size: .9rem; }
 .field-table { width: 100%; border-collapse: collapse; font-size: .78rem; }

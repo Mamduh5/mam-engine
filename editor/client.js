@@ -1,6 +1,6 @@
 "use strict";
 
-const state = { definitions: [], selectedPath: null, enabledKinds: new Set(), query: "" };
+const state = { definitions: [], selectedPath: null, enabledKinds: new Set(), query: "", currentInspection: null, undo: null, notice: null };
 const elements = {
   workspaceName: document.querySelector("#workspace-name"),
   connection: document.querySelector("#connection-status"),
@@ -18,12 +18,8 @@ void loadWorkspace();
 
 async function loadWorkspace() {
   try {
-    const [workspace, result] = await Promise.all([getJson("/api/workspace"), getJson("/api/definitions")]);
-    state.definitions = result.definitions;
+    const workspace = await refreshWorkspaceData();
     state.enabledKinds = new Set(workspace.supportedDefinitionKinds);
-    elements.workspaceName.textContent = workspace.displayName;
-    elements.validCount.textContent = String(workspace.validCount);
-    elements.invalidCount.textContent = String(workspace.invalidCount);
     elements.connection.textContent = "Connected";
     elements.connection.dataset.state = "connected";
     renderFilters(workspace.supportedDefinitionKinds);
@@ -34,6 +30,16 @@ async function loadWorkspace() {
     elements.list.replaceChildren(message("Server unavailable"));
     showFailure("Server unavailable", errorMessage(error));
   }
+}
+
+async function refreshWorkspaceData() {
+  const [workspace, result] = await Promise.all([getJson("/api/workspace"), getJson("/api/definitions")]);
+  state.definitions = result.definitions;
+  elements.workspaceName.textContent = workspace.displayName;
+  elements.validCount.textContent = String(workspace.validCount);
+  elements.invalidCount.textContent = String(workspace.invalidCount);
+  renderDefinitionList();
+  return workspace;
 }
 
 function renderFilters(kinds) {
@@ -92,12 +98,13 @@ function definitionButton(definition) {
   return button;
 }
 
-async function selectDefinition(relativePath) {
+async function selectDefinition(relativePath, preserveUndo = false) {
+  if (state.selectedPath !== relativePath && !preserveUndo) { state.undo = null; state.notice = null; }
   state.selectedPath = relativePath;
   renderDefinitionList();
   elements.inspector.setAttribute("aria-busy", "true");
   elements.inspector.replaceChildren(emptyState("Inspector", "Loading definition", relativePath));
-  try { renderInspection(await getJson(`/api/definitions/inspect?file=${encodeURIComponent(relativePath)}`)); }
+  try { state.currentInspection = await getJson(`/api/definitions/inspect?file=${encodeURIComponent(relativePath)}`); renderInspection(state.currentInspection); }
   catch (error) { showFailure("Inspection failed", errorMessage(error)); }
   finally { elements.inspector.removeAttribute("aria-busy"); elements.inspector.focus(); }
 }
@@ -117,11 +124,27 @@ function renderInspection(inspection) {
   meta.className = "definition-meta";
   meta.textContent = summary.relativePath;
   identity.append(eyebrow, title, meta);
+  const actions = document.createElement("div");
+  actions.className = "inspector-actions";
+  if (summary.valid && summary.kind === "movement-profile") {
+    const edit = actionButton("Edit", "primary");
+    edit.addEventListener("click", () => { void beginMovementEdit(); });
+    actions.append(edit);
+  }
+  if (state.undo?.file === summary.relativePath) {
+    const undo = actionButton("Undo last save");
+    undo.addEventListener("click", () => { void undoLastSave(undo); });
+    actions.append(undo);
+  }
   const badge = document.createElement("span");
   badge.className = `status-badge${summary.valid ? " valid" : ""}`;
   badge.textContent = summary.valid ? "Valid" : `Invalid · ${summary.errorCount}`;
-  heading.append(identity, badge);
+  const headingStatus = document.createElement("div");
+  headingStatus.className = "heading-status";
+  headingStatus.append(actions, badge);
+  heading.append(identity, headingStatus);
   wrapper.append(heading);
+  if (state.notice !== null && state.notice.file === summary.relativePath) wrapper.append(noticePanel(state.notice.message));
   wrapper.append(sectionWithFields("Authored fields", inspection.authoredFields));
   wrapper.append(sectionWithList("Referenced definitions", inspection.resolvedReferences.map((reference) => `${reference.field}: ${reference.relativePath}`), "No resolved references."));
   const findings = inspection.validationFindings.map((finding) => `${finding.code}${finding.path ? ` · ${finding.path}` : ""}: ${finding.message}`);
@@ -137,6 +160,115 @@ function renderInspection(inspection) {
   rawSection.append(details);
   wrapper.append(rawSection);
   elements.inspector.replaceChildren(wrapper);
+}
+
+async function beginMovementEdit() {
+  if (state.selectedPath === null || state.currentInspection === null) return;
+  elements.inspector.setAttribute("aria-busy", "true");
+  try { renderMovementEdit(await getJson(`/api/definitions/edit?file=${encodeURIComponent(state.selectedPath)}`)); }
+  catch (error) { showFailure("Edit unavailable", errorMessage(error)); }
+  finally { elements.inspector.removeAttribute("aria-busy"); }
+}
+
+function renderMovementEdit(model) {
+  let selected = model.editableFields[0];
+  let candidate = selected?.value;
+  let previewPassed = false;
+  const wrapper = document.createElement("article");
+  const heading = document.createElement("header");
+  heading.className = "inspector-heading";
+  const identity = document.createElement("div");
+  const eyebrow = document.createElement("p"); eyebrow.className = "eyebrow"; eyebrow.textContent = "movement-profile · edit one property";
+  const title = document.createElement("h1"); title.textContent = model.displayName;
+  const meta = document.createElement("p"); meta.className = "definition-meta"; meta.textContent = model.relativePath;
+  identity.append(eyebrow, title, meta);
+  const dirty = document.createElement("span"); dirty.className = "status-badge"; dirty.textContent = "Unchanged";
+  heading.append(identity, dirty);
+  wrapper.append(heading);
+
+  const form = document.createElement("form");
+  form.className = "edit-form inspector-section";
+  form.addEventListener("submit", (event) => event.preventDefault());
+  const pathLabel = document.createElement("label"); pathLabel.htmlFor = "edit-property"; pathLabel.textContent = "Property";
+  const pathSelect = document.createElement("select"); pathSelect.id = "edit-property";
+  for (const field of model.editableFields) { const option = document.createElement("option"); option.value = field.path; option.textContent = `${field.label} · ${field.path}`; pathSelect.append(option); }
+  const original = document.createElement("p"); original.className = "original-value";
+  const inputLabel = document.createElement("label"); inputLabel.htmlFor = "edit-value"; inputLabel.textContent = "New value";
+  const inputSlot = document.createElement("div");
+  const findings = document.createElement("div"); findings.className = "edit-findings"; findings.setAttribute("aria-live", "polite");
+  const controls = document.createElement("div"); controls.className = "edit-actions";
+  const cancel = actionButton("Cancel");
+  const preview = actionButton("Preview", "primary");
+  const save = actionButton("Save", "primary"); save.disabled = true;
+  controls.append(cancel, preview, save);
+  form.append(pathLabel, pathSelect, original, inputLabel, inputSlot, findings, controls);
+  wrapper.append(form);
+  elements.inspector.replaceChildren(wrapper);
+
+  const renderInput = () => {
+    candidate = selected.value;
+    previewPassed = false;
+    save.disabled = true;
+    findings.replaceChildren();
+    original.textContent = `Original value: ${formatValue(selected.value)}`;
+    const input = document.createElement("input"); input.id = "edit-value"; input.name = "value";
+    if (selected.valueType === "number") { input.type = "number"; input.step = "any"; input.value = String(selected.value); }
+    else if (selected.valueType === "boolean") { input.type = "checkbox"; input.checked = selected.value; }
+    else { input.type = "text"; input.value = selected.value; }
+    const update = () => {
+      candidate = selected.valueType === "number" ? (input.value === "" ? null : Number(input.value)) : selected.valueType === "boolean" ? input.checked : input.value;
+      previewPassed = false;
+      save.disabled = true;
+      findings.replaceChildren();
+      const changed = candidate !== selected.value;
+      dirty.textContent = changed ? "Unsaved change" : "Unchanged";
+      dirty.classList.toggle("dirty", changed);
+      preview.disabled = !changed || (selected.valueType === "number" && !Number.isFinite(candidate));
+    };
+    input.addEventListener(selected.valueType === "boolean" ? "change" : "input", update);
+    inputSlot.replaceChildren(input);
+    update();
+  };
+  pathSelect.addEventListener("change", () => { selected = model.editableFields.find((field) => field.path === pathSelect.value); renderInput(); });
+  cancel.addEventListener("click", () => { renderInspection(state.currentInspection); });
+  preview.addEventListener("click", async () => {
+    setBusy(controls, true);
+    try {
+      const result = await postJson("/api/definitions/edit/preview", { file: model.relativePath, expectedRevision: model.revision, path: selected.path, value: candidate });
+      previewPassed = result.previewStatus === "passed";
+      save.disabled = !previewPassed;
+      showValidationFindings(findings, result.validationFindings, previewPassed ? "Preview passed. Save is enabled." : "Preview failed.");
+    } catch (error) { previewPassed = false; save.disabled = true; showRequestError(findings, error); }
+    finally { setBusy(controls, false); save.disabled = !previewPassed; }
+  });
+  save.addEventListener("click", async () => {
+    if (!previewPassed) return;
+    setBusy(controls, true);
+    try {
+      const result = await postJson("/api/definitions/edit/save", { file: model.relativePath, expectedRevision: model.revision, path: selected.path, value: candidate });
+      if (result.saveStatus !== "passed") { showValidationFindings(findings, result.validationFindings, "Save failed."); return; }
+      state.undo = { file: model.relativePath, snapshotId: result.snapshotId, expectedRevision: result.currentRevision };
+      state.notice = { file: model.relativePath, message: `Saved ${result.savedPropertyPath} = ${formatValue(result.savedValue)} · snapshot ${result.snapshotId}` };
+      await refreshWorkspaceData();
+      await selectDefinition(model.relativePath, true);
+    } catch (error) { showRequestError(findings, error); }
+    finally { setBusy(controls, false); }
+  });
+  renderInput();
+}
+
+async function undoLastSave(button) {
+  const undo = state.undo;
+  if (undo === null) return;
+  button.disabled = true;
+  try {
+    const result = await postJson("/api/definitions/edit/rollback", undo);
+    if (result.rollbackStatus !== "rolled_back") throw new Error("Rollback failed");
+    state.undo = null;
+    state.notice = { file: undo.file, message: `Undo restored snapshot ${result.restoredSnapshotId}` };
+    await refreshWorkspaceData();
+    await selectDefinition(undo.file, true);
+  } catch (error) { showFailure("Undo failed", errorMessage(error)); }
 }
 
 function sectionWithFields(title, fields) {
@@ -170,9 +302,16 @@ function sectionWithList(title, items, emptyText) {
 }
 
 function sectionShell(title) { const section = document.createElement("section"); section.className = "inspector-section"; const heading = document.createElement("h2"); heading.textContent = title; section.append(heading); return section; }
+function actionButton(text, style = "") { const button = document.createElement("button"); button.type = "button"; button.className = `editor-button${style ? ` ${style}` : ""}`; button.textContent = text; return button; }
+function noticePanel(text) { const panel = document.createElement("p"); panel.className = "editor-notice"; panel.setAttribute("role", "status"); panel.textContent = text; return panel; }
+function formatValue(value) { return typeof value === "string" ? value : JSON.stringify(value); }
+function setBusy(container, busy) { container.querySelectorAll("button").forEach((button) => { button.disabled = busy; }); }
+function showValidationFindings(container, findings, successText) { container.replaceChildren(); if (findings.length === 0) { container.append(message(successText)); return; } const list = document.createElement("ul"); list.className = "finding-list"; for (const finding of findings) { const item = document.createElement("li"); item.textContent = `${finding.code}${finding.path ? ` · ${finding.path}` : ""}: ${finding.message}`; list.append(item); } container.append(list); }
+function showRequestError(container, error) { const findings = error.payload?.error?.validationFindings || []; showValidationFindings(container, findings, errorMessage(error)); if (findings.length === 0) container.replaceChildren(message(errorMessage(error))); }
 function showFailure(title, detail) { elements.inspector.replaceChildren(emptyState("Editor", title, detail)); }
 function emptyState(eyebrowText, titleText, detailText) { const section = document.createElement("section"); section.className = "empty-state"; const eyebrow = document.createElement("p"); eyebrow.className = "eyebrow"; eyebrow.textContent = eyebrowText; const title = document.createElement("h1"); title.textContent = titleText; const detail = document.createElement("p"); detail.textContent = detailText; section.append(eyebrow, title, detail); return section; }
 function message(text) { const paragraph = document.createElement("p"); paragraph.className = "muted"; paragraph.textContent = text; return paragraph; }
 function searchableText(definition) { return [definition.relativePath, definition.kind, definition.id, definition.displayName].filter(Boolean).join(" ").toLowerCase(); }
 function errorMessage(error) { return error instanceof Error ? error.message : String(error); }
 async function getJson(url) { const response = await fetch(url, { headers: { Accept: "application/json" } }); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message || `Request failed with ${response.status}`); return body; }
+async function postJson(url, value) { const response = await fetch(url, { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify(value) }); const body = await response.json(); if (!response.ok) { const error = new Error(body.error?.message || `Request failed with ${response.status}`); error.payload = body; throw error; } return body; }
