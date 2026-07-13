@@ -206,6 +206,7 @@ export const ErrorCodes = {
   EncounterWriteVerificationFailed: "ENCOUNTER_WRITE_VERIFICATION_FAILED",
   EncounterWriteScopeAuditFailed: "ENCOUNTER_WRITE_SCOPE_AUDIT_FAILED",
   EncounterWriteRecoveryFailed: "ENCOUNTER_WRITE_RECOVERY_FAILED",
+  EncounterCheckpointInvalid: "ENCOUNTER_CHECKPOINT_INVALID",
   DefinitionFileNotFound: "DEFINITION_FILE_NOT_FOUND",
   DefinitionFileInvalid: "DEFINITION_FILE_INVALID",
   DefinitionKindUnsupported: "DEFINITION_KIND_UNSUPPORTED",

@@ -14,6 +14,7 @@ export interface RuntimeSession {
   stdoutPath: string;
   stderrPath: string;
   metadataPath: string;
+  checkpointPath: string;
 }
 
 export async function createRuntimeSession(workspaceRoot: string, correlationId: string = randomUUID()): Promise<RuntimeSession> {
@@ -27,7 +28,7 @@ export async function createRuntimeSession(workspaceRoot: string, correlationId:
   return {
     correlationId, directory, relativeDirectory,
     requestPath: path.join(directory, "request.json"), readyPath: path.join(directory, "ready.json"), responsePath: path.join(directory, "response.json"),
-    stdoutPath: path.join(directory, "stdout.log"), stderrPath: path.join(directory, "stderr.log"), metadataPath: path.join(directory, "session.json")
+    stdoutPath: path.join(directory, "stdout.log"), stderrPath: path.join(directory, "stderr.log"), metadataPath: path.join(directory, "session.json"), checkpointPath: path.join(directory, "encounter-checkpoint.json")
   };
 }
 

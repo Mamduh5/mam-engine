@@ -241,6 +241,30 @@ static func _validate_encounter_payload(payload: Dictionary, scenario: Dictionar
 	if selected_id.is_empty() or selected_id != str(payload.get("selectedBodyPartId", "")): errors.append("encounter selected body part must be first targetable")
 	if not ["successful-hunt", "stamina-exhausted"].has(scenario.get("id")): errors.append("unsupported encounter scenario")
 	if not _finite_number(scenario.get("startingStamina")) or float(scenario.get("startingStamina", -1)) < 0.0: errors.append("invalid encounter starting stamina")
+	var mode: String = str(scenario.get("mode", "runtime"))
+	if not ["runtime", "interactive", "recovery-initial", "recovery-resume"].has(mode): errors.append("unsupported encounter runtime mode")
+	if mode == "interactive" and scenario.get("autoDrive") != true: errors.append("interactive encounter requires input driving")
+	if mode != "runtime":
+		var checkpoint_path: String = str(scenario.get("checkpointPath", ""))
+		if not checkpoint_path.contains(".mam-engine") or not checkpoint_path.contains("runtime-sessions") or not checkpoint_path.ends_with("encounter-checkpoint.json") or checkpoint_path.contains(".."): errors.append("invalid encounter checkpoint path")
+	if mode == "recovery-initial" and (not _finite_number(scenario.get("interruptAfterRound")) or int(scenario.get("interruptAfterRound", 0)) < 1 or (typeof(encounter) == TYPE_DICTIONARY and int(scenario.get("interruptAfterRound", 0)) >= int(encounter.get("maxRounds", 0)))): errors.append("invalid recovery interruption round")
+	if mode == "recovery-resume": errors.append_array(_validate_encounter_checkpoint(scenario.get("recoveryCheckpoint"), payload, scenario))
+	return errors
+
+static func _validate_encounter_checkpoint(value: Variant, payload: Dictionary, scenario: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	if typeof(value) != TYPE_DICTIONARY: return ["recovery checkpoint must be an object"]
+	if value.get("schemaVersion") != "mam.encounter-checkpoint/v1": errors.append("unsupported checkpoint schema version")
+	if value.get("encounterId") != payload.encounterProfile.get("id"): errors.append("checkpoint encounter ID mismatch")
+	if value.get("scenarioId") != scenario.get("id"): errors.append("checkpoint scenario ID mismatch")
+	if value.get("selectedBodyPartId") != payload.get("selectedBodyPartId"): errors.append("checkpoint selected body part mismatch")
+	var rounds: int = int(value.get("roundsCompleted", -1)); var next_round: int = int(value.get("nextRoundNumber", -1))
+	if rounds < 1 or next_round != rounds + 1 or next_round > int(payload.encounterProfile.maxRounds): errors.append("checkpoint round boundary is invalid")
+	if int(value.get("enemyBehaviorCyclesCompleted", -1)) != rounds or int(value.get("strikeCount", -1)) != rounds: errors.append("checkpoint counters are inconsistent")
+	if typeof(value.get("roundSummaries")) != TYPE_ARRAY or value.roundSummaries.size() != rounds: errors.append("checkpoint summaries are inconsistent")
+	if not _finite_number(value.get("currentHunterStamina")) or float(value.get("currentHunterStamina", -1)) < 0.0 or float(value.get("currentHunterStamina", 0)) > float(payload.staminaProfile.maxStamina): errors.append("checkpoint stamina is invalid")
+	if not _finite_number(value.get("currentEnemyHealth")) or float(value.get("currentEnemyHealth", -1)) < 0.0 or float(value.get("currentEnemyHealth", 0)) > float(payload.enemyHealthProfile.maxHealth): errors.append("checkpoint enemy health is invalid")
+	if value.get("encounterState") != "in-progress": errors.append("checkpoint is not resumable")
 	return errors
 
 static func _validate_targeting_plan(plan: Dictionary) -> Array[String]:

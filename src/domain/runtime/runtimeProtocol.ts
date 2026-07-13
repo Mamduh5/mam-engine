@@ -15,6 +15,7 @@ import type { LargeEnemyProfile, LargeEnemyScenario, ResolvedLargeEnemyDefinitio
 import type { EncounterProfile, EncounterScenario, ResolvedEncounterDefinitionPaths } from "../encounter/encounterTypes";
 import type { HunterProfile, ResolvedHunterDefinitionPaths } from "../hunter/hunterTypes";
 import type { ArenaProfile } from "../arena/arenaTypes";
+import type { EncounterRuntimeCheckpoint } from "./encounterCheckpoint";
 export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
 export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
@@ -372,7 +373,7 @@ export interface EncounterRuntimeRequest {
     reactionDefinitionKind: "damage-reaction-profile"; reactionDefinitionSchemaVersion: 1; reactionProfile: DamageReactionProfile;
     hurtboxDefinitionKind: "contact-volume-profile"; hurtboxDefinitionSchemaVersion: 1; hurtboxProfiles: ContactVolumeProfile[]; selectedBodyPartId: string; selectedHurtboxProfile: ContactVolumeProfile;
     arenaDefinitionKind: "arena-profile"; arenaDefinitionSchemaVersion: 1; arenaProfile: ArenaProfile;
-    scenario: { id: EncounterScenario; durationSeconds: number; fixedDeltaSeconds: number; startingStamina: number };
+    scenario: { id: EncounterScenario; durationSeconds: number; fixedDeltaSeconds: number; startingStamina: number; mode?: "runtime" | "interactive" | "recovery-initial" | "recovery-resume"; autoDrive?: boolean; checkpointPath?: string; interruptAfterRound?: number; recoveryCheckpoint?: EncounterRuntimeCheckpoint };
   };
 }
 

@@ -85,6 +85,8 @@ import { setEncounterValue } from "../application/encounter/setEncounterValue";
 import { simulateEncounterFile } from "../application/encounter/simulateEncounter";
 import { validateEncounterFile } from "../application/encounter/validateEncounter";
 import { runEncounterRuntimeTest } from "../application/runtime/runEncounterRuntimeTest";
+import { runEncounterInteractiveTest } from "../application/runtime/runEncounterInteractiveTest";
+import { runEncounterRecoveryTest } from "../application/runtime/runEncounterRecoveryTest";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -168,6 +170,8 @@ async function dispatch(
     case "encounter.validate": return validateEncounterFile(workspaceRoot, command.file);
     case "encounter.simulate": return simulateEncounterFile(workspaceRoot, command.file, command.scenario, command.fixedDelta);
     case "encounter.runtime-test": return runEncounterRuntimeTest(workspaceRoot, command.file, command.scenario, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
+    case "encounter.interactive-test": return runEncounterInteractiveTest(workspaceRoot, command.file, command.scenario, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
+    case "encounter.recovery-test": return runEncounterRecoveryTest(workspaceRoot, command.file, command.interruptAfterRound, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "encounter.set": return dependencies.setEncounterValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "hunter.inspect": return inspectHunter(workspaceRoot, command.file);
     case "hunter.validate": return validateHunterFile(workspaceRoot, command.file);
