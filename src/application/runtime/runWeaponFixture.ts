@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
-import path from "node:path";
 
 import type { ActionTimelineProfile } from "../../domain/actionTimeline/actionTimelineTypes";
 import type { ContactVolumeProfile } from "../../domain/contactVolume/contactVolumeTypes";
@@ -18,14 +16,14 @@ import { discoverGodot, GodotDiscoveryError, type GodotExecutable } from "../../
 import { runGodotProcess, type ProcessRunnerOptions } from "../../infrastructure/runtime/godotProcessRunner";
 import { createRuntimeSession, readSessionJson, removeRuntimeSession, writeSessionJson, type RuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
 import { ErrorCodes } from "../../shared/errorCodes";
-import { RuntimeFixtureError } from "./runMovementFixture";
+import { resolveRuntimeProjectPath, RuntimeFixtureError } from "./runMovementFixture";
 
 export interface RunWeaponFixtureOptions extends ProcessRunnerOptions { godot?: string; keepSession?: boolean; timeoutMs?: number }
 export interface WeaponRuntimeFixtureExecution { executable: GodotExecutable; request: WeaponRuntimeRequest; readiness: RuntimeResponse; response: RuntimeResponse; process: Awaited<ReturnType<typeof runGodotProcess>>; simulation: WeaponStrikeSimulation; session: { retained: boolean; path: string | null }; runtimeSession: RuntimeSession; internalArtifacts: string[] }
 
 export async function runWeaponFixture(workspaceRoot: string, weapon: WeaponProfile, resolvedDefinitionPaths: ResolvedWeaponDefinitionPaths, stamina: StaminaProfile, health: HealthProfile, hurtbox: ContactVolumeProfile, reaction: DamageReactionProfile, action: OffensiveActionProfile, timeline: ActionTimelineProfile, hitbox: ContactVolumeProfile, scenario: WeaponRuntimeScenario, fixedDeltaSeconds = WEAPON_FIXED_DELTA_SECONDS, options: RunWeaponFixtureOptions = {}): Promise<WeaponRuntimeFixtureExecution> {
   const before = await captureWorkspaceState(workspaceRoot); let executable: GodotExecutable; try { executable = await discoverGodot(options.godot); } catch (caught) { if (caught instanceof GodotDiscoveryError) throw new RuntimeFixtureError(caught.code, caught.message); throw caught; }
-  const projectPath = path.join(workspaceRoot, "runtime", "godot"); try { if (!(await stat(path.join(projectPath, "project.godot"))).isFile()) throw new Error(); } catch { throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Godot runtime project was not found"); }
+  const projectPath = await resolveRuntimeProjectPath();
   const correlationId = randomUUID(); const simulation = simulateWeaponStrike(weapon, resolvedDefinitionPaths, stamina, health, hurtbox, reaction, action, timeline, hitbox, fixedDeltaSeconds); const durationSeconds = simulation.actionAccepted ? action.durationSeconds + action.cooldownSeconds + simulation.reactionDurationSeconds : 0;
   const request: WeaponRuntimeRequest = { schemaVersion: RUNTIME_SCHEMA_VERSION, commandId: RUNTIME_RUN_COMMAND, fixtureId: WEAPON_FIXTURE_ID, correlationId, requestedAt: new Date().toISOString(), timeoutMs: Math.min(Math.max(options.timeoutMs ?? 10_000, 1), 60_000), payload: { weaponDefinitionKind: "weapon-profile", weaponDefinitionSchemaVersion: 1, weaponProfile: weapon, resolvedDefinitionPaths, offensiveActionDefinitionKind: "offensive-action-profile", offensiveActionDefinitionSchemaVersion: 1, offensiveActionProfile: action, actionTimelineDefinitionKind: "action-timeline-profile", actionTimelineDefinitionSchemaVersion: 1, actionTimelineProfile: timeline, hitboxDefinitionKind: "contact-volume-profile", hitboxDefinitionSchemaVersion: 1, hitboxProfile: hitbox, staminaDefinitionKind: "stamina-profile", staminaDefinitionSchemaVersion: 1, staminaProfile: stamina, healthDefinitionKind: "health-profile", healthDefinitionSchemaVersion: 1, healthProfile: health, hurtboxDefinitionKind: "contact-volume-profile", hurtboxDefinitionSchemaVersion: 1, hurtboxProfile: hurtbox, reactionDefinitionKind: "damage-reaction-profile", reactionDefinitionSchemaVersion: 1, reactionProfile: reaction, scenario: { id: scenario, durationSeconds, fixedDeltaSeconds, targetActionWasActive: true } } };
   const requestValidation = validateRuntimeRequest(request); if (!requestValidation.valid) throw new RuntimeFixtureError(ErrorCodes.RuntimeRequestInvalid, "Weapon runtime request validation failed", null, { errors: requestValidation.errors });

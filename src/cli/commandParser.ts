@@ -112,10 +112,42 @@ const cameraScenarios = new Set<CameraScenario>(["orbit", "pitch-clamp", "recent
 const targetingScenarios = new Set<TargetingScenario>(["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown"]);
 const targetingRuntimeScenarios = new Set<TargetingRuntimeScenario>(["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]);
 
+export const SUPPORTED_COMMAND_ACTIONS = {
+  movement: ["inspect", "validate", "simulate", "set", "runtime-test"],
+  camera: ["inspect", "validate", "simulate", "set", "runtime-test"],
+  targeting: ["inspect", "validate", "simulate", "set", "runtime-test"],
+  "defensive-action": ["inspect", "validate", "simulate", "set", "runtime-test"],
+  "offensive-action": ["inspect", "validate", "simulate", "set", "runtime-test"],
+  health: ["inspect", "validate", "simulate-hit", "set", "runtime-test"],
+  stamina: ["inspect", "validate", "simulate-action", "set", "runtime-test"],
+  "action-timeline": ["inspect", "validate", "simulate", "set", "runtime-test"],
+  "contact-volume": ["inspect", "validate", "simulate-contact", "set", "runtime-test"],
+  "damage-reaction": ["inspect", "validate", "simulate-hit", "set", "runtime-test"],
+  weapon: ["inspect", "validate", "simulate-strike", "set", "runtime-test"],
+  "large-enemy": ["inspect", "validate", "simulate", "set", "runtime-test"],
+  hunter: ["inspect", "validate", "set"],
+  arena: ["inspect", "validate", "set"],
+  encounter: ["inspect", "validate", "simulate", "set", "runtime-test", "interactive-test", "recovery-test"],
+  combat: ["simulate-exchange", "simulate-stamina-exchange", "simulate-targeted-exchange", "runtime-test", "stamina-runtime-test", "targeted-runtime-test"],
+  editor: ["serve"],
+  snapshot: ["list", "create", "rollback"],
+  runtime: ["check"]
+} as const;
+
+export type CommandGroup = keyof typeof SUPPORTED_COMMAND_ACTIONS;
+
+export function isSupportedCommandGroup(value: string): value is CommandGroup {
+  return Object.prototype.hasOwnProperty.call(SUPPORTED_COMMAND_ACTIONS, value);
+}
+
 export function parseCommand(argv: string[]): ParsedCommand {
   const [group, action, ...remaining] = argv;
   if (!group || !action) {
     throw new CliParseError("Expected a command such as 'mam movement inspect <file> --json'");
+  }
+  if (!isSupportedCommandGroup(group)) throw new CliParseError(`Unknown command group '${group}'`);
+  if (!(SUPPORTED_COMMAND_ACTIONS[group] as readonly string[]).includes(action)) {
+    throw new CliParseError(`Unknown ${group} command '${action}'`);
   }
 
   if (group === "movement") {

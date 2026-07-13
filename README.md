@@ -45,17 +45,19 @@ npm install
 npm run check
 ```
 
-The package exposes the executable name `mam` through its `bin` entry. During repository development, use `npm run mam -- <arguments>`; an installed or linked package can use `mam <arguments>` directly.
+The package exposes the executable name `mam` through its `bin` entry. Installed and linked package consumers use `mam <arguments>` directly. During repository development, use `npm run mam -- <arguments>`.
 
 ## Commands
 
 Every command accepts `--json`. JSON mode writes one versioned result envelope to standard output and returns a non-zero exit code on failure.
 
-Start the local editor at `http://127.0.0.1:4310`:
+Start the installed package's local editor at `http://127.0.0.1:4310`:
 
 ```text
-npm run mam -- editor serve
+mam editor serve
 ```
+
+For repository development, run `npm run mam -- editor serve` instead.
 
 Phase 10 completes the movement-profile workflow in that local editor. Each save requires a successful dry-run preview and matching file revision, uses the existing transactional setter and snapshot/rollback behavior, and can compare a validated candidate against the saved profile through the canonical deterministic movement simulation. Other definition kinds remain read-only.
 

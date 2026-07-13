@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
-import path from "node:path";
 
 import type { CameraProfile } from "../../domain/camera/cameraTypes";
 import { buildTargetingRuntimePlan, type TargetingRuntimeScenario } from "../../domain/runtime/targetingRuntimePlan";
@@ -14,7 +12,7 @@ import { discoverGodot, GodotDiscoveryError, type GodotExecutable } from "../../
 import { runGodotProcess, type ProcessRunnerOptions } from "../../infrastructure/runtime/godotProcessRunner";
 import { createRuntimeSession, readSessionJson, removeRuntimeSession, writeSessionJson, type RuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
 import { ErrorCodes } from "../../shared/errorCodes";
-import { RuntimeFixtureError } from "./runMovementFixture";
+import { resolveRuntimeProjectPath, RuntimeFixtureError } from "./runMovementFixture";
 
 export interface TargetingFixtureExecution {
   executable: GodotExecutable; request: TargetingRuntimeRequest; readiness: RuntimeResponse; response: RuntimeResponse;
@@ -35,8 +33,7 @@ export async function runTargetingFixture(workspaceRoot: string, targetingProfil
   if (!requestValidation.valid) throw new RuntimeFixtureError(ErrorCodes.RuntimeRequestInvalid, "Targeting runtime request validation failed", null, { errors: requestValidation.errors });
   const before = await captureWorkspaceState(workspaceRoot); let executable: GodotExecutable;
   try { executable = await discoverGodot(options.godot); } catch (caught) { if (caught instanceof GodotDiscoveryError) throw new RuntimeFixtureError(caught.code, caught.message); throw caught; }
-  const projectPath = path.join(workspaceRoot, "runtime", "godot");
-  try { if (!(await stat(path.join(projectPath, "project.godot"))).isFile()) throw new Error(); } catch { throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Godot runtime project was not found"); }
+  const projectPath = await resolveRuntimeProjectPath();
   const session = await createRuntimeSession(workspaceRoot, correlationId); await writeSessionJson(session.requestPath, request);
   await writeSessionJson(session.metadataPath, { correlationId, state: "created", fixtureId: TARGETING_FIXTURE_ID, executableSource: executable.source, requestedAt: request.requestedAt });
   try {

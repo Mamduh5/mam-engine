@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import { simulateEncounter } from "../../domain/encounter/encounterSimulation";
@@ -14,14 +13,14 @@ import { runGodotProcess, type ProcessRunnerOptions } from "../../infrastructure
 import { createRuntimeSession, readSessionJson, removeRuntimeSession, writeSessionJson, type RuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
 import { ErrorCodes } from "../../shared/errorCodes";
 import type { LoadedEncounterBundle } from "../encounter/encounterOperationSupport";
-import { RuntimeFixtureError } from "./runMovementFixture";
+import { resolveRuntimeProjectPath, RuntimeFixtureError } from "./runMovementFixture";
 
 export interface RunEncounterFixtureOptions extends ProcessRunnerOptions { godot?: string; keepSession?: boolean; timeoutMs?: number; mode?: "runtime" | "interactive" | "recovery-initial" | "recovery-resume"; autoDrive?: boolean; interruptAfterRound?: number; recoveryCheckpoint?: EncounterRuntimeCheckpoint }
 export interface EncounterRuntimeFixtureExecution { executable: GodotExecutable; request: EncounterRuntimeRequest; readiness: RuntimeResponse; response: RuntimeResponse; process: Awaited<ReturnType<typeof runGodotProcess>>; simulation: EncounterSimulation; checkpoint: unknown | null; session: { retained: boolean; path: string | null }; runtimeSession: RuntimeSession; internalArtifacts: string[] }
 
 export async function runEncounterFixture(workspaceRoot: string, loaded: LoadedEncounterBundle, scenario: EncounterScenario, fixedDeltaSeconds: number, options: RunEncounterFixtureOptions = {}): Promise<EncounterRuntimeFixtureExecution> {
   const before = await captureWorkspaceState(workspaceRoot); let executable: GodotExecutable; try { executable = await discoverGodot(options.godot); } catch (caught) { if (caught instanceof GodotDiscoveryError) throw new RuntimeFixtureError(caught.code, caught.message); throw caught; }
-  const projectPath = path.join(workspaceRoot, "runtime", "godot"); try { if (!(await stat(path.join(projectPath, "project.godot"))).isFile()) throw new Error(); } catch { throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Godot runtime project was not found"); }
+  const projectPath = await resolveRuntimeProjectPath();
   const simulation = simulateEncounter({ profile: loaded.profile, resolvedDefinitionPaths: loaded.resolvedDefinitionPaths, arena: loaded.arena.profile, hunterHealth: loaded.hunter.health, hunterStamina: loaded.hunter.stamina, weapon: loaded.weapon, enemy: loaded.enemy.profile, enemyResolvedDefinitionPaths: loaded.enemy.resolvedDefinitionPaths, enemyHealth: loaded.enemy.health, enemyReaction: loaded.enemy.reaction, selectedBodyPartId: loaded.selectedBodyPartId, selectedHurtbox: loaded.selectedHurtbox, scenario, fixedDeltaSeconds });
   const cycleSeconds = loaded.enemy.profile.idleDurationSeconds + loaded.enemy.profile.telegraphDurationSeconds + loaded.enemy.profile.attackDurationSeconds + loaded.enemy.profile.recoveryDurationSeconds; const durationSeconds = Math.min(60, Math.max(fixedDeltaSeconds, simulation.enemyBehaviorCyclesCompleted * (cycleSeconds + loaded.weapon.offensiveAction.durationSeconds + loaded.weapon.offensiveAction.cooldownSeconds + Math.max(loaded.enemy.reaction.hitReactionDurationSeconds, loaded.enemy.reaction.staggerDurationSeconds))));
   const correlationId = randomUUID(); const checkpointPath = path.join(workspaceRoot, ".mam-engine", "runtime-sessions", correlationId, "encounter-checkpoint.json"); const mode = options.mode ?? "runtime"; const request: EncounterRuntimeRequest = { schemaVersion: RUNTIME_SCHEMA_VERSION, commandId: RUNTIME_RUN_COMMAND, fixtureId: ENCOUNTER_FIXTURE_ID, correlationId, requestedAt: new Date().toISOString(), timeoutMs: Math.min(Math.max(options.timeoutMs ?? 30_000, 1), 60_000), payload: {

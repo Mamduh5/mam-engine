@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
-import path from "node:path";
 
 import { simulateStaminaAction } from "../../domain/stamina/staminaSimulation";
 import type { StaminaActionProfile, StaminaActionSimulation, StaminaProfile } from "../../domain/stamina/staminaTypes";
@@ -12,7 +10,7 @@ import { discoverGodot, GodotDiscoveryError, type GodotExecutable } from "../../
 import { runGodotProcess, type ProcessRunnerOptions } from "../../infrastructure/runtime/godotProcessRunner";
 import { createRuntimeSession, readSessionJson, removeRuntimeSession, writeSessionJson, type RuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
 import { ErrorCodes } from "../../shared/errorCodes";
-import { RuntimeFixtureError } from "./runMovementFixture";
+import { resolveRuntimeProjectPath, RuntimeFixtureError } from "./runMovementFixture";
 
 const FIXED_DELTA_SECONDS = 1 / 60;
 export interface RunStaminaFixtureOptions extends ProcessRunnerOptions { godot?: string; keepSession?: boolean; timeoutMs?: number }
@@ -21,7 +19,7 @@ export interface StaminaRuntimeFixtureExecution { executable: GodotExecutable; r
 export async function runStaminaFixture(workspaceRoot: string, stamina: StaminaProfile, action: StaminaActionProfile, options: RunStaminaFixtureOptions = {}): Promise<StaminaRuntimeFixtureExecution> {
   const before = await captureWorkspaceState(workspaceRoot); let executable: GodotExecutable;
   try { executable = await discoverGodot(options.godot); } catch (caught) { if (caught instanceof GodotDiscoveryError) throw new RuntimeFixtureError(caught.code, caught.message); throw caught; }
-  const projectPath = path.join(workspaceRoot, "runtime", "godot"); try { if (!(await stat(path.join(projectPath, "project.godot"))).isFile()) throw new Error(); } catch { throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Godot runtime project was not found"); }
+  const projectPath = await resolveRuntimeProjectPath();
   const correlationId = randomUUID(); const simulation = simulateStaminaAction(stamina, action);
   const request: StaminaRuntimeRequest = { schemaVersion: RUNTIME_SCHEMA_VERSION, commandId: RUNTIME_RUN_COMMAND, fixtureId: STAMINA_FIXTURE_ID, correlationId, requestedAt: new Date().toISOString(), timeoutMs: Math.min(Math.max(options.timeoutMs ?? 10_000, 1), 60_000), payload: { staminaDefinitionKind: "stamina-profile", staminaDefinitionSchemaVersion: 1, staminaProfile: stamina, actionDefinitionKind: action.kind, actionDefinitionSchemaVersion: 1, actionProfile: action, scenario: { id: "action-cost", durationSeconds: FIXED_DELTA_SECONDS, fixedDeltaSeconds: FIXED_DELTA_SECONDS } } };
   const requestValidation = validateRuntimeRequest(request); if (!requestValidation.valid) throw new RuntimeFixtureError(ErrorCodes.RuntimeRequestInvalid, "Runtime request validation failed", null, { errors: requestValidation.errors });

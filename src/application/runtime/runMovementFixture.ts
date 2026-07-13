@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import { FIXED_TIMESTEP_SECONDS, simulateMovement, type SimulationResult } from "../../domain/movement/movementSimulation";
@@ -10,6 +9,7 @@ import { captureWorkspaceState, diffFileStates } from "../../infrastructure/file
 import { fileExists } from "../../infrastructure/files/jsonFileStore";
 import { discoverGodot, GodotDiscoveryError, type GodotExecutable } from "../../infrastructure/runtime/godotDiscovery";
 import { runGodotProcess, type ProcessRunnerOptions } from "../../infrastructure/runtime/godotProcessRunner";
+import { PackageAssetResolutionError, resolvePackageAsset } from "../../infrastructure/runtime/packageAssetResolver";
 import { createRuntimeSession, readSessionJson, removeRuntimeSession, writeSessionJson, type RuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
 import { ErrorCodes, type ErrorCode } from "../../shared/errorCodes";
 
@@ -36,9 +36,7 @@ export async function runMovementFixture(workspaceRoot: string, profile: Movemen
   let executable: GodotExecutable;
   try { executable = await discoverGodot(options.godot); }
   catch (caught) { if (caught instanceof GodotDiscoveryError) throw new RuntimeFixtureError(caught.code, caught.message); throw caught; }
-  const projectPath = path.join(workspaceRoot, "runtime", "godot");
-  try { if (!(await stat(path.join(projectPath, "project.godot"))).isFile()) throw new Error(); }
-  catch { throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Godot runtime project was not found"); }
+  const projectPath = await resolveRuntimeProjectPath();
 
   const correlationId = randomUUID();
   const simulation = simulateMovement(profile, scenario, seconds);
@@ -82,6 +80,17 @@ export async function runMovementFixture(workspaceRoot: string, profile: Movemen
     await writeSessionJson(session.metadataPath, { correlationId, state: "failed", code: caught instanceof RuntimeFixtureError ? caught.code : ErrorCodes.RuntimeExecutionFailed }).catch(() => undefined);
     if (caught instanceof RuntimeFixtureError) throw caught;
     throw new RuntimeFixtureError(ErrorCodes.RuntimeExecutionFailed, caught instanceof Error ? caught.message : String(caught), session);
+  }
+}
+
+export async function resolveRuntimeProjectPath(): Promise<string> {
+  try {
+    return path.dirname((await resolvePackageAsset("runtime/godot/project.godot")).path);
+  } catch (caught) {
+    if (caught instanceof PackageAssetResolutionError) {
+      throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Packaged Godot runtime project was not found", null, { asset: caught.relativePath, packageAssetCode: caught.code });
+    }
+    throw caught;
   }
 }
 

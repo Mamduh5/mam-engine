@@ -48,6 +48,7 @@ import { runTargetedCombatRuntimeTest } from "../application/runtime/runTargeted
 import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
+import { helpGuidance, renderHelpRequest } from "./help";
 import { writeResult } from "./output";
 import { inspectActionTimeline } from "../application/actionTimeline/inspectActionTimeline";
 import { setActionTimelineValue } from "../application/actionTimeline/setActionTimelineValue";
@@ -126,7 +127,9 @@ export async function executeCli(
   try {
     command = parseCommand(argv);
   } catch (caught) {
-    const message = caught instanceof Error ? caught.message : String(caught);
+    const baseMessage = caught instanceof Error ? caught.message : String(caught);
+    const guidance = caught instanceof CliParseError && baseMessage.startsWith("Unknown ") ? helpGuidance(argv[0] ?? "") : null;
+    const message = guidance === null ? baseMessage : `${baseMessage}\n${guidance}`;
     const result = operationResult({
       command: "cli.parse",
       status: "failed",
@@ -156,8 +159,9 @@ export async function executeCli(
 }
 
 export async function runCli(argv: string[], workspaceRoot = process.cwd()): Promise<number> {
-  if (argv.length === 1 && (argv[0] === "--help" || argv[0] === "-h")) {
-    process.stdout.write("mam <command-group> <command> [arguments] [--json]\n\nCommand groups: movement, camera, targeting, defensive-action, offensive-action, health, stamina, action-timeline, contact-volume, damage-reaction, weapon, large-enemy, hunter, arena, encounter, combat, editor, snapshot, runtime\n");
+  const help = renderHelpRequest(argv);
+  if (help !== null) {
+    process.stdout.write(help);
     return 0;
   }
   const execution = await executeCli(argv, workspaceRoot);

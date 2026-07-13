@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { copyFile, mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-test("packed v0.1 installs and exposes CLI examples plus the local editor", async (context) => {
+test("packed v0.1 works from a separate consumer workspace", async (context) => {
   const sourceRoot = path.resolve(__dirname, "../..");
   const root = await mkdtemp(path.join(tmpdir(), "mam-package-smoke-"));
   context.after(() => rm(root, { recursive: true, force: true }));
@@ -31,34 +31,25 @@ test("packed v0.1 installs and exposes CLI examples plus the local editor", asyn
   assert.equal((await readdir(path.join(packageRoot, "schemas"))).length >= 16, true);
 
   const bin = process.platform === "win32" ? path.join(installRoot, "node_modules", ".bin", "mam.cmd") : path.join(installRoot, "node_modules", ".bin", "mam");
-  const help = runInstalled(bin, ["--help"], installRoot);
-  assert.match(help.stdout, /mam <command-group>/);
-  const packagedExample = "examples/movement/default.json";
-  const inspection = operation(runInstalled(bin, ["movement", "inspect", packagedExample, "--json"], packageRoot).stdout);
-  assert.equal(inspection.command, "movement.inspect");
-  assert.equal(inspection.status, "passed");
-  const simulation = operation(runInstalled(bin, ["movement", "simulate", packagedExample, "--scenario", "accelerate", "--json"], packageRoot).stdout);
-  assert.equal(simulation.command, "movement.simulate");
-  assert.equal(simulation.status, "passed");
-
   const workspace = path.join(root, "workspace");
   await mkdir(workspace, { recursive: true });
+  const sourceDefinition = await readFile(path.join(packageRoot, "examples", "movement", "default.json"), "utf8");
   await copyFile(path.join(packageRoot, "examples", "movement", "default.json"), path.join(workspace, "movement.json"));
-  const main = path.join(packageRoot, packageJson.bin.mam);
-  const server = spawn(process.execPath, [main, "editor", "serve", "--host", "127.0.0.1", "--port", "0", "--workspace", workspace, "--json"], { cwd: installRoot, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
-  context.after(() => { if (server.exitCode === null && server.signalCode === null) server.kill("SIGTERM"); });
-  const started = operation(await firstOutputLine(server));
-  assert.equal(started.status, "passed");
-  const url = (started.data as { url: string }).url;
-  assert.equal((await fetch(`${url}/api/health`)).status, 200);
-  for (const asset of ["/", "/styles.css", "/client.js"]) assert.equal((await fetch(`${url}${asset}`)).status, 200);
-  const definitions = await fetch(`${url}/api/definitions`).then((response) => response.json()) as { definitions: Array<{ relativePath: string }> };
-  assert.deepEqual(definitions.definitions.map((definition) => definition.relativePath), ["movement.json"]);
-  const editorInspection = await fetch(`${url}/api/definitions/inspect?file=movement.json`).then((response) => response.json()) as { summary: { kind: string; valid: boolean } };
-  assert.deepEqual(editorInspection.summary, { ...editorInspection.summary, kind: "movement-profile", valid: true });
-  server.kill("SIGTERM");
-  await processExit(server);
-  await assert.rejects(fetch(`${url}/api/health`));
+
+  const help = runInstalled(bin, ["--help"], workspace);
+  assert.match(help.stdout, /mam <command-group>/);
+  const movementHelp = runInstalled(bin, ["movement", "--help"], workspace);
+  assert.match(movementHelp.stdout, /mam movement runtime-test <file>/);
+  const runtimeCheck = operation(runInstalled(bin, ["runtime", "check", "--json"], workspace).stdout);
+  assert.equal(runtimeCheck.status, "passed");
+  assert.equal((runtimeCheck.data as { headlessSmokePassed: boolean }).headlessSmokePassed, true);
+  const runtimeProof = operation(runInstalled(bin, ["movement", "runtime-test", "movement.json", "--scenario", "accelerate", "--seconds", "2", "--json"], workspace).stdout);
+  assert.equal(runtimeProof.status, "passed");
+  assert.equal(((runtimeProof.data as { comparison: { passed: boolean } }).comparison).passed, true);
+  await assert.rejects(readFile(path.join(workspace, "runtime", "godot", "project.godot")));
+  assert.equal(await readFile(path.join(workspace, "movement.json"), "utf8"), sourceDefinition);
+  assert.deepEqual(await runtimeSessions(workspace), []);
+
 });
 
 function runNpm(args: string[], cwd: string): { stdout: string } {
@@ -76,24 +67,7 @@ function runInstalled(bin: string, args: string[], cwd: string): { stdout: strin
 
 function operation(output: string): Record<string, unknown> { return JSON.parse(output.trim()) as Record<string, unknown>; }
 
-function firstOutputLine(child: ChildProcess): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let output = "";
-    const timeout = setTimeout(() => reject(new Error("Installed editor did not report readiness")), 10_000);
-    child.stdout?.on("data", (chunk: Buffer) => {
-      output += chunk.toString("utf8");
-      const newline = output.indexOf("\n");
-      if (newline >= 0) { clearTimeout(timeout); resolve(output.slice(0, newline)); }
-    });
-    child.once("error", (error) => { clearTimeout(timeout); reject(error); });
-    child.once("exit", (code, signal) => { if (!output.includes("\n")) { clearTimeout(timeout); reject(new Error(`Installed editor exited before readiness (${String(code)}, ${String(signal)})`)); } });
-  });
-}
-
-function processExit(child: ChildProcess): Promise<void> {
-  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("Installed editor did not shut down")), 10_000);
-    child.once("exit", () => { clearTimeout(timeout); resolve(); });
-  });
+async function runtimeSessions(workspace: string): Promise<string[]> {
+  try { return await readdir(path.join(workspace, ".mam-engine", "runtime-sessions")); }
+  catch (caught) { if ((caught as NodeJS.ErrnoException).code === "ENOENT") return []; throw caught; }
 }

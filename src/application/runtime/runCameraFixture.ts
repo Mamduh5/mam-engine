@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
-import path from "node:path";
 
 import { CAMERA_FIXED_DELTA_SECONDS, simulateCamera } from "../../domain/camera/cameraSimulation";
 import type { CameraProfile, CameraScenario } from "../../domain/camera/cameraTypes";
@@ -12,7 +10,7 @@ import { discoverGodot, GodotDiscoveryError, type GodotExecutable } from "../../
 import { runGodotProcess, type ProcessRunnerOptions } from "../../infrastructure/runtime/godotProcessRunner";
 import { createRuntimeSession, readSessionJson, removeRuntimeSession, writeSessionJson, type RuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
 import { ErrorCodes } from "../../shared/errorCodes";
-import { RuntimeFixtureError } from "./runMovementFixture";
+import { resolveRuntimeProjectPath, RuntimeFixtureError } from "./runMovementFixture";
 
 export interface CameraFixtureExecution {
   executable: GodotExecutable;
@@ -48,9 +46,7 @@ export async function runCameraFixture(workspaceRoot: string, profile: CameraPro
   let executable: GodotExecutable;
   try { executable = await discoverGodot(options.godot); }
   catch (caught) { if (caught instanceof GodotDiscoveryError) throw new RuntimeFixtureError(caught.code, caught.message); throw caught; }
-  const projectPath = path.join(workspaceRoot, "runtime", "godot");
-  try { if (!(await stat(path.join(projectPath, "project.godot"))).isFile()) throw new Error(); }
-  catch { throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Godot runtime project was not found"); }
+  const projectPath = await resolveRuntimeProjectPath();
   const session = await createRuntimeSession(workspaceRoot, correlationId);
   await writeSessionJson(session.requestPath, request);
   await writeSessionJson(session.metadataPath, { correlationId, state: "created", fixtureId: CAMERA_FIXTURE_ID, executableSource: executable.source, requestedAt: request.requestedAt });

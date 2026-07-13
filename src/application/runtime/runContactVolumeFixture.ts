@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { stat } from "node:fs/promises";
-import path from "node:path";
 
 import { CONTACT_VOLUME_FIXED_DELTA_SECONDS, simulateContact } from "../../domain/contactVolume/contactVolumeSimulation";
 import type { ContactVolumeProfile, ContactVolumeSimulation } from "../../domain/contactVolume/contactVolumeTypes";
@@ -12,7 +10,7 @@ import { discoverGodot, GodotDiscoveryError, type GodotExecutable } from "../../
 import { runGodotProcess, type ProcessRunnerOptions } from "../../infrastructure/runtime/godotProcessRunner";
 import { createRuntimeSession, readSessionJson, removeRuntimeSession, writeSessionJson, type RuntimeSession } from "../../infrastructure/runtime/runtimeSessionStore";
 import { ErrorCodes } from "../../shared/errorCodes";
-import { RuntimeFixtureError } from "./runMovementFixture";
+import { resolveRuntimeProjectPath, RuntimeFixtureError } from "./runMovementFixture";
 
 export interface RunContactVolumeFixtureOptions extends ProcessRunnerOptions { godot?: string; keepSession?: boolean; timeoutMs?: number }
 export interface ContactVolumeRuntimeFixtureExecution { executable: GodotExecutable; request: ContactVolumeRuntimeRequest; readiness: RuntimeResponse; response: RuntimeResponse; process: Awaited<ReturnType<typeof runGodotProcess>>; simulation: ContactVolumeSimulation; session: { retained: boolean; path: string | null }; runtimeSession: RuntimeSession; internalArtifacts: string[] }
@@ -20,7 +18,7 @@ export interface ContactVolumeRuntimeFixtureExecution { executable: GodotExecuta
 export async function runContactVolumeFixture(workspaceRoot: string, hitbox: ContactVolumeProfile, hurtbox: ContactVolumeProfile, scenario: ContactVolumeRuntimeScenario, fixedDeltaSeconds = CONTACT_VOLUME_FIXED_DELTA_SECONDS, options: RunContactVolumeFixtureOptions = {}): Promise<ContactVolumeRuntimeFixtureExecution> {
   const before = await captureWorkspaceState(workspaceRoot); let executable: GodotExecutable;
   try { executable = await discoverGodot(options.godot); } catch (caught) { if (caught instanceof GodotDiscoveryError) throw new RuntimeFixtureError(caught.code, caught.message); throw caught; }
-  const projectPath = path.join(workspaceRoot, "runtime", "godot"); try { if (!(await stat(path.join(projectPath, "project.godot"))).isFile()) throw new Error(); } catch { throw new RuntimeFixtureError(ErrorCodes.RuntimeProjectNotFound, "Godot runtime project was not found"); }
+  const projectPath = await resolveRuntimeProjectPath();
   const correlationId = randomUUID(); const simulation = simulateContact(hitbox, hurtbox, fixedDeltaSeconds);
   const request: ContactVolumeRuntimeRequest = { schemaVersion: RUNTIME_SCHEMA_VERSION, commandId: RUNTIME_RUN_COMMAND, fixtureId: CONTACT_VOLUME_FIXTURE_ID, correlationId, requestedAt: new Date().toISOString(), timeoutMs: Math.min(Math.max(options.timeoutMs ?? 10_000, 1), 60_000), payload: { hitboxDefinitionKind: "contact-volume-profile", hitboxDefinitionSchemaVersion: 1, hitboxProfile: hitbox, hurtboxDefinitionKind: "contact-volume-profile", hurtboxDefinitionSchemaVersion: 1, hurtboxProfile: hurtbox, scenario: { id: scenario, durationSeconds: simulation.totalSteps * fixedDeltaSeconds, fixedDeltaSeconds } } };
   const requestValidation = validateRuntimeRequest(request); if (!requestValidation.valid) throw new RuntimeFixtureError(ErrorCodes.RuntimeRequestInvalid, "Contact volume runtime request validation failed", null, { errors: requestValidation.errors });
