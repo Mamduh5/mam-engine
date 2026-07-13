@@ -8,10 +8,11 @@ import { validateHealthDefinition } from "../health/healthValidation";
 import { simulateOffensiveAction } from "../offensiveAction/offensiveActionSimulation";
 import { validateStaminaDefinition } from "../stamina/staminaValidation";
 import { simulateStaminaCombatExchange } from "../combat/staminaCombatExchangeSimulation";
+import { simulateTargetedCombatExchange } from "../combat/targetedCombatExchangeSimulation";
 import { validateCameraRuntimeMetrics } from "./cameraRuntimeMetrics";
 import { validateTargetingRuntimePlan } from "./targetingRuntimePlan";
 import { validateTargetingRuntimeMetrics } from "./targetingRuntimeMetrics";
-import { CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETING_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
+import { CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
 
 export interface ProtocolValidation<T> { valid: boolean; value?: T; errors: string[] }
 
@@ -20,7 +21,7 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   if (!isRecord(value)) return { valid: false, errors: ["request must be an object"] };
   if (value.schemaVersion !== RUNTIME_SCHEMA_VERSION) errors.push("unsupported schemaVersion");
   if (value.commandId !== RUNTIME_RUN_COMMAND) errors.push("unknown commandId");
-  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID) errors.push("unknown fixtureId");
+  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID) errors.push("unknown fixtureId");
   if (typeof value.correlationId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.correlationId)) errors.push("correlationId is missing or unsafe");
   if (typeof value.requestedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value.requestedAt) || !Number.isFinite(Date.parse(value.requestedAt))) errors.push("requestedAt must be an ISO timestamp");
   if (!finiteInRange(value.timeoutMs, 1, 60_000)) errors.push("timeoutMs must be finite and bounded");
@@ -33,8 +34,28 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   else if (value.fixtureId === COMBAT_FIXTURE_ID) validateCombatPayload(value.payload, errors);
   else if (value.fixtureId === STAMINA_FIXTURE_ID) validateStaminaPayload(value.payload, errors);
   else if (value.fixtureId === STAMINA_COMBAT_FIXTURE_ID) validateStaminaCombatPayload(value.payload, errors);
+  else if (value.fixtureId === TARGETED_COMBAT_FIXTURE_ID) validateTargetedCombatPayload(value.payload, errors);
   else if (value.fixtureId === MOVEMENT_FIXTURE_ID) validateMovementPayload(value.payload, errors);
   return errors.length === 0 ? { valid: true, value: value as unknown as RuntimeRequest, errors } : { valid: false, errors };
+}
+
+function validateTargetedCombatPayload(payload: Record<string, any>, errors: string[]): void {
+  if (payload.targetingDefinitionKind !== "targeting-profile" || payload.targetingDefinitionSchemaVersion !== 1) errors.push("unsupported targeted combat targeting definition");
+  if (payload.staminaDefinitionKind !== "stamina-profile" || payload.staminaDefinitionSchemaVersion !== 1) errors.push("unsupported targeted combat stamina definition");
+  if (payload.healthDefinitionKind !== "health-profile" || payload.healthDefinitionSchemaVersion !== 1) errors.push("unsupported targeted combat health definition");
+  if (payload.offensiveActionDefinitionKind !== "offensive-action-profile" || payload.offensiveActionDefinitionSchemaVersion !== 1) errors.push("unsupported targeted combat action definition");
+  const targeting = validateTargetingDefinition(payload.targetingProfile); if (!targeting.valid) errors.push(...targeting.errors.map((error) => error.message));
+  const stamina = validateStaminaDefinition(payload.staminaProfile); if (!stamina.valid) errors.push(...stamina.errors.map((error) => error.message));
+  const health = validateHealthDefinition(payload.healthProfile); if (!health.valid) errors.push(...health.errors.map((error) => error.message));
+  const action = validateOffensiveActionDefinition(payload.offensiveActionProfile); if (!action.valid) errors.push(...action.errors.map((error) => error.message));
+  const scenario = payload.scenario; if (!isRecord(scenario)) { errors.push("scenario must be an object"); return; }
+  if (!["target-available", "no-valid-target"].includes(String(scenario.id))) errors.push("unsupported targeted combat scenario");
+  if (!finiteInRange(scenario.durationSeconds, Number.EPSILON, 60)) errors.push("durationSeconds must be finite and bounded");
+  if (!finiteInRange(scenario.fixedDeltaSeconds, Number.EPSILON, 1)) errors.push("fixedDeltaSeconds must be finite and bounded");
+  if (targeting.valid && targeting.profile && stamina.valid && stamina.profile && health.valid && health.profile && action.valid && action.profile && ["target-available", "no-valid-target"].includes(String(scenario.id))) {
+    const simulation = simulateTargetedCombatExchange(targeting.profile, stamina.profile, health.profile, action.profile, scenario.id);
+    if (!simulation) errors.push("targeted combat action has no valid active step");
+  }
 }
 
 function validateStaminaCombatPayload(payload: Record<string, any>, errors: string[]): void {

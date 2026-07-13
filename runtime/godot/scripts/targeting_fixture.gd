@@ -13,6 +13,15 @@ func configure(targeting_value: Dictionary, camera_value: Dictionary) -> void:
 	targeting = targeting_value; camera_profile = camera_value
 	camera.fov = float(camera_profile.lens.fieldOfViewDegrees); camera.near = float(camera_profile.lens.nearClipDistance); camera.far = float(camera_profile.lens.farClipDistance)
 
+func configure_targeting_only(targeting_value: Dictionary) -> void:
+	targeting = targeting_value
+
+func run_acquisition(plan: Dictionary) -> Dictionary:
+	_setup_candidates(plan.candidates)
+	await get_tree().physics_frame
+	var acquisition := _acquire(plan)
+	return {"selectedTargetId": acquisition.selectedTargetId, "lockState": "locked" if acquisition.selectedTargetId != null else "unlocked", "physicsSteps": 1}
+
 func run_scenario(plan: Dictionary) -> Dictionary:
 	_setup_candidates(plan.candidates)
 	await get_tree().physics_frame

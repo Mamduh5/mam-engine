@@ -6,6 +6,7 @@ import type { OffensiveActionProfile } from "../offensiveAction/offensiveActionT
 import type { HealthProfile } from "../health/healthTypes";
 import type { StaminaActionProfile, StaminaProfile } from "../stamina/staminaTypes";
 import type { TargetingRuntimeScenarioRequest } from "./targetingRuntimePlan";
+import type { TargetedCombatExchangeScenario } from "../combat/targetedCombatExchangeSimulation";
 export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
 export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
@@ -18,6 +19,7 @@ export const HEALTH_FIXTURE_ID = "health/basic-confirmed-hit" as const;
 export const COMBAT_FIXTURE_ID = "combat/basic-exchange" as const;
 export const STAMINA_FIXTURE_ID = "stamina/basic-action-cost" as const;
 export const STAMINA_COMBAT_FIXTURE_ID = "combat/stamina-gated-exchange" as const;
+export const TARGETED_COMBAT_FIXTURE_ID = "combat/targeted-stamina-exchange" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -189,7 +191,31 @@ export interface StaminaCombatRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest;
+export interface TargetedCombatRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof TARGETED_COMBAT_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    targetingDefinitionKind: "targeting-profile";
+    targetingDefinitionSchemaVersion: 1;
+    targetingProfile: TargetingProfile;
+    staminaDefinitionKind: "stamina-profile";
+    staminaDefinitionSchemaVersion: 1;
+    staminaProfile: StaminaProfile;
+    healthDefinitionKind: "health-profile";
+    healthDefinitionSchemaVersion: 1;
+    healthProfile: HealthProfile;
+    offensiveActionDefinitionKind: "offensive-action-profile";
+    offensiveActionDefinitionSchemaVersion: 1;
+    offensiveActionProfile: OffensiveActionProfile;
+    scenario: { id: TargetedCombatExchangeScenario; durationSeconds: number; fixedDeltaSeconds: number };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

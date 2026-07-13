@@ -24,6 +24,18 @@ func run_scenario(scenario: Dictionary) -> Dictionary:
 		combat.configure(health_profile, action_profile)
 		var result: Dictionary = await combat.run_scenario({"id": "default", "fixedDeltaSeconds": scenario.fixedDeltaSeconds})
 		return _combine(stamina, result)
+	return _rejected_exchange(stamina, scenario)
+
+func reject_before_stamina(scenario: Dictionary) -> Dictionary:
+	var zero_cost_action := action_profile.duplicate(true)
+	zero_cost_action.staminaCost = 0.0
+	var stamina := StaminaFixtureRuntime.evaluate(stamina_profile, zero_cost_action)
+	stamina.actionAccepted = false
+	stamina.sufficientStamina = false
+	stamina.requestedStaminaCost = action_profile.staminaCost
+	return _rejected_exchange(stamina, scenario)
+
+func _rejected_exchange(stamina: Dictionary, scenario: Dictionary) -> Dictionary:
 	var action_steps := {
 		"actionTotalSteps": OffensiveActionFixtureRuntime.lifecycle_steps(action_profile, float(scenario.fixedDeltaSeconds)),
 		"activeStartStep": OffensiveActionFixtureRuntime.active_start_step(action_profile, float(scenario.fixedDeltaSeconds)),
