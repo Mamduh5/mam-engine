@@ -1,29 +1,29 @@
-# v0.2 release readiness
+# v0.3 release readiness
 
-## 0.2 production consumer addition
+## 0.3 production camera addition
 
-`mam-engine` 0.2.0 adds the first production Godot consumer foundation: public install/sync/check commands, a deterministic integrity-protected movement bundle, a scene-free manifest-managed addon, one shared fixture/production movement core, and a packed external consumer that runs after its npm prefix is deleted.
+`mam-engine` 0.3.0 completes ENGINE-GAP-001B. Initialized projects may create and register an optional canonical camera profile; consumer sync preserves the required movement bundle and adds a separate deterministic camera bundle when configured. The scene-free managed addon now includes fail-closed camera loading and a reusable runtime for game-owned camera nodes, explicit input, orbit/follow/recenter/collision/lens behavior, and movement-basis output.
 
-Only grounded movement is claimed. Production camera, targeting, combat, full-hunt integration, presentation, assets, progression, multiplayer, and live editing remain unsupported.
+The 0.2.0 movement consumer contract remains supported. Production targeting, lock-on/combat cameras, full-hunt game integration, presentation, assets, progression, multiplayer, and live editing remain unsupported.
 
 ## Release scope
 
-`mam-engine` v0.1 completes canonical Phases 0–10. It ships definition contracts, deterministic domain operations, transactional persistence, controlled Godot fixture proofs, and a loopback-only local editor. The CLI is the authoritative automation interface; the visual editor calls the same application and domain services.
+`mam-engine` 0.3.0 retains the canonical Phases 0–10 definition, simulation, persistence, controlled-fixture, and local-editor scope while adding the production camera consumer boundary. The CLI remains the authoritative automation interface; the visual editor calls the same application and domain services.
 
 ## Supported installed workflows
 
-The installed package supports CLI help, greenfield project initialization and validation, definition inspection/validation/simulation/editing, snapshots and rollback, packaged examples, runtime commands and assets, plus local editor discovery and inspection. The editor's complete authoring workflow is limited to `movement-profile`: validation preview, persisted-versus-candidate simulation, revision-protected save, and snapshot-backed undo. Other registered definitions are read-only in the editor.
+The installed package supports CLI help, greenfield project initialization and validation, `movement create`, optional `camera create`, definition inspection/validation/simulation/editing, snapshots and rollback, packaged examples, runtime commands and assets, and local editor discovery and inspection. `mam godot consumer install` safely manages the scene-free addon; sync/check covers every configured deterministic bundle. The installed addon and generated bundles have no runtime dependency on Node or npm, and packed-consumer evidence runs after the npm installation is removed. The visual editor's complete authoring workflow remains limited to `movement-profile`; other registered definitions are read-only there.
 
 ## Validation evidence
 
 - `npm run build`
-- focused capability-manifest and packed-install smoke tests
+- focused project, consumer synchronization, camera runtime, capability-manifest, and packed-install tests
 - `npm pack --dry-run` package-content inspection
-- installed CLI help, packaged movement inspect/simulate, and editor health/static/discovery/inspection/shutdown checks from a temporary installation
+- installed CLI, managed-addon, dual-bundle, consumer-owned movement/camera binding, and runtime-independence checks from a temporary installation
 
 ## Known limitations and risks
 
-Godot proofs are controlled fixtures, not production gameplay. Production gameplay, asset authoring, progression, multiplayer, live runtime editing, and additional visual-editor authoring kinds are unsupported. Broad platform regression and Godot runtime verification remain CI-owned release risks.
+The public camera runtime is production consumer infrastructure, not completed game integration. Targeting and combat evidence still comes from controlled fixtures. Production gameplay, asset authoring, progression, multiplayer, live runtime editing, and additional visual-editor authoring kinds are unsupported. Broad platform regression and full Godot verification remain CI-owned release risks.
 
 ## Release decision
 

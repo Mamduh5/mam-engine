@@ -2,7 +2,7 @@ import path from "node:path";
 
 import type { MamProjectManifest, ProjectValidationFinding } from "./projectTypes";
 
-const keys = ["schemaVersion", "kind", "id", "displayName", "definitionRoot", "entryMovementFile"] as const;
+const keys = ["schemaVersion", "kind", "id", "displayName", "definitionRoot", "entryMovementFile", "entryCameraFile"] as const;
 
 export function validateProjectManifest(value: unknown): { valid: boolean; manifest: MamProjectManifest | null; findings: ProjectValidationFinding[] } {
   const findings: ProjectValidationFinding[] = [];
@@ -14,6 +14,7 @@ export function validateProjectManifest(value: unknown): { valid: boolean; manif
   if (!nonEmpty(value.displayName)) findings.push({ code: "PROJECT_SCHEMA_INVALID", path: "displayName", message: "displayName must be a non-empty string" });
   if (!safeRelativeDirectory(value.definitionRoot)) findings.push({ code: "PROJECT_DEFINITION_ROOT_INVALID", path: "definitionRoot", message: "definitionRoot must be a safe workspace-relative directory" });
   if (value.entryMovementFile !== null && !safeRelativeJson(value.entryMovementFile)) findings.push({ code: "PROJECT_ENTRY_MOVEMENT_INVALID", path: "entryMovementFile", message: "entryMovementFile must be null or a safe workspace-relative JSON path" });
+  if (value.entryCameraFile !== undefined && value.entryCameraFile !== null && !safeRelativeJson(value.entryCameraFile)) findings.push({ code: "PROJECT_ENTRY_CAMERA_INVALID", path: "entryCameraFile", message: "entryCameraFile must be null or a safe workspace-relative JSON path" });
   return findings.length === 0 ? { valid: true, manifest: value as unknown as MamProjectManifest, findings } : { valid: false, manifest: null, findings };
 }
 

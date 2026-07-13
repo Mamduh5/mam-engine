@@ -40,12 +40,61 @@ test("project init, movement create, and project validate form a safe greenfield
   assert.equal((validated.result.data as Record<string, unknown>).definitionCount, 1);
   assert.equal(await readFile(path.join(root, "mam-project.json"), "utf8"), before);
 
+  const cameraCreated = await executeCli(["camera", "create", "camera/player.json", "--json"], root);
+  assert.equal(cameraCreated.result.status, "passed", JSON.stringify(cameraCreated.result));
+  assert.deepEqual(cameraCreated.result.changedFiles, ["definitions/camera/player.json", "mam-project.json"]);
+  const camera = JSON.parse(await readFile(path.join(root, "definitions", "camera", "player.json"), "utf8")) as Record<string, any>;
+  assert.equal(camera.kind, "camera-profile");
+  assert.equal(camera.id, "player");
+  assert.equal(camera.orbit.yawSpeedDegreesPerSecond, 180);
+  assert.equal(camera.follow.distance, 6);
+  assert.equal(camera.lens.fieldOfViewDegrees, 65);
+  const cameraManifest = JSON.parse(await readFile(path.join(root, "mam-project.json"), "utf8")) as Record<string, unknown>;
+  assert.equal(cameraManifest.entryCameraFile, "definitions/camera/player.json");
+  const cameraValidated = await executeCli(["project", "validate", "--json"], root);
+  assert.equal(cameraValidated.result.status, "passed", JSON.stringify(cameraValidated.result));
+  assert.equal((cameraValidated.result.data as Record<string, unknown>).definitionCount, 2);
+  assert.equal((cameraValidated.result.data as Record<string, unknown>).entryCameraValid, true);
+  await rm(path.join(root, "definitions", "camera", "player.json"));
+  const recreated = await executeCli(["camera", "create", "camera/player.json", "--json"], root);
+  assert.equal(recreated.result.status, "passed", JSON.stringify(recreated.result));
+  assert.deepEqual(recreated.result.changedFiles, ["definitions/camera/player.json"]);
+
   const overwrite = await executeCli(["movement", "create", "movement/player.json", "--json"], root);
   assert.equal(overwrite.result.status, "failed");
   const traversal = await executeCli(["movement", "create", "../outside.json", "--json"], root);
   assert.equal(traversal.result.status, "failed");
   await assert.rejects(readFile(path.join(root, "outside.json")));
+  assert.equal((await executeCli(["camera", "create", "camera/player.json", "--json"], root)).result.status, "failed");
+  assert.equal((await executeCli(["camera", "create", "../outside-camera.json", "--json"], root)).result.status, "failed");
+  assert.equal((await executeCli(["camera", "create", "C:/outside-camera.json", "--json"], root)).result.status, "failed");
+  await assert.rejects(readFile(path.join(root, "outside-camera.json")));
   assert.equal((await executeCli(["project", "init", "--json"], root)).result.status, "failed");
+});
+
+test("project validation accepts legacy movement-only manifests and rejects invalid configured camera entries", async (context) => {
+  const root = await emptyWorkspace(context);
+  assert.equal((await initProject(root)).status, "passed");
+  assert.equal((await executeCli(["movement", "create", "movement/player.json", "--json"], root)).result.status, "passed");
+  const manifestPath = path.join(root, "mam-project.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Record<string, unknown>;
+  delete manifest.entryCameraFile;
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  const legacy = await executeCli(["project", "validate", "--json"], root);
+  assert.equal(legacy.result.status, "passed", JSON.stringify(legacy.result));
+  assert.equal((legacy.result.data as Record<string, unknown>).entryCameraValid, false);
+
+  manifest.entryCameraFile = "camera/player.json";
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  let invalid = await executeCli(["project", "validate", "--json"], root);
+  assert.equal(invalid.result.status, "failed");
+  assert.equal((invalid.result.data as Record<string, any>).findings.some((finding: Record<string, string>) => finding.code === "PROJECT_ENTRY_CAMERA_INVALID" && finding.path === "entryCameraFile"), true);
+
+  manifest.entryCameraFile = manifest.entryMovementFile;
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  invalid = await executeCli(["project", "validate", "--json"], root);
+  assert.equal(invalid.result.status, "failed");
+  assert.equal((invalid.result.data as Record<string, any>).findings.some((finding: Record<string, string>) => finding.code === "PROJECT_ENTRY_CAMERA_INVALID" && finding.file === manifest.entryMovementFile), true);
 });
 
 test("project validation rejects invalid definitions and an unconfigured entry read-only", async (context) => {

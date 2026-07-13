@@ -6,6 +6,7 @@ export const ErrorCodes = {
   ProjectDirectoryNotEmpty: "PROJECT_DIRECTORY_NOT_EMPTY",
   ProjectDefinitionRootInvalid: "PROJECT_DEFINITION_ROOT_INVALID",
   ProjectEntryMovementInvalid: "PROJECT_ENTRY_MOVEMENT_INVALID",
+  ProjectEntryCameraInvalid: "PROJECT_ENTRY_CAMERA_INVALID",
   ProjectValidationFailed: "PROJECT_VALIDATION_FAILED",
   ProjectWriteBlocked: "PROJECT_WRITE_BLOCKED",
   ProjectRuntimeFailed: "PROJECT_RUNTIME_FAILED",

@@ -4,6 +4,7 @@ import { readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 import { inspectProjectWorkspace, loadProject } from "../project/projectOperations";
+import { isLoadedCamera, loadValidCamera } from "../camera/cameraOperationSupport";
 import { isLoadedMovement, loadErrors, loadValidMovement } from "../movement/movementOperationSupport";
 import { auditChangedFiles, captureWorkspaceState, normalizeRepositoryPath, type FileState } from "../../infrastructure/files/changedFileAudit";
 import { atomicWriteText, fileExists, formatJson } from "../../infrastructure/files/jsonFileStore";
@@ -14,13 +15,17 @@ import { operationResult, type OperationError, type OperationResult } from "../.
 export const GODOT_CONSUMER_CONTRACT = "mam.godot-consumer/v1";
 export const GODOT_RUNTIME_BUNDLE_SCHEMA = "mam.godot-runtime-bundle/v1";
 export const GODOT_ADAPTER_CONTRACT = "mam.godot-movement-adapter/v1";
+export const GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA = "mam.godot-camera-runtime-bundle/v1";
+export const GODOT_CAMERA_ADAPTER_CONTRACT = "mam.godot-camera-adapter/v1";
 export const GODOT_ADDON_ROOT = "addons/mam_engine";
 export const GODOT_MANIFEST_FILE = `${GODOT_ADDON_ROOT}/mam-managed-files.json`;
 export const GODOT_BUNDLE_FILE = "mam_generated/mam_runtime_bundle.json";
+export const GODOT_CAMERA_BUNDLE_FILE = "mam_generated/mam_camera_runtime_bundle.json";
 
 interface ManagedFile { path: string; sha256: string }
 interface ManagedManifest { schemaVersion: typeof GODOT_CONSUMER_CONTRACT; packageVersion: string; consumerContractVersion: typeof GODOT_ADAPTER_CONTRACT; files: ManagedFile[] }
 interface SourcePlan { packageVersion: string; manifest: ManagedManifest; manifestText: string; files: Map<string, string> }
+interface RuntimeBundle { file: string; text: string; data: Record<string, unknown> }
 export interface GodotConsumerDependencies { writeText: (filePath: string, content: string) => Promise<void>; removeFile: (filePath: string) => Promise<void>; captureState: (root: string) => Promise<FileState> }
 const productionDependencies: GodotConsumerDependencies = { writeText: atomicWriteText, removeFile: (filePath) => rm(filePath, { force: true }), captureState: captureWorkspaceState };
 
@@ -54,17 +59,34 @@ export async function syncGodotConsumer(projectRoot: string, check: boolean, inj
   if (!("manifest" in loadedProject) || loadedProject.manifest.entryMovementFile === null) return operationResult({ command, status: "failed", input: { check }, errors: [{ code: ErrorCodes.GodotConsumerProjectInvalid, path: "entryMovementFile", message: "Project entry movement is not configured" }], changedFiles: [] });
   const movement = await loadValidMovement(projectRoot, loadedProject.manifest.entryMovementFile);
   if (!isLoadedMovement(movement)) return operationResult({ command, status: "failed", input: { check }, errors: loadErrors(movement), changedFiles: [] });
-  const bundle = buildBundle(plan.packageVersion, movement.relativePath, movement.content, movement.profile); const bundlePath = path.join(projectRoot, ...GODOT_BUNDLE_FILE.split("/"));
-  let current: string | null = null; try { current = await readFile(bundlePath, "utf8"); } catch (caught) { if ((caught as NodeJS.ErrnoException).code !== "ENOENT") return operationResult({ command, status: "failed", input: { check }, errors: [{ code: ErrorCodes.GodotRuntimeBundleMalformed, path: GODOT_BUNDLE_FILE, message: message(caught) }], changedFiles: [] }); }
-  if (check) {
-    if (current === null) return operationResult({ command, status: "failed", input: { check }, errors: [{ code: ErrorCodes.GodotRuntimeBundleMissing, path: GODOT_BUNDLE_FILE, message: "Generated runtime bundle is missing; run 'mam godot consumer sync'" }], changedFiles: [] });
-    if (current !== bundle.text) { const malformed = !validJson(current); return operationResult({ command, status: "failed", input: { check }, errors: [{ code: malformed ? ErrorCodes.GodotRuntimeBundleMalformed : ErrorCodes.GodotRuntimeBundleStale, path: GODOT_BUNDLE_FILE, message: malformed ? "Generated runtime bundle is malformed" : "Generated runtime bundle is stale or incompatible" }], changedFiles: [] }); }
-    return operationResult({ command, status: "passed", input: { check }, data: bundle.data, changedFiles: [] });
+  const bundles: RuntimeBundle[] = [buildBundle(plan.packageVersion, movement.relativePath, movement.content, movement.profile)];
+  if (loadedProject.manifest.entryCameraFile != null) {
+    const camera = await loadValidCamera(projectRoot, loadedProject.manifest.entryCameraFile);
+    if (!isLoadedCamera(camera)) return operationResult({ command, status: "failed", input: { check }, errors: camera.errors, changedFiles: [] });
+    bundles.push(buildCameraBundle(plan.packageVersion, camera.relativePath, camera.content, camera.profile));
   }
-  if (current === bundle.text) return operationResult({ command, status: "passed", input: { check }, data: bundle.data, changedFiles: [] });
-  const transaction = await mutateFiles(projectRoot, before, [{ file: GODOT_BUNDLE_FILE, content: bundle.text }], [], [GODOT_BUNDLE_FILE], dependencies);
+  const currentBundles: { bundle: RuntimeBundle; current: string | null }[] = []; const readErrors: OperationError[] = [];
+  for (const bundle of bundles) {
+    let current: string | null = null;
+    try { current = await readFile(path.join(projectRoot, ...bundle.file.split("/")), "utf8"); }
+    catch (caught) { if ((caught as NodeJS.ErrnoException).code !== "ENOENT") readErrors.push({ code: ErrorCodes.GodotRuntimeBundleMalformed, path: bundle.file, message: message(caught) }); }
+    currentBundles.push({ bundle, current });
+  }
+  if (readErrors.length > 0) return operationResult({ command, status: "failed", input: { check }, errors: readErrors, changedFiles: [] });
+  if (check) {
+    const errors: OperationError[] = [];
+    for (const { bundle, current } of currentBundles) {
+      if (current === null) errors.push({ code: ErrorCodes.GodotRuntimeBundleMissing, path: bundle.file, message: "Generated runtime bundle is missing; run 'mam godot consumer sync'" });
+      else if (current !== bundle.text) { const malformed = !validJson(current); errors.push({ code: malformed ? ErrorCodes.GodotRuntimeBundleMalformed : ErrorCodes.GodotRuntimeBundleStale, path: bundle.file, message: malformed ? "Generated runtime bundle is malformed" : "Generated runtime bundle is stale or incompatible" }); }
+    }
+    if (errors.length > 0) return operationResult({ command, status: "failed", input: { check }, errors, changedFiles: [] });
+    return operationResult({ command, status: "passed", input: { check }, data: syncData(bundles), changedFiles: [] });
+  }
+  const writes = currentBundles.filter(({ bundle, current }) => current !== bundle.text).map(({ bundle }) => ({ file: bundle.file, content: bundle.text }));
+  if (writes.length === 0) return operationResult({ command, status: "passed", input: { check }, data: syncData(bundles), changedFiles: [] });
+  const transaction = await mutateFiles(projectRoot, before, writes, [], writes.map((item) => item.file), dependencies);
   if (!transaction.ok) return operationResult({ command, status: "failed", input: { check }, data: { recovery: transaction.recovery }, errors: transaction.errors.map((error) => ({ ...error, code: error.code === ErrorCodes.GodotConsumerInstallFailed ? ErrorCodes.GodotRuntimeBundleWriteFailed : error.code })), changedFiles: transaction.changedFiles });
-  return operationResult({ command, status: "passed", input: { check }, data: bundle.data, changedFiles: transaction.changedFiles });
+  return operationResult({ command, status: "passed", input: { check }, data: syncData(bundles), changedFiles: transaction.changedFiles });
 }
 
 async function buildSourcePlan(): Promise<SourcePlan> {
@@ -94,7 +116,8 @@ async function inspectInstalledAddon(root: string, plan: SourcePlan, requirePres
 }
 function parseManifest(content: string): ManagedManifest | null { try { const value = JSON.parse(content) as Partial<ManagedManifest>; if (value.schemaVersion !== GODOT_CONSUMER_CONTRACT || typeof value.packageVersion !== "string" || value.consumerContractVersion !== GODOT_ADAPTER_CONTRACT || !Array.isArray(value.files)) return null; if (!value.files.every((file) => file && typeof file.path === "string" && typeof file.sha256 === "string" && /^[a-f0-9]{64}$/.test(file.sha256)) || new Set(value.files.map((file) => file.path)).size !== value.files.length) return null; return value as ManagedManifest; } catch { return null; } }
 
-function buildBundle(packageVersion: string, sourcePath: string, sourceContent: string, profile: unknown): { text: string; data: Record<string, unknown> } { const payload = stableValue({ adapterContractVersion: GODOT_ADAPTER_CONTRACT, definition: { kind: "movement-profile", profile: stableValue(profile), schemaVersion: 1, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent) }, packageVersion }); const payloadJson = JSON.stringify(payload); const value = { schemaVersion: GODOT_RUNTIME_BUNDLE_SCHEMA, payloadJson, integrity: { algorithm: "sha256", payloadSha256: sha256(payloadJson) } }; return { text: stableJson(value), data: { bundleFile: GODOT_BUNDLE_FILE, schemaVersion: GODOT_RUNTIME_BUNDLE_SCHEMA, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent), payloadSha256: sha256(payloadJson) } }; }
+function buildBundle(packageVersion: string, sourcePath: string, sourceContent: string, profile: unknown): RuntimeBundle { const payload = stableValue({ adapterContractVersion: GODOT_ADAPTER_CONTRACT, definition: { kind: "movement-profile", profile: stableValue(profile), schemaVersion: 1, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent) }, packageVersion }); const payloadJson = JSON.stringify(payload); const value = { schemaVersion: GODOT_RUNTIME_BUNDLE_SCHEMA, payloadJson, integrity: { algorithm: "sha256", payloadSha256: sha256(payloadJson) } }; return { file: GODOT_BUNDLE_FILE, text: stableJson(value), data: { bundleFile: GODOT_BUNDLE_FILE, schemaVersion: GODOT_RUNTIME_BUNDLE_SCHEMA, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent), payloadSha256: sha256(payloadJson) } }; }
+function buildCameraBundle(packageVersion: string, sourcePath: string, sourceContent: string, profile: unknown): RuntimeBundle { const payload = stableValue({ adapterContractVersion: GODOT_CAMERA_ADAPTER_CONTRACT, definition: { kind: "camera-profile", profile: stableValue(profile), schemaVersion: 1, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent) }, packageVersion }); const payloadJson = JSON.stringify(payload); const value = { schemaVersion: GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA, payloadJson, integrity: { algorithm: "sha256", payloadSha256: sha256(payloadJson) } }; return { file: GODOT_CAMERA_BUNDLE_FILE, text: stableJson(value), data: { bundleFile: GODOT_CAMERA_BUNDLE_FILE, schemaVersion: GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent), payloadSha256: sha256(payloadJson) } }; }
 
 async function mutateFiles(root: string, before: FileState, writes: { file: string; content: string }[], removals: string[], allowed: string[], dependencies: GodotConsumerDependencies): Promise<{ ok: true; changedFiles: string[] } | { ok: false; changedFiles: string[]; recovery: Record<string, unknown>; errors: OperationError[] }> {
   const originals = new Map<string, string | null>(); for (const file of allowed) { try { originals.set(file, await readFile(path.join(root, ...file.split("/")), "utf8")); } catch (caught) { if ((caught as NodeJS.ErrnoException).code === "ENOENT") originals.set(file, null); else throw caught; } }
@@ -103,6 +126,7 @@ async function mutateFiles(root: string, before: FileState, writes: { file: stri
 }
 
 function projectErrors(findings: { path?: string; file?: string; message: string }[]): OperationError[] { return findings.map((finding) => ({ code: ErrorCodes.GodotConsumerProjectInvalid, ...((finding.path ?? finding.file) ? { path: finding.path ?? finding.file } : {}), message: finding.message })); }
+function syncData(bundles: RuntimeBundle[]): Record<string, unknown> { const movement = bundles[0]?.data ?? {}; const camera = bundles.find((bundle) => bundle.file === GODOT_CAMERA_BUNDLE_FILE); return camera === undefined ? movement : { ...movement, cameraBundle: camera.data }; }
 function installData(plan: SourcePlan): Record<string, unknown> { return { addonRoot: GODOT_ADDON_ROOT, manifestFile: GODOT_MANIFEST_FILE, packageVersion: plan.packageVersion, consumerContractVersion: GODOT_ADAPTER_CONTRACT, managedFileCount: plan.manifest.files.length }; }
 function safeManagedPath(root: string, relative: string): string | null { const normalized = normalizeRepositoryPath(relative); if (!normalized.startsWith(`${GODOT_ADDON_ROOT}/`) || normalized.includes("../") || path.isAbsolute(relative)) return null; const absolute = path.resolve(root, ...normalized.split("/")); return absolute.startsWith(`${path.resolve(root)}${path.sep}`) ? absolute : null; }
 function stableValue(value: unknown): unknown { if (Array.isArray(value)) return value.map(stableValue); if (value !== null && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, stableValue(item)])); return value; }

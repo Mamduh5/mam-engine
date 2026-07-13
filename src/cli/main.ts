@@ -91,7 +91,7 @@ import { runEncounterRuntimeTest } from "../application/runtime/runEncounterRunt
 import { runEncounterInteractiveTest } from "../application/runtime/runEncounterInteractiveTest";
 import { runEncounterRecoveryTest } from "../application/runtime/runEncounterRecoveryTest";
 import { serveEditor } from "../application/editor/serveEditor";
-import { createMovementProfile, initProject, validateProject } from "../application/project/projectOperations";
+import { createCameraProfile, createMovementProfile, initProject, validateProject } from "../application/project/projectOperations";
 import { runProjectPlay } from "../application/runtime/runProjectPlay";
 import { installGodotConsumer, syncGodotConsumer } from "../application/godotConsumer/godotConsumerOperations";
 
@@ -250,6 +250,7 @@ async function dispatch(
     case "defensive-action.simulate": return simulateDefensiveActionFile(workspaceRoot, command.file, command.fixedDelta);
     case "defensive-action.runtime-test": return runDefensiveActionRuntimeTest(workspaceRoot, command.file, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "defensive-action.set": return dependencies.setDefensiveActionValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
+    case "camera.create": return createCameraProfile(workspaceRoot, command.file);
     case "camera.inspect": return inspectCamera(workspaceRoot, command.file);
     case "camera.validate": return validateCameraFile(workspaceRoot, command.file);
     case "camera.simulate": return simulateCameraFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);

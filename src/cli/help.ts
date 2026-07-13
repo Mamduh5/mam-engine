@@ -22,6 +22,7 @@ export const COMMAND_HELP: Record<CommandGroup, readonly string[]> = {
     `movement set <file> <property-path> <json-value> ${commonSetFlags}`
   ],
   camera: [
+    "camera create <file> [--json]",
     "camera inspect <file> [--json]", "camera validate <file> [--json]",
     "camera simulate <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--json]",
     `camera runtime-test <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] ${commonRuntimeFlags}`,

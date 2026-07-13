@@ -2,6 +2,8 @@ extends Node3D
 
 const Loader = preload("res://addons/mam_engine/runtime/mam_runtime_bundle_loader.gd")
 const MovementRuntime = preload("res://addons/mam_engine/runtime/mam_movement_runtime.gd")
+const CameraLoader = preload("res://addons/mam_engine/runtime/mam_camera_bundle_loader.gd")
+const CameraRuntime = preload("res://addons/mam_engine/runtime/mam_camera_runtime.gd")
 const DELTA := 1.0 / 60.0
 
 var body: CharacterBody3D
@@ -13,6 +15,8 @@ func _ready() -> void:
 	var shape := CollisionShape3D.new(); var capsule := CapsuleShape3D.new(); capsule.height = 1.8; capsule.radius = 0.4; shape.shape = capsule; body.add_child(shape)
 	var loaded := Loader.load_bundle()
 	if loaded.status != "passed": _write_and_exit(loaded); return
+	var camera_loaded := CameraLoader.load_bundle()
+	if camera_loaded.status != "passed": _write_and_exit(camera_loaded); return
 	var runtime := MovementRuntime.new(); var bind := runtime.bind(body, loaded.data.profile)
 	var duplicate := MovementRuntime.new().bind(body, loaded.data.profile)
 	var incomplete_bind := MovementRuntime.new().bind(body, {})
@@ -39,12 +43,59 @@ func _ready() -> void:
 		if state.dodgeAccepted: accepted_count += 1
 		if state.invulnerable: iframe_observed = true
 	var dodge_distance := dodge_start.distance_to(body.position); var unbind := runtime.unbind()
+	var camera_proof := await _camera_evidence(camera_loaded.data.profile)
+	if camera_proof.status != "passed": _write_and_exit(camera_proof); return
 	var missing := Loader.load_bundle("res://mam_generated/missing.json")
 	var invalid_bundle_code := _invalid_bundle_code()
-	_write_and_exit({"status": "passed", "data": {"bind": bind.status, "duplicateBind": duplicate.diagnostics[0].code, "incompleteBind": incomplete_bind.diagnostics[0].code, "incompleteStep": incomplete_step.diagnostics[0].code, "acceleratedSpeed": accelerated_speed, "accelerationDistance": acceleration_distance, "stoppedSpeed": stopped_speed, "cameraBasisX": camera_basis_x, "sprintStartStamina": sprint_start, "sprintStamina": sprint_stamina, "sprintSpeed": sprint_speed, "regeneratedStamina": regenerated_stamina, "dodgeDistance": dodge_distance, "dodgeAcceptedCount": accepted_count, "iframeObserved": iframe_observed, "missingBundleCode": missing.diagnostics[0].code, "invalidBundleCode": invalid_bundle_code, "unbind": unbind.status}, "diagnostics": []})
+	var missing_camera := CameraLoader.load_bundle("res://mam_generated/missing-camera.json")
+	var invalid_camera_bundle_code := _invalid_camera_bundle_code()
+	var data := {"bind": bind.status, "duplicateBind": duplicate.diagnostics[0].code, "incompleteBind": incomplete_bind.diagnostics[0].code, "incompleteStep": incomplete_step.diagnostics[0].code, "acceleratedSpeed": accelerated_speed, "accelerationDistance": acceleration_distance, "stoppedSpeed": stopped_speed, "cameraBasisX": camera_basis_x, "sprintStartStamina": sprint_start, "sprintStamina": sprint_stamina, "sprintSpeed": sprint_speed, "regeneratedStamina": regenerated_stamina, "dodgeDistance": dodge_distance, "dodgeAcceptedCount": accepted_count, "iframeObserved": iframe_observed, "missingBundleCode": missing.diagnostics[0].code, "invalidBundleCode": invalid_bundle_code, "cameraMissingBundleCode": missing_camera.diagnostics[0].code, "cameraInvalidBundleCode": invalid_camera_bundle_code, "unbind": unbind.status}
+	data.merge(camera_proof.data)
+	_write_and_exit({"status": "passed", "data": data, "diagnostics": []})
 
 func _consumer_input(movement: Vector2, sprint := false, dodge := false) -> Dictionary:
 	return {"movement": movement, "walk": false, "sprintHeld": sprint, "dodgePressed": dodge}
+
+func _camera_evidence(profile: Dictionary) -> Dictionary:
+	var follow_target := Node3D.new(); follow_target.name = "ConsumerCameraTarget"; follow_target.position = Vector3(0, 0.9, 0); add_child(follow_target)
+	var rig_root := Node3D.new(); rig_root.name = "ConsumerCameraRig"; add_child(rig_root)
+	var yaw_pivot := Node3D.new(); yaw_pivot.name = "ConsumerYawPivot"; rig_root.add_child(yaw_pivot)
+	var pitch_pivot := Node3D.new(); pitch_pivot.name = "ConsumerPitchPivot"; yaw_pivot.add_child(pitch_pivot)
+	var camera := Camera3D.new(); camera.name = "ConsumerCamera"; pitch_pivot.add_child(camera); camera.current = true
+	var collision_probe := ShapeCast3D.new(); collision_probe.name = "ConsumerCameraProbe"; add_child(collision_probe)
+	var bindings := {"followTarget": follow_target, "rigRoot": rig_root, "yawPivot": yaw_pivot, "pitchPivot": pitch_pivot, "camera": camera, "collisionProbe": collision_probe}
+	var incomplete_bind := CameraRuntime.new().bind({}, profile)
+	var camera_runtime := CameraRuntime.new(); var bind_result := camera_runtime.bind(bindings, profile)
+	if bind_result.status != "passed": return bind_result
+	var lens_applied := absf(camera.fov - float(profile.lens.fieldOfViewDegrees)) <= 0.001 and absf(camera.near - float(profile.lens.nearClipDistance)) <= 0.001 and absf(camera.far - float(profile.lens.farClipDistance)) <= 0.001
+	var state: Dictionary = bind_result.data; var initial_yaw: float = state.yawDegrees
+	for _step in range(30):
+		await get_tree().physics_frame; state = camera_runtime.physics_step(DELTA, _camera_input(Vector2(1, 0))).data
+	var orbit_yaw: float = state.yawDegrees
+	for _step in range(90):
+		await get_tree().physics_frame; state = camera_runtime.physics_step(DELTA, _camera_input(Vector2(0, 1))).data
+	var pitch_clamped := absf(float(state.pitchDegrees) - float(profile.orbit.minimumPitchDegrees)) <= 0.001 or absf(float(state.pitchDegrees) - float(profile.orbit.maximumPitchDegrees)) <= 0.001
+	var rig_before: Vector3 = rig_root.global_position; follow_target.global_position += Vector3(3, 0, 0)
+	for _step in range(60):
+		await get_tree().physics_frame; state = camera_runtime.physics_step(DELTA, _camera_input(Vector2.ZERO)).data
+	var follow_rig_distance := rig_before.distance_to(rig_root.global_position)
+	await get_tree().physics_frame; state = camera_runtime.physics_step(DELTA, _camera_input(Vector2(1, 0), Vector3.FORWARD, 1.0)).data
+	var manual_orbit_active: bool = state.manualOrbitActive; var manual_yaw: float = state.yawDegrees; var recenter_delayed := true
+	for _step in range(60):
+		await get_tree().physics_frame; state = camera_runtime.physics_step(DELTA, _camera_input(Vector2.ZERO, Vector3.FORWARD, 1.0)).data
+		if state.recentering: recenter_delayed = false
+	var recenter_observed := false
+	for _step in range(120):
+		await get_tree().physics_frame; state = camera_runtime.physics_step(DELTA, _camera_input(Vector2.ZERO, Vector3.FORWARD, 1.0)).data
+		if state.recentering: recenter_observed = true
+	var camera_forward: Vector3 = state.cameraForward; var camera_right: Vector3 = state.cameraRight; var unbind_result := camera_runtime.unbind()
+	return {"status": "passed", "data": {"cameraLoad": "passed", "cameraBind": bind_result.status, "cameraIncompleteBind": incomplete_bind.diagnostics[0].code, "cameraOrbitYawDelta": absf(_yaw_error(orbit_yaw - initial_yaw)), "cameraPitchClamped": pitch_clamped, "cameraFollowRigDistance": follow_rig_distance, "cameraManualOrbitActive": manual_orbit_active, "cameraRecenterDelayed": recenter_delayed, "cameraRecenterObserved": recenter_observed, "cameraRecenterErrorBefore": _yaw_error(manual_yaw), "cameraRecenterErrorAfter": _yaw_error(state.yawDegrees), "cameraLensApplied": lens_applied, "cameraForwardMagnitude": camera_forward.length(), "cameraRightMagnitude": camera_right.length(), "cameraBasisDot": camera_forward.dot(camera_right), "cameraUnbind": unbind_result.status}, "diagnostics": []}
+
+func _camera_input(orbit: Vector2, movement_direction := Vector3.ZERO, movement_magnitude := 0.0) -> Dictionary:
+	return {"orbit": orbit, "movementWorldDirection": movement_direction, "movementMagnitude": movement_magnitude}
+
+func _yaw_error(value: float) -> float:
+	return absf(fposmod(value + 180.0, 360.0) - 180.0)
 
 func _invalid_bundle_code() -> String:
 	var source := FileAccess.open("res://mam_generated/mam_runtime_bundle.json", FileAccess.READ)
@@ -53,6 +104,15 @@ func _invalid_bundle_code() -> String:
 	var tampered := FileAccess.open("res://mam_generated/tampered.json", FileAccess.WRITE); tampered.store_string(JSON.stringify(value)); tampered.close()
 	var result := Loader.load_bundle("res://mam_generated/tampered.json")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("res://mam_generated/tampered.json"))
+	return result.diagnostics[0].code
+
+func _invalid_camera_bundle_code() -> String:
+	var source := FileAccess.open("res://mam_generated/mam_camera_runtime_bundle.json", FileAccess.READ)
+	var value: Dictionary = JSON.parse_string(source.get_as_text()); source.close()
+	value.payloadJson += " "
+	var tampered := FileAccess.open("res://mam_generated/tampered-camera.json", FileAccess.WRITE); tampered.store_string(JSON.stringify(value)); tampered.close()
+	var result := CameraLoader.load_bundle("res://mam_generated/tampered-camera.json")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("res://mam_generated/tampered-camera.json"))
 	return result.diagnostics[0].code
 
 func _write_and_exit(result: Dictionary) -> void:

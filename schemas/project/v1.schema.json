@@ -11,6 +11,7 @@
     "id": { "type": "string", "minLength": 1 },
     "displayName": { "type": "string", "minLength": 1 },
     "definitionRoot": { "type": "string", "minLength": 1 },
-    "entryMovementFile": { "type": ["string", "null"] }
+    "entryMovementFile": { "type": ["string", "null"] },
+    "entryCameraFile": { "type": ["string", "null"] }
   }
 }

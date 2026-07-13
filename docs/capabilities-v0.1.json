@@ -1,5 +1,5 @@
 {
-  "releaseVersion": "0.2.0",
+  "releaseVersion": "0.3.0",
   "completedCanonicalPhases": [
     0,
     1,
@@ -93,8 +93,11 @@
     "large-enemy",
     "encounter"
   ],
+  "productionConsumerRuntimeCategories": [
+    "movement",
+    "camera"
+  ],
   "explicitlyUnsupportedCapabilities": [
-    "production-camera-runtime",
     "production-targeting-runtime",
     "asset-authoring",
     "progression",

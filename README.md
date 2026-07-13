@@ -28,7 +28,7 @@ The long-term target is a Dauntless-style action hunting game. **Movement Editor
 - Targeting profile v1 validation and safe authoring, deterministic acquisition/scoring, stable ties, retention/grace/reacquisition, and directional switching/cooldown simulations.
 - Canonical Phases 0–10 complete, including definition-driven combat/enemy/encounter slices and their scoped controlled Godot fixture proofs.
 - A loopback-only visual editor using existing application/domain services for discovery and inspection of every registered kind, plus the complete movement-profile preview/simulate/save/undo workflow.
-- A packed, scene-free production Godot movement addon installed and synchronized through `mam godot consumer`, with deterministic bundle integrity, drift-safe upgrades, and no runtime Node dependency.
+- A packed, scene-free production Godot movement and third-person camera addon installed and synchronized through `mam godot consumer`, with separate deterministic bundles, drift-safe upgrades, and no exported-game dependency on Node or npm.
 
 ## Why CLI first
 
@@ -55,11 +55,12 @@ From an empty directory, the installed package can create and run a project with
 ```text
 mam project init
 mam movement create movement/player.json
+mam camera create camera/player.json
 mam project validate
 mam project play
 ```
 
-`project play` opens the packaged Godot movement sandbox. Use WASD to move, Shift to sprint, Space to dodge, and Escape to exit. The same project and movement services back the editor's **Create movement profile** and **Play movement sandbox** actions.
+`camera create` is optional and registers `entryCameraFile`; legacy and movement-only projects remain valid without it. `project play` opens the packaged Godot movement sandbox. Use WASD to move, Shift to sprint, Space to dodge, and Escape to exit. The same project and movement services back the editor's **Create movement profile** and **Play movement sandbox** actions.
 
 ### Production Godot consumer
 
@@ -69,7 +70,7 @@ mam godot consumer sync
 mam godot consumer sync --check
 ```
 
-The game loads the installed bundle loader and binds the movement runtime to its own `CharacterBody3D`. See [Godot consumer movement runtime v0.1](docs/godot-consumer-runtime-v0.1.md).
+Movement synchronization remains required. When `entryCameraFile` is configured, sync also writes `mam_generated/mam_camera_runtime_bundle.json`. The game loads the installed movement or camera bundle loader and binds the scene-free runtimes to its own `CharacterBody3D` and camera rig nodes. See [Godot consumer movement and camera runtime v0.3](docs/godot-consumer-runtime-v0.1.md).
 
 ## Commands
 
@@ -93,6 +94,7 @@ mam runtime check [--godot <path>] [--json]
 mam movement runtime-test <file> --scenario <accelerate|stop|sprint|dodge|turn> [--seconds <number>] [--camera-yaw-degrees <number>] [--godot <path>] [--keep-session] [--json]
 mam movement set <file> <property-path> <json-value> [--dry-run] [--json]
 
+mam camera create <file> [--json]
 mam camera inspect <file> [--json]
 mam camera validate <file> [--json]
 mam camera simulate <file> --scenario <orbit|pitch-clamp|recenter|follow|collision|basis> [--seconds <number>] [--fixed-delta <number>] [--json]
@@ -141,13 +143,14 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [`schemas/targeting/`](schemas/targeting/v1.schema.json) and [`examples/targeting/`](examples/targeting/default.json) - Phase 2B.1 targeting rules and prototype default.
 - [`tests/`](tests/README.md) - engine-independent automated verification.
 - [`runtime/godot/`](runtime/godot/README.md) and [`fixtures/movement/`](fixtures/movement/README.md) - controlled Phase 1B runtime and fixture.
-- [`runtime/godot/addons/mam_engine/`](runtime/godot/addons/mam_engine/README.md) - production scene-free movement consumer addon.
+- [`runtime/godot/addons/mam_engine/`](runtime/godot/addons/mam_engine/README.md) - production scene-free movement and camera consumer addon.
 
 ## Current limitations
 
 - No persistent live runtime session, live editing, or visual camera editor exists; the greenfield movement sandbox is a bounded process-per-run window exited with Escape.
 - The visual editor supports transactional single-property movement-profile editing and deterministic saved-versus-preview movement simulation only; other definition kinds remain read-only, and broader authoring workflows remain pending.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
+- The production camera runtime does not provide input maps, camera zones, targeting or lock-on framing, combat/cinematic cameras, shake, cutscenes, photo mode, or game-scene integration.
 - Runtime evidence, including targeting, combat, weapon, large-enemy, and encounter coverage, comes from controlled fixtures rather than production gameplay. Audio, VFX, progression, multiplayer, and open-world implementation remain unsupported.
 - Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, canonical Phase 8 training-behemoth runtime proofs, canonical Phase 9 training-encounter proof, and the complete canonical Phase 10 local movement editor workflow exist; production gameplay, polished UI, save games, progression, and broader visual-editor workflows are not claimed complete.
 
@@ -160,10 +163,10 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [Camera Editor v0.1 through Phase 2A.2](docs/camera-editor-v0.1.md)
 - [Targeting Editor Phase 2B.1](docs/targeting-editor-v0.1.md)
 - [Runtime and CLI protocols](docs/runtime-protocol.md)
-- [Godot consumer movement runtime v0.1](docs/godot-consumer-runtime-v0.1.md)
+- [Godot consumer movement and camera runtime v0.3](docs/godot-consumer-runtime-v0.1.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Roadmap](docs/roadmap.md)
-- [v0.1 capability manifest](docs/capabilities-v0.1.json)
-- [v0.1 release readiness](docs/release-readiness-v0.1.md)
+- [v0.3 capability manifest](docs/capabilities-v0.1.json)
+- [v0.3 release readiness](docs/release-readiness-v0.1.md)
 - [Greenfield movement sandbox dogfood](docs/dogfood/greenfield-movement-sandbox.md)
 - Decisions: [CLI first](docs/decisions/0001-cli-first.md), [Godot runtime](docs/decisions/0002-godot-runtime.md), [authored vs. engine-owned files](docs/decisions/0003-codex-owned-vs-engine-owned.md), and [process-per-run transport](docs/decisions/0004-process-per-run-runtime-transport.md)

@@ -83,6 +83,7 @@ export type ParsedCommand =
   | { kind: "defensive-action.simulate"; file: string; fixedDelta?: number; json: boolean }
   | { kind: "defensive-action.runtime-test"; file: string; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "defensive-action.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
+  | { kind: "camera.create"; file: string; json: boolean }
   | { kind: "camera.inspect"; file: string; json: boolean }
   | { kind: "camera.validate"; file: string; json: boolean }
   | { kind: "camera.simulate"; file: string; scenario: CameraScenario; seconds?: number; fixedDelta?: number; json: boolean }
@@ -122,7 +123,7 @@ export const SUPPORTED_COMMAND_ACTIONS = {
   project: ["init", "validate", "play"],
   godot: ["consumer"],
   movement: ["create", "inspect", "validate", "simulate", "set", "runtime-test"],
-  camera: ["inspect", "validate", "simulate", "set", "runtime-test"],
+  camera: ["create", "inspect", "validate", "simulate", "set", "runtime-test"],
   targeting: ["inspect", "validate", "simulate", "set", "runtime-test"],
   "defensive-action": ["inspect", "validate", "simulate", "set", "runtime-test"],
   "offensive-action": ["inspect", "validate", "simulate", "set", "runtime-test"],
@@ -392,6 +393,11 @@ function parseTargetingCommand(action: string, args: string[]): ParsedCommand {
 }
 
 function parseCameraCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "create") {
+    const parsed = parseArguments(args, new Set(["--json"]));
+    requirePositionals(parsed, 1, "camera create requires exactly one file argument");
+    return { kind: "camera.create", file: parsed.positional[0] as string, json: parsed.flags.has("--json") };
+  }
   if (action === "inspect" || action === "validate") {
     const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `camera ${action} requires exactly one file argument`);
     return { kind: `camera.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") };

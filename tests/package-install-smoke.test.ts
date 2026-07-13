@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-test("packed v0.2 works from a separate consumer workspace", async (context) => {
+test("packed v0.3 works from a separate consumer workspace", async (context) => {
   const sourceRoot = path.resolve(__dirname, "../..");
   const root = await mkdtemp(path.join(tmpdir(), "mam-package-smoke-"));
   context.after(() => rm(root, { recursive: true, force: true }));
@@ -25,8 +25,9 @@ test("packed v0.2 works from a separate consumer workspace", async (context) => 
   assert.equal(packageJson.bin.mam, "dist/src/cli/main.js");
   for (const required of [
     "editor/index.html", "editor/styles.css", "editor/client.js", "schemas/movement/v1.schema.json",
-    "examples/movement/default.json", "runtime/godot/project.godot", "runtime/godot/scenes/movement_fixture.tscn",
+    "examples/movement/default.json", "examples/camera/default.json", "runtime/godot/project.godot", "runtime/godot/scenes/movement_fixture.tscn",
     "runtime/godot/addons/mam_engine/runtime/mam_runtime_bundle_loader.gd", "runtime/godot/addons/mam_engine/runtime/mam_movement_runtime.gd",
+    "runtime/godot/addons/mam_engine/runtime/mam_camera_bundle_loader.gd", "runtime/godot/addons/mam_engine/runtime/mam_camera_core.gd", "runtime/godot/addons/mam_engine/runtime/mam_camera_runtime.gd",
     "runtime/godot/scripts/runtime_main.gd", "docs/capabilities-v0.1.json", "docs/release-readiness-v0.1.md"
   ]) await readFile(path.join(packageRoot, ...required.split("/")));
   assert.equal((await readdir(path.join(packageRoot, "schemas"))).length >= 16, true);

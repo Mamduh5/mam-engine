@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { inspectRegisteredDefinition } from "../definitions/definitionInspectionRegistry";
 import { validateDefinition, type DefinitionKind } from "../definitions/definitionValidationRegistry";
+import type { CameraProfile } from "../../domain/camera/cameraTypes";
+import { validateCameraDefinition } from "../../domain/camera/cameraValidation";
 import type { MovementProfile } from "../../domain/movement/movementTypes";
 import { validateMovementDefinition } from "../../domain/movement/movementValidation";
 import type { MamProjectManifest, ProjectValidationFinding } from "../../domain/project/projectTypes";
@@ -25,6 +27,18 @@ const basicMovement = (id: string, displayName: string): MovementProfile => ({
   dodge: { distance: 4.2, durationSeconds: 0.55, staminaCost: 20, invulnerabilityStartSeconds: 0.08, invulnerabilityEndSeconds: 0.32, directionMode: "movement_input", steeringMultiplier: 0.15 }
 });
 
+const basicCamera = (id: string, displayName: string): CameraProfile => ({
+  schemaVersion: 1,
+  kind: "camera-profile",
+  id,
+  displayName,
+  orbit: { yawSpeedDegreesPerSecond: 180, pitchSpeedDegreesPerSecond: 120, invertYaw: false, invertPitch: false, minimumPitchDegrees: -35, maximumPitchDegrees: 60, initialYawDegrees: 0, initialPitchDegrees: 15 },
+  follow: { distance: 6, height: 2.2, shoulderOffset: 0.6, lookAtHeight: 1.4, positionHalfLifeSeconds: 0.12, rotationHalfLifeSeconds: 0.08 },
+  recenter: { enabled: true, delaySeconds: 1.2, yawSpeedDegreesPerSecond: 90, movementInputThreshold: 0.2 },
+  collision: { enabled: true, probeRadius: 0.25, minimumDistance: 1, returnHalfLifeSeconds: 0.1 },
+  lens: { fieldOfViewDegrees: 65, nearClipDistance: 0.1, farClipDistance: 500 }
+});
+
 export interface LoadedProject { root: string; manifestPath: string; manifest: MamProjectManifest }
 
 export async function initProject(workspaceRoot: string, directory?: string): Promise<OperationResult> {
@@ -39,7 +53,7 @@ export async function initProject(workspaceRoot: string, directory?: string): Pr
   const meaningful = entries.filter((entry) => entry !== ".git");
   if (meaningful.length > 0) return operationResult({ command, status: "failed", input, errors: [error(ErrorCodes.ProjectDirectoryNotEmpty, undefined, "Project init requires an empty directory", meaningful, [])] });
   const displayName = title(path.basename(target) || "mam project");
-  const manifest: MamProjectManifest = { schemaVersion: 1, kind: "mam-project", id: `${slug(path.basename(target) || "mam-project")}-project`, displayName, definitionRoot: "definitions", entryMovementFile: null };
+  const manifest: MamProjectManifest = { schemaVersion: 1, kind: "mam-project", id: `${slug(path.basename(target) || "mam-project")}-project`, displayName, definitionRoot: "definitions", entryMovementFile: null, entryCameraFile: null };
   const generatedReadme = `# ${displayName}\n\nCreated with mam-engine.\n\n## Start\n\n\`\`\`sh\nmam movement create movement/player.json\nmam project validate\nmam project play\n\`\`\`\n`;
   await mkdir(path.join(target, "definitions", "movement"), { recursive: true });
   await atomicWriteText(manifestPath, formatJson(manifest));
@@ -52,7 +66,7 @@ export async function createMovementProfile(workspaceRoot: string, inputFile: st
   const command = "movement.create";
   const project = await loadProject(workspaceRoot);
   if (!("manifest" in project)) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: project.errors });
-  const relativeFile = resolveMovementCreatePath(project.manifest, inputFile);
+  const relativeFile = resolveDefinitionCreatePath(project.manifest, inputFile);
   if (relativeFile === null) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: [error(ErrorCodes.ProjectWriteBlocked, inputFile, "Movement path must be a JSON file inside the project definition root")] });
   const absoluteFile = path.join(project.root, ...relativeFile.split("/"));
   if (await fileExists(absoluteFile)) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: [error(ErrorCodes.ProjectWriteBlocked, relativeFile, "Movement create will not overwrite an existing file")] });
@@ -71,6 +85,31 @@ export async function createMovementProfile(workspaceRoot: string, inputFile: st
   return operationResult({ command, status: "passed", input: { file: inputFile }, data: { file: relativeFile, profile, projectEntryMovementFile: relativeFile }, changedFiles: [relativeFile, PROJECT_MANIFEST_FILE] });
 }
 
+export async function createCameraProfile(workspaceRoot: string, inputFile: string): Promise<OperationResult> {
+  const command = "camera.create";
+  const project = await loadProject(workspaceRoot);
+  if (!("manifest" in project)) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: project.errors });
+  const relativeFile = resolveDefinitionCreatePath(project.manifest, inputFile);
+  if (relativeFile === null) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: [error(ErrorCodes.ProjectWriteBlocked, inputFile, "Camera path must be a JSON file inside the project definition root")] });
+  const absoluteFile = path.join(project.root, ...relativeFile.split("/"));
+  if (await fileExists(absoluteFile)) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: [error(ErrorCodes.ProjectWriteBlocked, relativeFile, "Camera create will not overwrite an existing file")] });
+  const base = path.posix.basename(relativeFile, ".json");
+  const profile = basicCamera(slug(base), title(base));
+  const validation = validateCameraDefinition(profile);
+  if (!validation.valid) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: validation.errors });
+  const updatedManifest: MamProjectManifest = { ...project.manifest, entryCameraFile: relativeFile };
+  const updatedManifestText = formatJson(updatedManifest);
+  const manifestChanged = await readFile(project.manifestPath, "utf8") !== updatedManifestText;
+  try {
+    await atomicWriteText(absoluteFile, formatJson(profile));
+    if (manifestChanged) await atomicWriteText(project.manifestPath, updatedManifestText);
+  } catch (caught) {
+    await rm(absoluteFile, { force: true }).catch(() => undefined);
+    throw caught;
+  }
+  return operationResult({ command, status: "passed", input: { file: inputFile }, data: { file: relativeFile, profile, projectEntryCameraFile: relativeFile }, changedFiles: [relativeFile, ...(manifestChanged ? [PROJECT_MANIFEST_FILE] : [])] });
+}
+
 export async function validateProject(workspaceRoot: string): Promise<OperationResult> {
   const command = "project.validate";
   const inspected = await inspectProjectWorkspace(workspaceRoot);
@@ -78,9 +117,9 @@ export async function validateProject(workspaceRoot: string): Promise<OperationR
   return operationResult({ command, status: inspected.valid ? "passed" : "failed", data: inspected, errors, changedFiles: [] });
 }
 
-export async function inspectProjectWorkspace(workspaceRoot: string): Promise<{ valid: boolean; initialized: boolean; manifest: MamProjectManifest | null; manifestPath: string; definitionCount: number; validDefinitionCount: number; entryMovementValid: boolean; findings: ProjectValidationFinding[] }> {
+export async function inspectProjectWorkspace(workspaceRoot: string): Promise<{ valid: boolean; initialized: boolean; manifest: MamProjectManifest | null; manifestPath: string; definitionCount: number; validDefinitionCount: number; entryMovementValid: boolean; entryCameraValid: boolean; findings: ProjectValidationFinding[] }> {
   const loaded = await loadProject(workspaceRoot);
-  if (!("manifest" in loaded)) return { valid: false, initialized: false, manifest: null, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: 0, validDefinitionCount: 0, entryMovementValid: false, findings: loaded.findings };
+  if (!("manifest" in loaded)) return { valid: false, initialized: false, manifest: null, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: 0, validDefinitionCount: 0, entryMovementValid: false, entryCameraValid: false, findings: loaded.findings };
   const findings: ProjectValidationFinding[] = [];
   const definitionRoot = path.join(loaded.root, ...loaded.manifest.definitionRoot.split("/"));
   try { if (!(await stat(definitionRoot)).isDirectory()) findings.push({ code: "PROJECT_DEFINITION_ROOT_INVALID", path: "definitionRoot", message: "Definition root is not a directory" }); }
@@ -104,7 +143,12 @@ export async function inspectProjectWorkspace(workspaceRoot: string): Promise<{ 
   if (loaded.manifest.entryMovementFile === null) findings.push({ code: "PROJECT_ENTRY_MOVEMENT_INVALID", path: "entryMovementFile", message: "Project entry movement is not configured" });
   else if (!loaded.manifest.entryMovementFile.startsWith(`${loaded.manifest.definitionRoot}/`) || kinds.get(loaded.manifest.entryMovementFile) !== "movement-profile") findings.push({ code: "PROJECT_ENTRY_MOVEMENT_INVALID", path: "entryMovementFile", file: loaded.manifest.entryMovementFile, message: "Project entry movement must resolve to a valid movement-profile inside definitionRoot" });
   else entryMovementValid = true;
-  return { valid: findings.length === 0, initialized: true, manifest: loaded.manifest, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: files.length, validDefinitionCount, entryMovementValid, findings };
+  let entryCameraValid = false;
+  if (loaded.manifest.entryCameraFile !== undefined && loaded.manifest.entryCameraFile !== null) {
+    if (!loaded.manifest.entryCameraFile.startsWith(`${loaded.manifest.definitionRoot}/`) || kinds.get(loaded.manifest.entryCameraFile) !== "camera-profile") findings.push({ code: "PROJECT_ENTRY_CAMERA_INVALID", path: "entryCameraFile", file: loaded.manifest.entryCameraFile, message: "Project entry camera must resolve to a valid camera-profile inside definitionRoot" });
+    else entryCameraValid = true;
+  }
+  return { valid: findings.length === 0, initialized: true, manifest: loaded.manifest, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: files.length, validDefinitionCount, entryMovementValid, entryCameraValid, findings };
 }
 
 export async function loadProject(workspaceRoot: string): Promise<LoadedProject | { errors: OperationError[]; findings: ProjectValidationFinding[] }> {
@@ -123,8 +167,9 @@ export async function loadProject(workspaceRoot: string): Promise<LoadedProject 
   return { root, manifestPath, manifest: validation.manifest };
 }
 
-function resolveMovementCreatePath(manifest: MamProjectManifest, input: string): string | null {
+function resolveDefinitionCreatePath(manifest: MamProjectManifest, input: string): string | null {
   const normalized = normalizeRepositoryPath(input);
+  if (path.posix.isAbsolute(normalized) || path.win32.isAbsolute(normalized)) return null;
   const relative = normalized.startsWith(`${manifest.definitionRoot}/`) ? normalized : `${manifest.definitionRoot}/${normalized}`;
   if (!safeRelativeJson(relative) || !relative.startsWith(`${manifest.definitionRoot}/`)) return null;
   return relative;
