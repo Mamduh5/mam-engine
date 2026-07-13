@@ -36,6 +36,7 @@ import { validateHealthFile } from "../application/health/validateHealth";
 import { runHealthRuntimeTest } from "../application/runtime/runHealthRuntimeTest";
 import { simulateCombatExchangeFiles } from "../application/combat/simulateCombatExchange";
 import { simulateStaminaCombatExchangeFiles } from "../application/combat/simulateStaminaCombatExchange";
+import { simulateTargetedCombatExchangeFiles } from "../application/combat/simulateTargetedCombatExchange";
 import { runCombatRuntimeTest } from "../application/runtime/runCombatRuntimeTest";
 import { inspectStamina } from "../application/stamina/inspectStamina";
 import { setStaminaValue } from "../application/stamina/setStaminaValue";
@@ -125,6 +126,7 @@ async function dispatch(
     case "stamina.set": return dependencies.setStaminaValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "combat.simulate-exchange": return simulateCombatExchangeFiles(workspaceRoot, command.healthFile, command.offensiveActionFile);
     case "combat.simulate-stamina-exchange": return simulateStaminaCombatExchangeFiles(workspaceRoot, command.staminaFile, command.healthFile, command.offensiveActionFile);
+    case "combat.simulate-targeted-exchange": return simulateTargetedCombatExchangeFiles(workspaceRoot, command.targetingFile, command.staminaFile, command.healthFile, command.offensiveActionFile, command.scenario);
     case "combat.runtime-test": return runCombatRuntimeTest(workspaceRoot, command.healthFile, command.offensiveActionFile, { godot: command.godot, keepSession: command.keepSession });
     case "combat.stamina-runtime-test": return runStaminaCombatRuntimeTest(workspaceRoot, command.staminaFile, command.healthFile, command.offensiveActionFile, command.scenario, { godot: command.godot, keepSession: command.keepSession });
     case "health.inspect": return inspectHealth(workspaceRoot, command.file);

@@ -3,6 +3,7 @@ import type { CameraScenario } from "../domain/camera/cameraTypes";
 import type { TargetingScenario } from "../domain/targeting/targetingTypes";
 import type { TargetingRuntimeScenario } from "../domain/runtime/targetingRuntimePlan";
 import type { StaminaCombatRuntimeScenario } from "../domain/runtime/runtimeProtocol";
+import type { TargetedCombatExchangeScenario } from "../domain/combat/targetedCombatExchangeSimulation";
 import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
@@ -14,6 +15,7 @@ export type ParsedCommand =
   | { kind: "stamina.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "combat.simulate-exchange"; healthFile: string; offensiveActionFile: string; json: boolean }
   | { kind: "combat.simulate-stamina-exchange"; staminaFile: string; healthFile: string; offensiveActionFile: string; json: boolean }
+  | { kind: "combat.simulate-targeted-exchange"; targetingFile: string; staminaFile: string; healthFile: string; offensiveActionFile: string; scenario: TargetedCombatExchangeScenario; json: boolean }
   | { kind: "combat.runtime-test"; healthFile: string; offensiveActionFile: string; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "combat.stamina-runtime-test"; staminaFile: string; healthFile: string; offensiveActionFile: string; scenario: StaminaCombatRuntimeScenario; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "health.inspect"; file: string; json: boolean }
@@ -111,6 +113,13 @@ function parseCombatCommand(action: string, args: string[]): ParsedCommand {
     const parsed = parseArguments(args, new Set(["--json"]));
     requirePositionals(parsed, 3, "combat simulate-stamina-exchange requires <stamina-file> <health-file> <offensive-action-file>");
     return { kind: "combat.simulate-stamina-exchange", staminaFile: parsed.positional[0] as string, healthFile: parsed.positional[1] as string, offensiveActionFile: parsed.positional[2] as string, json: parsed.flags.has("--json") };
+  }
+  if (action === "simulate-targeted-exchange") {
+    const parsed = parseArguments(args, new Set(["--json", "--scenario"]), new Set(["--scenario"]));
+    requirePositionals(parsed, 4, "combat simulate-targeted-exchange requires <targeting-file> <stamina-file> <health-file> <offensive-action-file>");
+    const scenarioValue = parsed.flags.get("--scenario"); const scenario = scenarioValue === undefined ? "target-available" : scenarioValue;
+    if (scenario !== "target-available" && scenario !== "no-valid-target") throw new CliParseError("--scenario must be one of: target-available, no-valid-target");
+    return { kind: "combat.simulate-targeted-exchange", targetingFile: parsed.positional[0] as string, staminaFile: parsed.positional[1] as string, healthFile: parsed.positional[2] as string, offensiveActionFile: parsed.positional[3] as string, scenario, json: parsed.flags.has("--json") };
   }
   if (action === "stamina-runtime-test") {
     const parsed = parseArguments(args, new Set(["--json", "--scenario", "--godot", "--keep-session"]), new Set(["--scenario", "--godot"]));
