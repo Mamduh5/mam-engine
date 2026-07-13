@@ -50,7 +50,7 @@
     "test:unit": "npm run build && node --test dist/tests/*.test.js",
     "test:camera-runtime": "npm run build && node --test dist/tests/camera-runtime-*.test.js",
     "test:targeting-runtime": "npm run build && node --test dist/tests/targeting-runtime-*.test.js",
-    "test:godot": "npm run build && node --test dist/tests/godot/*.integration.js",
+    "test:godot": "npm run build && node --test --test-concurrency=1 dist/tests/godot/*.integration.js",
     "test:godot:camera": "npm run build && node --test dist/tests/godot/camera-runtime.integration.js",
     "test:godot:targeting": "npm run build && node --test dist/tests/godot/targeting-runtime.integration.js",
     "check": "npm run lint && npm test",
