@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/arena/v1.schema.json",
+  "title": "Arena Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "radius", "playerSpawn", "enemySpawn"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "arena-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "radius": { "type": "number", "exclusiveMinimum": 0 },
+    "playerSpawn": { "$ref": "#/$defs/vector3" },
+    "enemySpawn": { "$ref": "#/$defs/vector3" }
+  },
+  "$defs": {
+    "vector3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } }
+    }
+  }
+}

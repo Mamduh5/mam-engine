@@ -12,6 +12,12 @@ import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "hunter.inspect"; file: string; json: boolean }
+  | { kind: "hunter.validate"; file: string; json: boolean }
+  | { kind: "hunter.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
+  | { kind: "arena.inspect"; file: string; json: boolean }
+  | { kind: "arena.validate"; file: string; json: boolean }
+  | { kind: "arena.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "large-enemy.inspect"; file: string; json: boolean }
   | { kind: "large-enemy.validate"; file: string; json: boolean }
   | { kind: "large-enemy.simulate"; file: string; scenario: LargeEnemyScenario; fixedDelta?: number; json: boolean }
@@ -117,6 +123,8 @@ export function parseCommand(argv: string[]): ParsedCommand {
   if (group === "damage-reaction") return parseDamageReactionCommand(action, remaining);
   if (group === "weapon") return parseWeaponCommand(action, remaining);
   if (group === "large-enemy") return parseLargeEnemyCommand(action, remaining);
+  if (group === "hunter") return parseHunterCommand(action, remaining);
+  if (group === "arena") return parseArenaCommand(action, remaining);
   if (group === "combat") return parseCombatCommand(action, remaining);
   if (group === "snapshot") {
     return parseSnapshotCommand(action, remaining);
@@ -128,6 +136,18 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseHunterCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `hunter ${action} requires exactly one file argument`); return { kind: `hunter.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
+  if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "hunter set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("hunter set <json-value> must be valid JSON"); } return { kind: "hunter.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
+  throw new CliParseError(`Unknown hunter command '${action}'`);
+}
+
+function parseArenaCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `arena ${action} requires exactly one file argument`); return { kind: `arena.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
+  if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "arena set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("arena set <json-value> must be valid JSON"); } return { kind: "arena.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
+  throw new CliParseError(`Unknown arena command '${action}'`);
 }
 
 function parseLargeEnemyCommand(action: string, args: string[]): ParsedCommand {

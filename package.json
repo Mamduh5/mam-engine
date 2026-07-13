@@ -21,6 +21,8 @@
     "examples/damage-reaction",
     "examples/weapon",
     "examples/large-enemy",
+    "examples/hunter",
+    "examples/arena",
     "docs/targeting-editor-v0.1.md",
     "docs/decisions/0007-targeting-runtime-and-camera-framing.md",
     "runtime/godot/project.godot",

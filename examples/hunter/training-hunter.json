@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "hunter-profile",
+  "id": "training-hunter",
+  "displayName": "Training Hunter",
+  "healthFile": "examples/health/default.json",
+  "staminaFile": "examples/stamina/default.json"
+}

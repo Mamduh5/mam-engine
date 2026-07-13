@@ -1,6 +1,6 @@
 import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020";
 
-import { loadActionTimelineV1Schema, loadCameraV1Schema, loadContactVolumeV1Schema, loadDamageReactionV1Schema, loadDefensiveActionV1Schema, loadHealthV1Schema, loadLargeEnemyV1Schema, loadMovementV1Schema, loadOffensiveActionV1Schema, loadStaminaV1Schema, loadTargetingV1Schema, loadWeaponV1Schema } from "./schemaLoader";
+import { loadActionTimelineV1Schema, loadArenaV1Schema, loadCameraV1Schema, loadContactVolumeV1Schema, loadDamageReactionV1Schema, loadDefensiveActionV1Schema, loadHealthV1Schema, loadHunterV1Schema, loadLargeEnemyV1Schema, loadMovementV1Schema, loadOffensiveActionV1Schema, loadStaminaV1Schema, loadTargetingV1Schema, loadWeaponV1Schema } from "./schemaLoader";
 
 let movementValidator: ValidateFunction | undefined;
 let cameraValidator: ValidateFunction | undefined;
@@ -14,6 +14,8 @@ let contactVolumeValidator: ValidateFunction | undefined;
 let damageReactionValidator: ValidateFunction | undefined;
 let weaponValidator: ValidateFunction | undefined;
 let largeEnemyValidator: ValidateFunction | undefined;
+let hunterValidator: ValidateFunction | undefined;
+let arenaValidator: ValidateFunction | undefined;
 
 export function validateMovementSchema(value: unknown): ErrorObject[] {
   movementValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadMovementV1Schema());
@@ -85,4 +87,16 @@ export function validateLargeEnemySchema(value: unknown): ErrorObject[] {
   largeEnemyValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadLargeEnemyV1Schema());
   const valid = largeEnemyValidator(value);
   return valid ? [] : [...(largeEnemyValidator.errors ?? [])];
+}
+
+export function validateHunterSchema(value: unknown): ErrorObject[] {
+  hunterValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadHunterV1Schema());
+  const valid = hunterValidator(value);
+  return valid ? [] : [...(hunterValidator.errors ?? [])];
+}
+
+export function validateArenaSchema(value: unknown): ErrorObject[] {
+  arenaValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadArenaV1Schema());
+  const valid = arenaValidator(value);
+  return valid ? [] : [...(arenaValidator.errors ?? [])];
 }

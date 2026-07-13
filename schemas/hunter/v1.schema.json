@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/hunter/v1.schema.json",
+  "title": "Hunter Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "healthFile", "staminaFile"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "hunter-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "healthFile": { "type": "string", "minLength": 1 },
+    "staminaFile": { "type": "string", "minLength": 1 }
+  }
+}

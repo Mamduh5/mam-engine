@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "arena-profile",
+  "id": "training-arena",
+  "displayName": "Training Arena",
+  "radius": 25,
+  "playerSpawn": { "x": -5, "y": 0, "z": 0 },
+  "enemySpawn": { "x": 5, "y": 0, "z": 0 }
+}

@@ -64,3 +64,13 @@ export function loadLargeEnemyV1Schema(): object {
   const schemaPath = path.join(packageRoot(), "schemas", "large-enemy", "v1.schema.json");
   return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
 }
+
+export function loadHunterV1Schema(): object {
+  const schemaPath = path.join(packageRoot(), "schemas", "hunter", "v1.schema.json");
+  return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
+}
+
+export function loadArenaV1Schema(): object {
+  const schemaPath = path.join(packageRoot(), "schemas", "arena", "v1.schema.json");
+  return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
+}

@@ -74,6 +74,12 @@ import { setLargeEnemyValue } from "../application/largeEnemy/setLargeEnemyValue
 import { simulateLargeEnemyFile } from "../application/largeEnemy/simulateLargeEnemy";
 import { validateLargeEnemyFile } from "../application/largeEnemy/validateLargeEnemy";
 import { runLargeEnemyRuntimeTest } from "../application/runtime/runLargeEnemyRuntimeTest";
+import { inspectHunter } from "../application/hunter/inspectHunter";
+import { setHunterValue } from "../application/hunter/setHunterValue";
+import { validateHunterFile } from "../application/hunter/validateHunter";
+import { inspectArena } from "../application/arena/inspectArena";
+import { setArenaValue } from "../application/arena/setArenaValue";
+import { validateArenaFile } from "../application/arena/validateArena";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -88,6 +94,8 @@ export interface CliApplicationDependencies {
   setDamageReactionValue: typeof setDamageReactionValue;
   setWeaponValue: typeof setWeaponValue;
   setLargeEnemyValue: typeof setLargeEnemyValue;
+  setHunterValue: typeof setHunterValue;
+  setArenaValue: typeof setArenaValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -97,7 +105,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, setWeaponValue, setLargeEnemyValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, setWeaponValue, setLargeEnemyValue, setHunterValue, setArenaValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -150,6 +158,12 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "hunter.inspect": return inspectHunter(workspaceRoot, command.file);
+    case "hunter.validate": return validateHunterFile(workspaceRoot, command.file);
+    case "hunter.set": return dependencies.setHunterValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
+    case "arena.inspect": return inspectArena(workspaceRoot, command.file);
+    case "arena.validate": return validateArenaFile(workspaceRoot, command.file);
+    case "arena.set": return dependencies.setArenaValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "large-enemy.inspect": return inspectLargeEnemy(workspaceRoot, command.file);
     case "large-enemy.validate": return validateLargeEnemyFile(workspaceRoot, command.file);
     case "large-enemy.simulate": return simulateLargeEnemyFile(workspaceRoot, command.file, command.scenario, command.fixedDelta);
