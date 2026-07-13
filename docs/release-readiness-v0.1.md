@@ -6,7 +6,7 @@
 
 ## Supported installed workflows
 
-The installed package supports CLI help, definition inspection/validation/simulation/editing, snapshots and rollback, packaged examples, runtime commands and assets, plus local editor discovery and inspection. The editor's complete authoring workflow is limited to `movement-profile`: validation preview, persisted-versus-candidate simulation, revision-protected save, and snapshot-backed undo. Other registered definitions are read-only in the editor.
+The installed package supports CLI help, greenfield project initialization and validation, definition inspection/validation/simulation/editing, snapshots and rollback, packaged examples, runtime commands and assets, plus local editor discovery and inspection. The editor's complete authoring workflow is limited to `movement-profile`: validation preview, persisted-versus-candidate simulation, revision-protected save, and snapshot-backed undo. Other registered definitions are read-only in the editor.
 
 ## Validation evidence
 

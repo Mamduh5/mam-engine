@@ -40,12 +40,14 @@ test("packed v0.1 works from a separate consumer workspace", async (context) => 
   assert.match(help.stdout, /mam <command-group>/);
   const movementHelp = runInstalled(bin, ["movement", "--help"], workspace);
   assert.match(movementHelp.stdout, /mam movement runtime-test <file>/);
-  const runtimeCheck = operation(runInstalled(bin, ["runtime", "check", "--json"], workspace).stdout);
-  assert.equal(runtimeCheck.status, "passed");
-  assert.equal((runtimeCheck.data as { headlessSmokePassed: boolean }).headlessSmokePassed, true);
-  const runtimeProof = operation(runInstalled(bin, ["movement", "runtime-test", "movement.json", "--scenario", "accelerate", "--seconds", "2", "--json"], workspace).stdout);
-  assert.equal(runtimeProof.status, "passed");
-  assert.equal(((runtimeProof.data as { comparison: { passed: boolean } }).comparison).passed, true);
+  if (process.env.MAM_GODOT_BIN !== undefined) {
+    const runtimeCheck = operation(runInstalled(bin, ["runtime", "check", "--json"], workspace).stdout);
+    assert.equal(runtimeCheck.status, "passed");
+    assert.equal((runtimeCheck.data as { headlessSmokePassed: boolean }).headlessSmokePassed, true);
+    const runtimeProof = operation(runInstalled(bin, ["movement", "runtime-test", "movement.json", "--scenario", "accelerate", "--seconds", "2", "--json"], workspace).stdout);
+    assert.equal(runtimeProof.status, "passed");
+    assert.equal(((runtimeProof.data as { comparison: { passed: boolean } }).comparison).passed, true);
+  }
   await assert.rejects(readFile(path.join(workspace, "runtime", "godot", "project.godot")));
   assert.equal(await readFile(path.join(workspace, "movement.json"), "utf8"), sourceDefinition);
   assert.deepEqual(await runtimeSessions(workspace), []);

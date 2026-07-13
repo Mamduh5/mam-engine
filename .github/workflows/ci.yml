@@ -91,3 +91,6 @@ jobs:
 
       - name: Run real movement, camera, and targeting Godot integration suite
         run: npm run test:godot
+
+      - name: Verify packed consumer with pinned Godot
+        run: node --test dist/tests/package-install-smoke.test.js

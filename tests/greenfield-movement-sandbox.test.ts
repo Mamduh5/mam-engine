@@ -88,19 +88,18 @@ test("packed install initializes and validates a separate consumer without copie
   const installRoot = path.join(root, "installed");
   const workspace = path.join(root, "consumer");
   await Promise.all([mkdir(packRoot), mkdir(installRoot), mkdir(workspace)]);
-  const packed = run("npm.cmd", ["pack", "--json", "--pack-destination", packRoot], sourceRoot);
+  const packed = run(npmExecutable(), ["pack", "--json", "--pack-destination", packRoot], sourceRoot);
   const tarball = path.join(packRoot, (JSON.parse(packed) as Array<{ filename: string }>)[0]?.filename ?? "");
-  run("npm.cmd", ["install", "--prefix", installRoot, "--ignore-scripts", "--no-audit", "--no-fund", "--omit=dev", "--prefer-offline", tarball], installRoot);
-  const packageRoot = path.join(installRoot, "node_modules", "mam-engine");
-  const cli = path.join(packageRoot, "dist", "src", "cli", "main.js");
-  operation(run(process.execPath, [cli, "project", "init", "--json"], workspace));
-  operation(run(process.execPath, [cli, "movement", "create", "movement/player.json", "--json"], workspace));
-  const validation = operation(run(process.execPath, [cli, "project", "validate", "--json"], workspace));
+  run(npmExecutable(), ["install", "--prefix", installRoot, "--ignore-scripts", "--no-audit", "--no-fund", "--omit=dev", "--prefer-offline", tarball], installRoot);
+  const bin = path.join(installRoot, "node_modules", ".bin", process.platform === "win32" ? "mam.cmd" : "mam");
+  operation(run(bin, ["project", "init", "--json"], workspace));
+  operation(run(bin, ["movement", "create", "movement/player.json", "--json"], workspace));
+  const validation = operation(run(bin, ["project", "validate", "--json"], workspace));
   assert.equal(validation.status, "passed");
   await assert.rejects(readFile(path.join(workspace, "examples", "movement", "default.json")));
   await assert.rejects(readFile(path.join(workspace, "runtime", "godot", "project.godot")));
 
-  const editor = spawn(process.execPath, [cli, "editor", "serve", "--port", "0", "--json"], { cwd: workspace, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  const editor = spawn(bin, ["editor", "serve", "--port", "0", "--json"], { cwd: workspace, stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32", windowsHide: true });
   context.after(() => stopChild(editor));
   const output = await firstLine(editor);
   const editorResult = operation(output);
@@ -112,9 +111,14 @@ test("packed install initializes and validates a separate consumer without copie
 
 function run(command: string, args: string[], cwd: string): string {
   const result = spawnSync(command, args, { cwd, encoding: "utf8", shell: process.platform === "win32" && command.endsWith(".cmd"), windowsHide: true });
-  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  if (result.error !== undefined) throw result.error;
+  const diagnostic = `command: ${command} ${args.join(" ")}\nstderr:\n${result.stderr}\nstdout:\n${result.stdout}`;
+  assert.equal(typeof result.status, "number", diagnostic);
+  assert.equal(result.status, 0, diagnostic);
   return result.stdout;
 }
+
+function npmExecutable(): string { return process.platform === "win32" ? "npm.cmd" : "npm"; }
 
 function operation(output: string): Record<string, any> { return JSON.parse(output.trim()) as Record<string, any>; }
 
@@ -134,6 +138,12 @@ function firstLine(child: ReturnType<typeof spawn>): Promise<string> {
 async function stopChild(child: ReturnType<typeof spawn>): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) return;
   const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
-  child.kill();
+  if (process.platform === "win32" && child.pid !== undefined) {
+    const result = spawnSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { encoding: "utf8", windowsHide: true });
+    if (result.error !== undefined) throw result.error;
+    assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  } else {
+    child.kill();
+  }
   await exited;
 }
