@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -6,14 +7,26 @@ export type FileState = ReadonlyMap<string, string>;
 
 const ignoredDirectories = new Set([".git", "node_modules", "dist"]);
 
-export async function captureWorkspaceState(workspaceRoot: string): Promise<FileState> {
+export interface WorkspaceAuditFileSystem {
+  readDirectory: (directory: string) => Promise<Dirent[]>;
+  readBinaryFile: (file: string) => Promise<Buffer>;
+}
+
+const productionFileSystem: WorkspaceAuditFileSystem = {
+  readDirectory: (directory) => readdir(directory, { withFileTypes: true }),
+  readBinaryFile: (file) => readFile(file)
+};
+
+export async function captureWorkspaceState(workspaceRoot: string, injected: Partial<WorkspaceAuditFileSystem> = {}): Promise<FileState> {
   const state = new Map<string, string>();
-  await visit(workspaceRoot, workspaceRoot, state);
+  await visit(workspaceRoot, workspaceRoot, state, { ...productionFileSystem, ...injected });
   return state;
 }
 
-async function visit(root: string, directory: string, state: Map<string, string>): Promise<void> {
-  const entries = await readdir(directory, { withFileTypes: true });
+async function visit(root: string, directory: string, state: Map<string, string>, fileSystem: WorkspaceAuditFileSystem): Promise<void> {
+  let entries: Dirent[];
+  try { entries = await fileSystem.readDirectory(directory); }
+  catch (caught) { if (isEnoent(caught)) return; throw caught; }
   entries.sort((left, right) => left.name.localeCompare(right.name));
   for (const entry of entries) {
     if (entry.isDirectory() && ignoredDirectories.has(entry.name)) {
@@ -21,13 +34,17 @@ async function visit(root: string, directory: string, state: Map<string, string>
     }
     const absolutePath = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      await visit(root, absolutePath, state);
+      await visit(root, absolutePath, state, fileSystem);
     } else if (entry.isFile()) {
-      const content = await readFile(absolutePath);
+      let content: Buffer;
+      try { content = await fileSystem.readBinaryFile(absolutePath); }
+      catch (caught) { if (isEnoent(caught)) continue; throw caught; }
       state.set(toRepositoryPath(root, absolutePath), createHash("sha256").update(content).digest("hex"));
     }
   }
 }
+
+function isEnoent(caught: unknown): boolean { return typeof caught === "object" && caught !== null && "code" in caught && (caught as NodeJS.ErrnoException).code === "ENOENT"; }
 
 export function diffFileStates(before: FileState, after: FileState): string[] {
   const paths = new Set([...before.keys(), ...after.keys()]);
