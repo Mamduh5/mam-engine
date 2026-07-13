@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "const": "runtime.fixture.run" },
-    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack", "health/basic-confirmed-hit", "large-enemy/training-behemoth", "encounter/training-hunt"] },
+    "fixtureId": { "enum": ["movement/basic-ground", "movement/interactive-sandbox", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack", "health/basic-confirmed-hit", "large-enemy/training-behemoth", "encounter/training-hunt"] },
     "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
     "requestedAt": { "type": "string" },
     "timeoutMs": { "type": "number", "exclusiveMinimum": 0, "maximum": 60000 },
@@ -18,6 +18,10 @@
     {
       "if": { "properties": { "fixtureId": { "const": "movement/basic-ground" } } },
       "then": { "properties": { "payload": { "$ref": "#/$defs/movementPayload" } } }
+    },
+    {
+      "if": { "properties": { "fixtureId": { "const": "movement/interactive-sandbox" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/movementSandboxPayload" } } }
     },
     {
       "if": { "properties": { "fixtureId": { "const": "camera/basic-third-person" } } },
@@ -62,6 +66,27 @@
             "durationSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
             "fixedDeltaSeconds": { "const": 0.016666666666666666 },
             "cameraYawDegrees": { "type": "number" }
+          }
+        }
+      }
+    },
+    "movementSandboxPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["definitionKind", "definitionSchemaVersion", "profile", "scenario"],
+      "properties": {
+        "definitionKind": { "const": "movement-profile" },
+        "definitionSchemaVersion": { "const": 1 },
+        "profile": { "$ref": "../movement/v1.schema.json" },
+        "scenario": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "durationSeconds", "fixedDeltaSeconds", "automatedInput"],
+          "properties": {
+            "id": { "enum": ["interactive", "automated"] },
+            "durationSeconds": { "type": "number", "minimum": 0, "maximum": 60 },
+            "fixedDeltaSeconds": { "const": 0.016666666666666666 },
+            "automatedInput": { "type": "boolean" }
           }
         }
       }

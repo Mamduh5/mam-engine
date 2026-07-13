@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/project/v1.schema.json",
+  "title": "mam-engine project manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "definitionRoot", "entryMovementFile"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "mam-project" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "definitionRoot": { "type": "string", "minLength": 1 },
+    "entryMovementFile": { "type": ["string", "null"] }
+  }
+}

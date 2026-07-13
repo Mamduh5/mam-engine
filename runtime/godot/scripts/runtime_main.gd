@@ -19,6 +19,7 @@ const DamageReactionFixtureScene = preload("res://scenes/damage_reaction_fixture
 const WeaponFixtureScene = preload("res://scenes/weapon_fixture.tscn")
 const LargeEnemyFixtureScene = preload("res://scenes/large_enemy_fixture.tscn")
 const EncounterFixtureScene = preload("res://scenes/encounter_fixture.tscn")
+const MovementSandboxFixtureScene = preload("res://scenes/movement_sandbox_fixture.tscn")
 
 func _ready() -> void:
 	var paths := _parse_paths(OS.get_cmdline_user_args())
@@ -40,7 +41,15 @@ func _execute(paths: Dictionary) -> void:
 		return
 	var fixture: Variant = player
 	var fixture_scene := "res://scenes/movement_fixture.tscn"
-	if request.fixtureId == RuntimeProtocol.CAMERA_FIXTURE_ID:
+	if request.fixtureId == RuntimeProtocol.MOVEMENT_SANDBOX_FIXTURE_ID:
+		$Ground.visible = false
+		$Player.visible = false
+		$Player/CollisionShape3D.disabled = true
+		$Camera3D.current = false
+		fixture = MovementSandboxFixtureScene.instantiate()
+		add_child(fixture)
+		fixture_scene = "res://scenes/movement_sandbox_fixture.tscn"
+	elif request.fixtureId == RuntimeProtocol.CAMERA_FIXTURE_ID:
 		fixture = CameraFixtureScene.instantiate()
 		add_child(fixture)
 		fixture_scene = "res://scenes/camera_fixture.tscn"

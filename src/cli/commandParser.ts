@@ -13,6 +13,9 @@ import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
 
 export type ParsedCommand =
+  | { kind: "project.init"; directory?: string; json: boolean }
+  | { kind: "project.validate"; json: boolean }
+  | { kind: "project.play"; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "editor.serve"; host: string; port: number; workspace?: string; json: boolean }
   | { kind: "encounter.inspect"; file: string; json: boolean }
   | { kind: "encounter.validate"; file: string; json: boolean }
@@ -89,6 +92,7 @@ export type ParsedCommand =
   | { kind: "targeting.runtime-test"; file: string; camera: string; scenario: TargetingRuntimeScenario; seconds?: number; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "targeting.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "movement.inspect"; file: string; json: boolean }
+  | { kind: "movement.create"; file: string; json: boolean }
   | { kind: "movement.validate"; file: string; json: boolean }
   | { kind: "movement.simulate"; file: string; scenario: MovementScenario; seconds?: number; json: boolean }
   | { kind: "movement.runtime-test"; file: string; scenario: MovementScenario; seconds?: number; cameraYawDegrees: number; godot?: string; keepSession: boolean; json: boolean }
@@ -113,7 +117,8 @@ const targetingScenarios = new Set<TargetingScenario>(["acquire", "eligibility",
 const targetingRuntimeScenarios = new Set<TargetingRuntimeScenario>(["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]);
 
 export const SUPPORTED_COMMAND_ACTIONS = {
-  movement: ["inspect", "validate", "simulate", "set", "runtime-test"],
+  project: ["init", "validate", "play"],
+  movement: ["create", "inspect", "validate", "simulate", "set", "runtime-test"],
   camera: ["inspect", "validate", "simulate", "set", "runtime-test"],
   targeting: ["inspect", "validate", "simulate", "set", "runtime-test"],
   "defensive-action": ["inspect", "validate", "simulate", "set", "runtime-test"],
@@ -150,6 +155,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
     throw new CliParseError(`Unknown ${group} command '${action}'`);
   }
 
+  if (group === "project") return parseProjectCommand(action, remaining);
   if (group === "movement") {
     return parseMovementCommand(action, remaining);
   }
@@ -179,6 +185,27 @@ export function parseCommand(argv: string[]): ParsedCommand {
     return { kind: "runtime.check", ...(typeof godot === "string" ? { godot } : {}), json: parsed.flags.has("--json") };
   }
   throw new CliParseError(`Unknown command group '${group}'`);
+}
+
+function parseProjectCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "init") {
+    const parsed = parseArguments(args, new Set(["--json"]));
+    if (parsed.positional.length > 1) throw new CliParseError("project init accepts at most one directory argument");
+    const directory = parsed.positional[0];
+    return { kind: "project.init", ...(directory === undefined ? {} : { directory }), json: parsed.flags.has("--json") };
+  }
+  if (action === "validate") {
+    const parsed = parseArguments(args, new Set(["--json"]));
+    requirePositionals(parsed, 0, "project validate does not accept positional arguments");
+    return { kind: "project.validate", json: parsed.flags.has("--json") };
+  }
+  if (action === "play") {
+    const parsed = parseArguments(args, new Set(["--json", "--godot", "--keep-session"]), new Set(["--godot"]));
+    requirePositionals(parsed, 0, "project play does not accept positional arguments");
+    const godot = parsed.flags.get("--godot");
+    return { kind: "project.play", ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") };
+  }
+  throw new CliParseError(`Unknown project command '${action}'`);
 }
 
 function parseEditorCommand(action: string, args: string[]): ParsedCommand {
@@ -376,6 +403,11 @@ function parseCameraCommand(action: string, args: string[]): ParsedCommand {
 }
 
 function parseMovementCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "create") {
+    const parsed = parseArguments(args, new Set(["--json"]));
+    requirePositionals(parsed, 1, "movement create requires exactly one file argument");
+    return { kind: "movement.create", file: parsed.positional[0] as string, json: parsed.flags.has("--json") };
+  }
   if (action === "inspect" || action === "validate") {
     const parsed = parseArguments(args, new Set(["--json"]));
     requirePositionals(parsed, 1, `movement ${action} requires exactly one file argument`);

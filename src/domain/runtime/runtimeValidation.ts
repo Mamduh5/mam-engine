@@ -26,7 +26,7 @@ import { validateEncounterCheckpoint } from "./encounterCheckpoint";
 import { validateCameraRuntimeMetrics } from "./cameraRuntimeMetrics";
 import { validateTargetingRuntimePlan } from "./targetingRuntimePlan";
 import { validateTargetingRuntimeMetrics } from "./targetingRuntimeMetrics";
-import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, ENCOUNTER_FIXTURE_ID, HEALTH_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, WEAPON_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
+import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, ENCOUNTER_FIXTURE_ID, HEALTH_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, MOVEMENT_SANDBOX_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, WEAPON_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
 
 export interface ProtocolValidation<T> { valid: boolean; value?: T; errors: string[] }
 
@@ -35,11 +35,12 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   if (!isRecord(value)) return { valid: false, errors: ["request must be an object"] };
   if (value.schemaVersion !== RUNTIME_SCHEMA_VERSION) errors.push("unsupported schemaVersion");
   if (value.commandId !== RUNTIME_RUN_COMMAND) errors.push("unknown commandId");
-  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID && value.fixtureId !== CONTACT_VOLUME_FIXTURE_ID && value.fixtureId !== DAMAGE_REACTION_FIXTURE_ID && value.fixtureId !== WEAPON_FIXTURE_ID && value.fixtureId !== LARGE_ENEMY_FIXTURE_ID && value.fixtureId !== ENCOUNTER_FIXTURE_ID) errors.push("unknown fixtureId");
+  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== MOVEMENT_SANDBOX_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID && value.fixtureId !== CONTACT_VOLUME_FIXTURE_ID && value.fixtureId !== DAMAGE_REACTION_FIXTURE_ID && value.fixtureId !== WEAPON_FIXTURE_ID && value.fixtureId !== LARGE_ENEMY_FIXTURE_ID && value.fixtureId !== ENCOUNTER_FIXTURE_ID) errors.push("unknown fixtureId");
   if (typeof value.correlationId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.correlationId)) errors.push("correlationId is missing or unsafe");
   if (typeof value.requestedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value.requestedAt) || !Number.isFinite(Date.parse(value.requestedAt))) errors.push("requestedAt must be an ISO timestamp");
   if (!finiteInRange(value.timeoutMs, 1, 60_000)) errors.push("timeoutMs must be finite and bounded");
   if (!isRecord(value.payload)) errors.push("payload must be an object");
+  else if (value.fixtureId === MOVEMENT_SANDBOX_FIXTURE_ID) validateMovementSandboxPayload(value.payload, errors);
   else if (value.fixtureId === CAMERA_FIXTURE_ID) validateCameraPayload(value.payload, errors);
   else if (value.fixtureId === TARGETING_FIXTURE_ID) validateTargetingPayload(value.payload, errors);
   else if (value.fixtureId === DEFENSIVE_ACTION_FIXTURE_ID) validateDefensiveActionPayload(value.payload, errors);
@@ -335,6 +336,17 @@ function validateMovementPayload(payload: Record<string, any>, errors: string[])
   const movement = validateMovementDefinition(payload.profile);
   if (!movement.valid) errors.push(...movement.errors.map((error) => error.message));
   validateScenario(payload.scenario, MOVEMENT_RUNTIME_SCENARIOS, errors, true);
+}
+
+function validateMovementSandboxPayload(payload: Record<string, any>, errors: string[]): void {
+  if (payload.definitionKind !== "movement-profile" || payload.definitionSchemaVersion !== 1) errors.push("unsupported movement sandbox definition");
+  const movement = validateMovementDefinition(payload.profile);
+  if (!movement.valid) errors.push(...movement.errors.map((error) => error.message));
+  if (!isRecord(payload.scenario)) { errors.push("scenario must be an object"); return; }
+  if (payload.scenario.id !== "interactive" && payload.scenario.id !== "automated") errors.push("unsupported movement sandbox scenario");
+  if (payload.scenario.automatedInput !== (payload.scenario.id === "automated")) errors.push("movement sandbox input mode mismatch");
+  if (!finiteInRange(payload.scenario.durationSeconds, 0, 60)) errors.push("durationSeconds must be finite and bounded");
+  if (payload.scenario.fixedDeltaSeconds !== 1 / 60) errors.push("fixedDeltaSeconds must equal 1/60");
 }
 
 function validateCameraPayload(payload: Record<string, any>, errors: string[]): void {

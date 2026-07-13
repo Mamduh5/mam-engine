@@ -1,6 +1,6 @@
 "use strict";
 
-const state = { definitions: [], selectedPath: null, enabledKinds: new Set(), query: "", currentInspection: null, undo: null, notice: null };
+const state = { definitions: [], project: null, selectedPath: null, enabledKinds: new Set(), query: "", currentInspection: null, undo: null, notice: null };
 const elements = {
   workspaceName: document.querySelector("#workspace-name"),
   connection: document.querySelector("#connection-status"),
@@ -8,6 +8,7 @@ const elements = {
   invalidCount: document.querySelector("#invalid-count"),
   search: document.querySelector("#definition-search"),
   filters: document.querySelector("#kind-filters"),
+  projectActions: document.querySelector("#project-actions"),
   list: document.querySelector("#definition-list"),
   inspector: document.querySelector("#inspector")
 };
@@ -23,6 +24,7 @@ async function loadWorkspace() {
     elements.connection.textContent = "Connected";
     elements.connection.dataset.state = "connected";
     renderFilters(workspace.supportedDefinitionKinds);
+    renderProjectActions();
     renderDefinitionList();
   } catch (error) {
     elements.connection.textContent = "Unavailable";
@@ -33,13 +35,44 @@ async function loadWorkspace() {
 }
 
 async function refreshWorkspaceData() {
-  const [workspace, result] = await Promise.all([getJson("/api/workspace"), getJson("/api/definitions")]);
+  const [workspace, result, project] = await Promise.all([getJson("/api/workspace"), getJson("/api/definitions"), getJson("/api/project")]);
   state.definitions = result.definitions;
+  state.project = project;
   elements.workspaceName.textContent = workspace.displayName;
   elements.validCount.textContent = String(workspace.validCount);
   elements.invalidCount.textContent = String(workspace.invalidCount);
   renderDefinitionList();
+  renderProjectActions();
   return workspace;
+}
+
+function renderProjectActions() {
+  elements.projectActions.replaceChildren();
+  const hasMovement = state.definitions.some((definition) => definition.kind === "movement-profile");
+  const create = actionButton("Create movement profile", "primary");
+  create.hidden = hasMovement;
+  create.disabled = !state.project?.initialized;
+  create.addEventListener("click", async () => {
+    create.disabled = true;
+    try {
+      const result = await postJson("/api/project/movement/create", { file: "movement/player.json" });
+      await refreshWorkspaceData();
+      if (result.data?.file) await selectDefinition(result.data.file);
+    } catch (error) { showFailure("Movement creation failed", errorMessage(error)); }
+  });
+  const play = actionButton("Play movement sandbox");
+  play.disabled = !state.project?.valid;
+  play.addEventListener("click", async () => {
+    play.disabled = true;
+    play.textContent = "Sandbox running…";
+    try {
+      const result = await postJson("/api/project/play", {});
+      state.notice = { file: state.selectedPath, message: `Sandbox exited · ${result.data?.metrics?.finalState ?? "complete"}` };
+      if (state.selectedPath) await selectDefinition(state.selectedPath, true);
+    } catch (error) { showFailure("Sandbox launch failed", errorMessage(error)); }
+    finally { play.textContent = "Play movement sandbox"; play.disabled = !state.project?.valid; }
+  });
+  elements.projectActions.append(create, play);
 }
 
 function renderFilters(kinds) {

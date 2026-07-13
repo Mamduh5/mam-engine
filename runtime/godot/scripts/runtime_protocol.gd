@@ -17,6 +17,7 @@ const LargeEnemyProfileRuntime = preload("res://scripts/large_enemy_profile.gd")
 const SCHEMA_VERSION := "mam.runtime/v1"
 const COMMAND_ID := "runtime.fixture.run"
 const MOVEMENT_FIXTURE_ID := "movement/basic-ground"
+const MOVEMENT_SANDBOX_FIXTURE_ID := "movement/interactive-sandbox"
 const CAMERA_FIXTURE_ID := "camera/basic-third-person"
 const TARGETING_FIXTURE_ID := "targeting/basic-lock-on"
 const DEFENSIVE_ACTION_FIXTURE_ID := "defensive-action/basic-dodge"
@@ -42,7 +43,7 @@ static func validate_request(request: Variant) -> Array[String]:
 	if request.get("schemaVersion") != SCHEMA_VERSION: errors.append("unsupported protocol version")
 	if request.get("commandId") != COMMAND_ID: errors.append("unknown command ID")
 	var fixture_id: Variant = request.get("fixtureId")
-	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, WEAPON_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID, ENCOUNTER_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
+	if not [MOVEMENT_FIXTURE_ID, MOVEMENT_SANDBOX_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, WEAPON_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID, ENCOUNTER_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
 	if typeof(request.get("correlationId")) != TYPE_STRING or request.get("correlationId").is_empty(): errors.append("missing correlation ID")
 	if not _finite_number(request.get("timeoutMs")) or float(request.get("timeoutMs", 0)) <= 0.0 or float(request.get("timeoutMs", 0)) > 60000.0: errors.append("invalid timeout")
 	var payload: Variant = request.get("payload")
@@ -55,6 +56,11 @@ static func validate_request(request: Variant) -> Array[String]:
 		errors.append_array(MovementProfileRuntime.validate(payload.get("profile")))
 		if not MOVEMENT_SCENARIOS.has(scenario.get("id")): errors.append("unsupported scenario")
 		if not _finite_number(scenario.get("cameraYawDegrees")): errors.append("invalid camera yaw")
+	elif fixture_id == MOVEMENT_SANDBOX_FIXTURE_ID:
+		if payload.get("definitionKind") != "movement-profile" or payload.get("definitionSchemaVersion") != 1: errors.append("unsupported movement sandbox definition")
+		errors.append_array(MovementProfileRuntime.validate(payload.get("profile")))
+		if not ["interactive", "automated"].has(scenario.get("id")): errors.append("unsupported movement sandbox scenario")
+		if typeof(scenario.get("automatedInput")) != TYPE_BOOL or bool(scenario.get("automatedInput")) != (scenario.get("id") == "automated"): errors.append("movement sandbox input mode mismatch")
 	elif fixture_id == CAMERA_FIXTURE_ID:
 		if payload.get("definitionKind") != "camera-profile": errors.append("unsupported definition kind")
 		if payload.get("definitionSchemaVersion") != 1: errors.append("unsupported camera schema version")

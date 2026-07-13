@@ -89,6 +89,8 @@ import { runEncounterRuntimeTest } from "../application/runtime/runEncounterRunt
 import { runEncounterInteractiveTest } from "../application/runtime/runEncounterInteractiveTest";
 import { runEncounterRecoveryTest } from "../application/runtime/runEncounterRecoveryTest";
 import { serveEditor } from "../application/editor/serveEditor";
+import { createMovementProfile, initProject, validateProject } from "../application/project/projectOperations";
+import { runProjectPlay } from "../application/runtime/runProjectPlay";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -175,6 +177,9 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "project.init": return initProject(workspaceRoot, command.directory);
+    case "project.validate": return validateProject(workspaceRoot);
+    case "project.play": return runProjectPlay(workspaceRoot, { godot: command.godot, keepSession: command.keepSession });
     case "editor.serve": return serveEditor(workspaceRoot, command.host, command.port, command.workspace);
     case "encounter.inspect": return inspectEncounter(workspaceRoot, command.file);
     case "encounter.validate": return validateEncounterFile(workspaceRoot, command.file);
@@ -252,6 +257,8 @@ async function dispatch(
     case "targeting.set": return dependencies.setTargetingValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "movement.inspect":
       return inspectMovement(workspaceRoot, command.file);
+    case "movement.create":
+      return createMovementProfile(workspaceRoot, command.file);
     case "movement.validate":
       return validateMovementFile(workspaceRoot, command.file);
     case "movement.simulate":

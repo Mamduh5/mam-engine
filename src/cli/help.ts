@@ -4,7 +4,13 @@ const commonRuntimeFlags = "[--godot <path>] [--keep-session] [--json]";
 const commonSetFlags = "[--dry-run] [--json]";
 
 export const COMMAND_HELP: Record<CommandGroup, readonly string[]> = {
+  project: [
+    "project init [directory] [--json]",
+    "project validate [--json]",
+    `project play ${commonRuntimeFlags}`
+  ],
   movement: [
+    "movement create <file> [--json]",
     "movement inspect <file> [--json]",
     "movement validate <file> [--json]",
     "movement simulate <file> --scenario <accelerate|stop|sprint|dodge|turn> [--seconds <number>] [--json]",

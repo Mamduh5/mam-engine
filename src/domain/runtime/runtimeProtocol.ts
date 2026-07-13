@@ -20,6 +20,7 @@ export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
 export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
 export const MOVEMENT_FIXTURE_ID = "movement/basic-ground" as const;
+export const MOVEMENT_SANDBOX_FIXTURE_ID = "movement/interactive-sandbox" as const;
 export const CAMERA_FIXTURE_ID = "camera/basic-third-person" as const;
 export const TARGETING_FIXTURE_ID = "targeting/basic-lock-on" as const;
 export const DEFENSIVE_ACTION_FIXTURE_ID = "defensive-action/basic-dodge" as const;
@@ -63,6 +64,21 @@ export interface MovementRuntimeRequest {
     definitionSchemaVersion: 1;
     profile: MovementProfile;
     scenario: MovementRuntimeScenarioRequest;
+  };
+}
+
+export interface MovementSandboxRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof MOVEMENT_SANDBOX_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    definitionKind: "movement-profile";
+    definitionSchemaVersion: 1;
+    profile: MovementProfile;
+    scenario: { id: "interactive" | "automated"; durationSeconds: number; fixedDeltaSeconds: number; automatedInput: boolean };
   };
 }
 
@@ -377,7 +393,7 @@ export interface EncounterRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest | ContactVolumeRuntimeRequest | DamageReactionRuntimeRequest | WeaponRuntimeRequest | LargeEnemyRuntimeRequest | EncounterRuntimeRequest;
+export type RuntimeRequest = MovementRuntimeRequest | MovementSandboxRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest | ContactVolumeRuntimeRequest | DamageReactionRuntimeRequest | WeaponRuntimeRequest | LargeEnemyRuntimeRequest | EncounterRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

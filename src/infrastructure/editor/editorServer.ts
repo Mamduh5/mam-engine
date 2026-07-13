@@ -6,6 +6,8 @@ import { discoverEditorDefinitions, EDITOR_PROTOCOL_VERSION, EditorInspectionErr
 import { EditorEditError, getMovementEditModel, previewMovementEdit, rollbackMovementEdit, saveMovementEdit } from "../../application/editor/movementEditor";
 import { getMovementSimulationModel, runMovementEditorSimulation } from "../../application/editor/movementSimulationEditor";
 import { SUPPORTED_DEFINITION_KINDS } from "../../application/definitions/definitionValidationRegistry";
+import { createMovementProfile, inspectProjectWorkspace } from "../../application/project/projectOperations";
+import { runProjectPlay } from "../../application/runtime/runProjectPlay";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 4310;
@@ -63,6 +65,16 @@ async function routeRequest(request: IncomingMessage, response: ServerResponse, 
   try { url = new URL(request.url ?? "/", "http://localhost"); }
   catch { sendJson(response, method, 400, errorBody("EDITOR_REQUEST_INVALID", "Request URL is invalid"), true); return; }
   try {
+    if (url.pathname === "/api/project/movement/create" || url.pathname === "/api/project/play") {
+      if (method !== "POST") { response.setHeader("Allow", "POST"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Project action accepts only POST"), true); return; }
+      validateMutationRequest(request, serverOrigin);
+      const body = await readMutationBody(request);
+      const record = typeof body === "object" && body !== null && !Array.isArray(body) ? body as Record<string, unknown> : {};
+      const result = url.pathname.endsWith("/play")
+        ? await runProjectPlay(workspaceRoot)
+        : await createMovementProfile(workspaceRoot, typeof record.file === "string" ? record.file : "movement/player.json");
+      sendJson(response, method, result.status === "failed" ? 400 : 200, result, true); return;
+    }
     if (url.pathname === "/api/definitions/edit") {
       if (method !== "GET" && method !== "HEAD") { response.setHeader("Allow", "GET, HEAD"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Edit model accepts only GET and HEAD"), true); return; }
       const file = url.searchParams.get("file");
@@ -90,6 +102,7 @@ async function routeRequest(request: IncomingMessage, response: ServerResponse, 
       const definitions = await discoverEditorDefinitions(workspaceRoot);
       sendJson(response, method, 200, { workspaceRoot, displayName: path.basename(workspaceRoot), supportedDefinitionKinds: SUPPORTED_DEFINITION_KINDS, totalDiscoveredDefinitions: definitions.length, validCount: definitions.filter((item) => item.valid).length, invalidCount: definitions.filter((item) => !item.valid).length }, true); return;
     }
+    if (url.pathname === "/api/project") { sendJson(response, method, 200, await inspectProjectWorkspace(workspaceRoot), true); return; }
     if (url.pathname === "/api/definitions") { sendJson(response, method, 200, { definitions: await discoverEditorDefinitions(workspaceRoot) }, true); return; }
     if (url.pathname === "/api/definitions/inspect") {
       const file = url.searchParams.get("file");

@@ -47,6 +47,19 @@ npm run check
 
 The package exposes the executable name `mam` through its `bin` entry. Installed and linked package consumers use `mam <arguments>` directly. During repository development, use `npm run mam -- <arguments>`.
 
+### Greenfield movement sandbox
+
+From an empty directory, the installed package can create and run a project without copying this repository's examples or Godot sources:
+
+```text
+mam project init
+mam movement create movement/player.json
+mam project validate
+mam project play
+```
+
+`project play` opens the packaged Godot movement sandbox. Use WASD to move, Shift to sprint, Space to dodge, and Escape to exit. The same project and movement services back the editor's **Create movement profile** and **Play movement sandbox** actions.
+
 ## Commands
 
 Every command accepts `--json`. JSON mode writes one versioned result envelope to standard output and returns a non-zero exit code on failure.
@@ -120,7 +133,7 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 
 ## Current limitations
 
-- No persistent live runtime session, live editing, visual camera editor, or explicit interactive shutdown command exists.
+- No persistent live runtime session, live editing, or visual camera editor exists; the greenfield movement sandbox is a bounded process-per-run window exited with Escape.
 - The visual editor supports transactional single-property movement-profile editing and deterministic saved-versus-preview movement simulation only; other definition kinds remain read-only, and broader authoring workflows remain pending.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - Runtime evidence, including targeting, combat, weapon, large-enemy, and encounter coverage, comes from controlled fixtures rather than production gameplay. Audio, VFX, progression, multiplayer, and open-world implementation remain unsupported.
@@ -139,4 +152,5 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [Roadmap](docs/roadmap.md)
 - [v0.1 capability manifest](docs/capabilities-v0.1.json)
 - [v0.1 release readiness](docs/release-readiness-v0.1.md)
+- [Greenfield movement sandbox dogfood](docs/dogfood/greenfield-movement-sandbox.md)
 - Decisions: [CLI first](docs/decisions/0001-cli-first.md), [Godot runtime](docs/decisions/0002-godot-runtime.md), [authored vs. engine-owned files](docs/decisions/0003-codex-owned-vs-engine-owned.md), and [process-per-run transport](docs/decisions/0004-process-per-run-runtime-transport.md)
