@@ -36,7 +36,7 @@ Promote dodge into a complete defensive-action slice with state restrictions, st
 
 ## Phase 4 — Action timeline and animation events
 
-Canonical Phase 4A action-timeline authoring, validation, inspection, deterministic event simulation, and safe editing are complete. Animation-runtime proof remains pending. **Exit condition:** a definition-driven non-damaging action executes with deterministic event ordering and measured Godot animation-event reports.
+Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. **Exit condition met:** a definition-driven non-damaging action executes with deterministic event ordering and measured Godot animation-event reports.
 
 ## Phase 5 — Hitboxes and hurtboxes
 

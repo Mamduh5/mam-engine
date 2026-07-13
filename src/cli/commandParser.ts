@@ -11,6 +11,7 @@ export type ParsedCommand =
   | { kind: "action-timeline.inspect"; file: string; json: boolean }
   | { kind: "action-timeline.validate"; file: string; json: boolean }
   | { kind: "action-timeline.simulate"; file: string; fixedDelta?: number; json: boolean }
+  | { kind: "action-timeline.runtime-test"; file: string; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "action-timeline.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "stamina.inspect"; file: string; json: boolean }
   | { kind: "stamina.validate"; file: string; json: boolean }
@@ -104,6 +105,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
 function parseActionTimelineCommand(action: string, args: string[]): ParsedCommand {
   if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `action-timeline ${action} requires exactly one file argument`); return { kind: `action-timeline.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "simulate") { const parsed = parseArguments(args, new Set(["--json", "--fixed-delta"]), new Set(["--fixed-delta"])); requirePositionals(parsed, 1, "action-timeline simulate requires exactly one file argument"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); return { kind: "action-timeline.simulate", file: parsed.positional[0] as string, ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") }; }
+  if (action === "runtime-test") { const parsed = parseArguments(args, new Set(["--json", "--fixed-delta", "--godot", "--keep-session"]), new Set(["--fixed-delta", "--godot"])); requirePositionals(parsed, 1, "action-timeline runtime-test requires exactly one file argument"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); const godot = parsed.flags.get("--godot"); return { kind: "action-timeline.runtime-test", file: parsed.positional[0] as string, ...(fixedDelta === undefined ? {} : { fixedDelta }), ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") }; }
   if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "action-timeline set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("action-timeline set <json-value> must be valid JSON"); } return { kind: "action-timeline.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
   throw new CliParseError(`Unknown action-timeline command '${action}'`);
 }

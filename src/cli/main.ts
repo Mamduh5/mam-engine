@@ -53,6 +53,7 @@ import { inspectActionTimeline } from "../application/actionTimeline/inspectActi
 import { setActionTimelineValue } from "../application/actionTimeline/setActionTimelineValue";
 import { simulateActionTimelineFile } from "../application/actionTimeline/simulateActionTimeline";
 import { validateActionTimelineFile } from "../application/actionTimeline/validateActionTimeline";
+import { runActionTimelineRuntimeTest } from "../application/runtime/runActionTimelineRuntimeTest";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -128,6 +129,7 @@ async function dispatch(
     case "action-timeline.inspect": return inspectActionTimeline(workspaceRoot, command.file);
     case "action-timeline.validate": return validateActionTimelineFile(workspaceRoot, command.file);
     case "action-timeline.simulate": return simulateActionTimelineFile(workspaceRoot, command.file, command.fixedDelta);
+    case "action-timeline.runtime-test": return runActionTimelineRuntimeTest(workspaceRoot, command.file, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "action-timeline.set": return dependencies.setActionTimelineValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "stamina.inspect": return inspectStamina(workspaceRoot, command.file);
     case "stamina.validate": return validateStaminaFile(workspaceRoot, command.file);

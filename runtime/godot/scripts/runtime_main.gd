@@ -13,6 +13,7 @@ const CombatFixtureScene = preload("res://scenes/combat_fixture.tscn")
 const StaminaFixtureScene = preload("res://scenes/stamina_fixture.tscn")
 const StaminaCombatFixtureScene = preload("res://scenes/stamina_combat_fixture.tscn")
 const TargetedCombatFixtureScene = preload("res://scenes/targeted_combat_fixture.tscn")
+const ActionTimelineFixtureScene = preload("res://scenes/action_timeline_fixture.tscn")
 
 func _ready() -> void:
 	var paths := _parse_paths(OS.get_cmdline_user_args())
@@ -70,6 +71,10 @@ func _execute(paths: Dictionary) -> void:
 		fixture = TargetedCombatFixtureScene.instantiate()
 		add_child(fixture)
 		fixture_scene = "res://scenes/targeted_combat_fixture.tscn"
+	elif request.fixtureId == RuntimeProtocol.ACTION_TIMELINE_FIXTURE_ID:
+		fixture = ActionTimelineFixtureScene.instantiate()
+		add_child(fixture)
+		fixture_scene = "res://scenes/action_timeline_fixture.tscn"
 	if request.fixtureId == RuntimeProtocol.TARGETING_FIXTURE_ID: fixture.configure(request.payload.profile, request.payload.cameraProfile)
 	elif request.fixtureId == RuntimeProtocol.HEALTH_FIXTURE_ID: fixture.configure(request.payload.profile, request.payload.offensiveActionProfile)
 	elif request.fixtureId == RuntimeProtocol.COMBAT_FIXTURE_ID: fixture.configure(request.payload.healthProfile, request.payload.offensiveActionProfile)
