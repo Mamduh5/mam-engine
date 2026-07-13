@@ -40,7 +40,7 @@ Canonical Phase 4 timeline authoring and real Godot animation-event synchronizat
 
 ## Phase 5 — Hitboxes and hurtboxes
 
-Add spatial contact volumes and activation windows without damage calculation. **Exit condition:** authored volumes and windows produce deterministic contact reports with visualization available only as supplementary evidence.
+Canonical Phase 5A contact-volume authoring and deterministic domain simulation are complete; real Godot spatial-contact proof remains pending. The full Phase 5 exit condition is not yet met. **Exit condition:** authored volumes and windows produce deterministic contact reports with visualization available only as supplementary evidence.
 
 ## Phase 6 — Damage, reactions, stagger, and interrupts
 

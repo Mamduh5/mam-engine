@@ -44,3 +44,8 @@ export function loadActionTimelineV1Schema(): object {
   const schemaPath = path.join(packageRoot(), "schemas", "action-timeline", "v1.schema.json");
   return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
 }
+
+export function loadContactVolumeV1Schema(): object {
+  const schemaPath = path.join(packageRoot(), "schemas", "contact-volume", "v1.schema.json");
+  return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
+}

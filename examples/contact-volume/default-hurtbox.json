@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "contact-volume-profile",
+  "id": "default-hurtbox",
+  "displayName": "Default Hurtbox",
+  "role": "hurtbox",
+  "center": { "x": 1.5, "y": 0, "z": 0 },
+  "radius": 0.75,
+  "activeStartSeconds": 0.2,
+  "activeEndSeconds": 0.5
+}

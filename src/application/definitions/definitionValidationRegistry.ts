@@ -18,9 +18,11 @@ import type { OperationError } from "../../shared/operationResult";
 import type { ContentVerification } from "../persistence/transactionalFileReplace";
 import { validateActionTimelineDefinition } from "../../domain/actionTimeline/actionTimelineValidation";
 import type { ActionTimelineProfile } from "../../domain/actionTimeline/actionTimelineTypes";
+import { validateContactVolumeDefinition } from "../../domain/contactVolume/contactVolumeValidation";
+import type { ContactVolumeProfile } from "../../domain/contactVolume/contactVolumeTypes";
 
 export type { DefinitionKind } from "../../domain/definitions/definitionTypes";
-export type SupportedDefinition = MovementProfile | CameraProfile | TargetingProfile | DefensiveActionProfile | OffensiveActionProfile | HealthProfile | StaminaProfile | ActionTimelineProfile;
+export type SupportedDefinition = MovementProfile | CameraProfile | TargetingProfile | DefensiveActionProfile | OffensiveActionProfile | HealthProfile | StaminaProfile | ActionTimelineProfile | ContactVolumeProfile;
 
 export interface DefinitionValidationResult {
   valid: boolean;
@@ -64,12 +66,16 @@ export function validateDefinition(value: unknown): DefinitionValidationResult {
     const result = validateActionTimelineDefinition(value);
     return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
   }
+  if (kind === "contact-volume-profile") {
+    const result = validateContactVolumeDefinition(value);
+    return { valid: result.valid, kind, definition: result.profile, schemaVersion: result.profile?.schemaVersion ?? schemaVersion(value), errors: result.errors };
+  }
   return {
     valid: false,
     kind: null,
     definition: null,
     schemaVersion: schemaVersion(value),
-    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile, camera-profile, targeting-profile, defensive-action-profile, offensive-action-profile, health-profile, stamina-profile, or action-timeline-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile", "targeting-profile", "defensive-action-profile", "offensive-action-profile", "health-profile", "stamina-profile", "action-timeline-profile"] }]
+    errors: [{ code: ErrorCodes.DefinitionKindUnsupported, path: "kind", message: "Definition kind must be movement-profile, camera-profile, targeting-profile, defensive-action-profile, offensive-action-profile, health-profile, stamina-profile, action-timeline-profile, or contact-volume-profile", actual: recordKind(value), expected: ["movement-profile", "camera-profile", "targeting-profile", "defensive-action-profile", "offensive-action-profile", "health-profile", "stamina-profile", "action-timeline-profile", "contact-volume-profile"] }]
   };
 }
 

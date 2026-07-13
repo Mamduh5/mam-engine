@@ -54,6 +54,10 @@ import { setActionTimelineValue } from "../application/actionTimeline/setActionT
 import { simulateActionTimelineFile } from "../application/actionTimeline/simulateActionTimeline";
 import { validateActionTimelineFile } from "../application/actionTimeline/validateActionTimeline";
 import { runActionTimelineRuntimeTest } from "../application/runtime/runActionTimelineRuntimeTest";
+import { inspectContactVolume } from "../application/contactVolume/inspectContactVolume";
+import { setContactVolumeValue } from "../application/contactVolume/setContactVolumeValue";
+import { simulateContactVolumeFiles } from "../application/contactVolume/simulateContactVolume";
+import { validateContactVolumeFile } from "../application/contactVolume/validateContactVolume";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -64,6 +68,7 @@ export interface CliApplicationDependencies {
   setHealthValue: typeof setHealthValue;
   setStaminaValue: typeof setStaminaValue;
   setActionTimelineValue: typeof setActionTimelineValue;
+  setContactVolumeValue: typeof setContactVolumeValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -73,7 +78,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -126,6 +131,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "contact-volume.inspect": return inspectContactVolume(workspaceRoot, command.file);
+    case "contact-volume.validate": return validateContactVolumeFile(workspaceRoot, command.file);
+    case "contact-volume.simulate-contact": return simulateContactVolumeFiles(workspaceRoot, command.hitboxFile, command.hurtboxFile, command.fixedDelta);
+    case "contact-volume.set": return dependencies.setContactVolumeValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "action-timeline.inspect": return inspectActionTimeline(workspaceRoot, command.file);
     case "action-timeline.validate": return validateActionTimelineFile(workspaceRoot, command.file);
     case "action-timeline.simulate": return simulateActionTimelineFile(workspaceRoot, command.file, command.fixedDelta);

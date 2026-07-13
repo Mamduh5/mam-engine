@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/contact-volume/v1.schema.json",
+  "title": "mam-engine contact volume profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "role", "center", "radius", "activeStartSeconds", "activeEndSeconds"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "contact-volume-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "role": { "enum": ["hitbox", "hurtbox"] },
+    "center": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } }
+    },
+    "radius": { "type": "number" },
+    "activeStartSeconds": { "type": "number" },
+    "activeEndSeconds": { "type": "number" }
+  }
+}

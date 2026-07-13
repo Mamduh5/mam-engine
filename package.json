@@ -17,6 +17,7 @@
     "examples/health",
     "examples/stamina",
     "examples/action-timeline",
+    "examples/contact-volume",
     "docs/targeting-editor-v0.1.md",
     "docs/decisions/0007-targeting-runtime-and-camera-framing.md",
     "runtime/godot/project.godot",
@@ -28,6 +29,7 @@
     "schemas/health",
     "schemas/stamina",
     "schemas/action-timeline",
+    "schemas/contact-volume",
     "fixtures/movement"
   ],
   "scripts": {
