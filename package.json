@@ -1,0 +1,15 @@
+{
+  "name": "mam-engine",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "mam-engine": "file:C:/tmp/mam-engine-greenfield-1b28871597f34347bb2ef62fa25063bb/mam-engine-0.1.0.tgz"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules/
+.mam-engine/
+*.tgz
+npm-debug.log*
