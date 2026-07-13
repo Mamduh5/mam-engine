@@ -50,9 +50,9 @@ Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and r
 
 Canonical Phase 7 is complete: the definition-driven training weapon now composes validated references, stamina, a real Godot animation timeline, event-controlled real spatial contact, one-hit damage, and reactions end to end. **Exit condition met:** TypeScript and headless Godot produce matching complete strike reports; enemies and encounters are not claimed complete.
 
-## Phase 8 — First large enemy
+## Phase 8 — First large enemy (Phase 8A complete)
 
-Add one large-enemy behavior model, telegraphs, targetable/body-part contracts, and controlled scenarios. **Exit condition:** behavior and telegraph sequences are authorable, deterministic where specified, measurable, and regression tested.
+Canonical Phase 8A large-enemy authoring, referenced body-part contracts, telegraphs, and deterministic behavior simulation are complete. Real Godot enemy-runtime proof remains pending, so full Phase 8 is not complete. **Exit condition:** behavior and telegraph sequences are authorable, deterministic where specified, measurable, and regression tested.
 
 ## Phase 9 — First complete boss encounter
 

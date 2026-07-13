@@ -59,3 +59,8 @@ export function loadWeaponV1Schema(): object {
   const schemaPath = path.join(packageRoot(), "schemas", "weapon", "v1.schema.json");
   return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
 }
+
+export function loadLargeEnemyV1Schema(): object {
+  const schemaPath = path.join(packageRoot(), "schemas", "large-enemy", "v1.schema.json");
+  return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
+}

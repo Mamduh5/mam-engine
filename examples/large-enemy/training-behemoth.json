@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "large-enemy-profile",
+  "id": "training-behemoth",
+  "displayName": "Training Behemoth",
+  "healthFile": "examples/health/default.json",
+  "reactionFile": "examples/damage-reaction/default.json",
+  "telegraphName": "training-swipe",
+  "idleDurationSeconds": 0.5,
+  "telegraphDurationSeconds": 0.3,
+  "attackDurationSeconds": 0.4,
+  "recoveryDurationSeconds": 0.5,
+  "bodyParts": [
+    {
+      "id": "head",
+      "displayName": "Head",
+      "hurtboxFile": "examples/contact-volume/default-hurtbox.json",
+      "targetPoint": { "x": 0, "y": 2, "z": 0 },
+      "targetable": true
+    },
+    {
+      "id": "core",
+      "displayName": "Core",
+      "hurtboxFile": "examples/contact-volume/window-miss-hurtbox.json",
+      "targetPoint": { "x": 0, "y": 1, "z": 0 },
+      "targetable": true
+    }
+  ]
+}

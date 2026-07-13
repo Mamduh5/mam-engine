@@ -69,6 +69,10 @@ import { setWeaponValue } from "../application/weapon/setWeaponValue";
 import { simulateWeaponStrikeFiles } from "../application/weapon/simulateWeaponStrike";
 import { validateWeaponFile } from "../application/weapon/validateWeapon";
 import { runWeaponRuntimeTest } from "../application/runtime/runWeaponRuntimeTest";
+import { inspectLargeEnemy } from "../application/largeEnemy/inspectLargeEnemy";
+import { setLargeEnemyValue } from "../application/largeEnemy/setLargeEnemyValue";
+import { simulateLargeEnemyFile } from "../application/largeEnemy/simulateLargeEnemy";
+import { validateLargeEnemyFile } from "../application/largeEnemy/validateLargeEnemy";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -82,6 +86,7 @@ export interface CliApplicationDependencies {
   setContactVolumeValue: typeof setContactVolumeValue;
   setDamageReactionValue: typeof setDamageReactionValue;
   setWeaponValue: typeof setWeaponValue;
+  setLargeEnemyValue: typeof setLargeEnemyValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -91,7 +96,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, setWeaponValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, setWeaponValue, setLargeEnemyValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -144,6 +149,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "large-enemy.inspect": return inspectLargeEnemy(workspaceRoot, command.file);
+    case "large-enemy.validate": return validateLargeEnemyFile(workspaceRoot, command.file);
+    case "large-enemy.simulate": return simulateLargeEnemyFile(workspaceRoot, command.file, command.scenario, command.fixedDelta);
+    case "large-enemy.set": return dependencies.setLargeEnemyValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "weapon.inspect": return inspectWeapon(workspaceRoot, command.file);
     case "weapon.validate": return validateWeaponFile(workspaceRoot, command.file);
     case "weapon.simulate-strike": return simulateWeaponStrikeFiles(workspaceRoot, command.weaponFile, command.staminaFile, command.healthFile, command.hurtboxFile, command.reactionFile, command.fixedDelta);
