@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Movement, camera, and targeting have controlled Godot 4.7-stable runtime proof. Phase 2 camera and targeting is complete; Phase 3 dodge and defensive actions is not started.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4A action-timeline authoring is complete; animation-runtime proof remains pending.
 
 ## Implemented through Phase 2A.2
 
@@ -112,7 +112,7 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Phase 3 dodge and defensive actions, and later combat systems, remain separate roadmap work.
+- Defensive, offensive, health, stamina, and targeted-combat primitives exist with controlled Godot proofs; later combat composition remains roadmap work, and action-timeline animation-runtime proof is pending.
 
 ## Documentation
 

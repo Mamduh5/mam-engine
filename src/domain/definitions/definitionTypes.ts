@@ -1,1 +1,1 @@
-export type DefinitionKind = "movement-profile" | "camera-profile" | "targeting-profile" | "defensive-action-profile" | "offensive-action-profile" | "health-profile" | "stamina-profile";
+export type DefinitionKind = "movement-profile" | "camera-profile" | "targeting-profile" | "defensive-action-profile" | "offensive-action-profile" | "health-profile" | "stamina-profile" | "action-timeline-profile";

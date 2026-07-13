@@ -1,0 +1,11 @@
+import type { ActionTimelineProfile } from "../../domain/actionTimeline/actionTimelineTypes";
+import { validateActionTimelineDefinition } from "../../domain/actionTimeline/actionTimelineValidation";
+import { resolveWorkspacePath } from "../../infrastructure/files/changedFileAudit";
+import { JsonFileReadError, readJsonFile } from "../../infrastructure/files/jsonFileStore";
+import { ErrorCodes } from "../../shared/errorCodes";
+import type { OperationError } from "../../shared/operationResult";
+
+export interface LoadedActionTimeline { absolutePath: string; relativePath: string; content: string; profile: ActionTimelineProfile }
+export interface LoadActionTimelineFailure { errors: OperationError[]; absolutePath?: string; relativePath?: string }
+export async function loadValidActionTimeline(workspaceRoot: string, inputFile: string): Promise<LoadedActionTimeline | LoadActionTimelineFailure> { let resolved: { absolutePath: string; relativePath: string }; try { resolved = resolveWorkspacePath(workspaceRoot, inputFile); } catch (caught) { return { errors: [{ code: ErrorCodes.ActionTimelineWriteBlocked, path: inputFile, message: caught instanceof Error ? caught.message : String(caught) }] }; } let read: Awaited<ReturnType<typeof readJsonFile>>; try { read = await readJsonFile(resolved.absolutePath); } catch (caught) { if (caught instanceof JsonFileReadError) { const code = caught.kind === "not_found" ? ErrorCodes.ActionTimelineFileNotFound : caught.kind === "invalid_json" ? ErrorCodes.ActionTimelineJsonInvalid : ErrorCodes.ActionTimelineFileReadFailed; return { ...resolved, errors: [{ code, path: resolved.relativePath, message: `Action timeline file ${caught.kind === "not_found" ? "was not found" : caught.kind === "invalid_json" ? "contains invalid JSON" : "could not be read"}` }] }; } throw caught; } const validation = validateActionTimelineDefinition(read.value); return validation.valid && validation.profile ? { ...resolved, content: read.content, profile: validation.profile } : { ...resolved, errors: validation.errors }; }
+export function isLoadedActionTimeline(value: LoadedActionTimeline | LoadActionTimelineFailure): value is LoadedActionTimeline { return "profile" in value; }

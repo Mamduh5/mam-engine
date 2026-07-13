@@ -1,0 +1,6 @@
+import { auditChangedFiles, captureWorkspaceState } from "../../infrastructure/files/changedFileAudit";
+import { ErrorCodes } from "../../shared/errorCodes";
+import { operationResult, type OperationResult } from "../../shared/operationResult";
+import { isLoadedActionTimeline, loadValidActionTimeline } from "./actionTimelineOperationSupport";
+
+export async function validateActionTimelineFile(workspaceRoot: string, inputFile: string): Promise<OperationResult> { const command = "action-timeline.validate"; const input = { file: inputFile }; const before = await captureWorkspaceState(workspaceRoot); const loaded = await loadValidActionTimeline(workspaceRoot, inputFile); const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), []); if (!audit.ok) return operationResult({ command, status: "failed", input, errors: [{ code: ErrorCodes.ActionTimelineWriteBlocked, message: "Read-only action timeline validation changed unexpected files", details: { unexpectedFiles: audit.unexpectedFiles } }], changedFiles: audit.changedFiles }); if (!isLoadedActionTimeline(loaded)) return operationResult({ command, status: "failed", input, errors: loaded.errors }); return operationResult({ command, status: "passed", input: { file: loaded.relativePath }, data: { valid: true, schemaVersion: loaded.profile.schemaVersion, profileId: loaded.profile.id } }); }

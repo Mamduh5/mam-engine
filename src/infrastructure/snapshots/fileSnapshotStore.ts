@@ -111,5 +111,5 @@ function isSnapshotRecord(value: unknown): value is SnapshotRecord {
     && typeof record.targetPath === "string"
     && typeof record.contentHash === "string"
     && typeof record.previousContent === "string"
-    && (record.definitionKind === undefined || record.definitionKind === "movement-profile" || record.definitionKind === "camera-profile" || record.definitionKind === "targeting-profile" || record.definitionKind === "defensive-action-profile" || record.definitionKind === "offensive-action-profile" || record.definitionKind === "health-profile" || record.definitionKind === "stamina-profile");
+    && (record.definitionKind === undefined || record.definitionKind === "movement-profile" || record.definitionKind === "camera-profile" || record.definitionKind === "targeting-profile" || record.definitionKind === "defensive-action-profile" || record.definitionKind === "offensive-action-profile" || record.definitionKind === "health-profile" || record.definitionKind === "stamina-profile" || record.definitionKind === "action-timeline-profile");
 }

@@ -16,6 +16,7 @@
     "examples/offensive-action",
     "examples/health",
     "examples/stamina",
+    "examples/action-timeline",
     "docs/targeting-editor-v0.1.md",
     "docs/decisions/0007-targeting-runtime-and-camera-framing.md",
     "runtime/godot/project.godot",
@@ -26,6 +27,7 @@
     "schemas/offensive-action",
     "schemas/health",
     "schemas/stamina",
+    "schemas/action-timeline",
     "fixtures/movement"
   ],
   "scripts": {

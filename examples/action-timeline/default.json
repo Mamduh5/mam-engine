@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "action-timeline-profile",
+  "id": "default-interact",
+  "displayName": "Default Interact",
+  "durationSeconds": 0.6,
+  "animationName": "interact",
+  "events": [
+    { "id": "begin", "timeSeconds": 0, "name": "interaction_begin" },
+    { "id": "commit", "timeSeconds": 0.3, "name": "interaction_commit" },
+    { "id": "finish", "timeSeconds": 0.6, "name": "interaction_finish" }
+  ]
+}

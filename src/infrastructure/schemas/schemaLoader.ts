@@ -39,3 +39,8 @@ export function loadStaminaV1Schema(): object {
   const schemaPath = path.join(packageRoot(), "schemas", "stamina", "v1.schema.json");
   return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
 }
+
+export function loadActionTimelineV1Schema(): object {
+  const schemaPath = path.join(packageRoot(), "schemas", "action-timeline", "v1.schema.json");
+  return JSON.parse(readFileSync(schemaPath, "utf8")) as object;
+}

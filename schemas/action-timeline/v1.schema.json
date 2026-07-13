@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/action-timeline/v1.schema.json",
+  "title": "mam-engine action timeline profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "durationSeconds", "animationName", "events"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "action-timeline-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "durationSeconds": { "type": "number" },
+    "animationName": { "type": "string", "minLength": 1 },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "timeSeconds", "name"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "timeSeconds": { "type": "number" },
+          "name": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

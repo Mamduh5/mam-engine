@@ -49,6 +49,10 @@ import { ErrorCodes } from "../shared/errorCodes";
 import { operationResult, type OperationResult } from "../shared/operationResult";
 import { CliParseError, parseCommand, type ParsedCommand } from "./commandParser";
 import { writeResult } from "./output";
+import { inspectActionTimeline } from "../application/actionTimeline/inspectActionTimeline";
+import { setActionTimelineValue } from "../application/actionTimeline/setActionTimelineValue";
+import { simulateActionTimelineFile } from "../application/actionTimeline/simulateActionTimeline";
+import { validateActionTimelineFile } from "../application/actionTimeline/validateActionTimeline";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -58,6 +62,7 @@ export interface CliApplicationDependencies {
   setOffensiveActionValue: typeof setOffensiveActionValue;
   setHealthValue: typeof setHealthValue;
   setStaminaValue: typeof setStaminaValue;
+  setActionTimelineValue: typeof setActionTimelineValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -67,7 +72,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -120,6 +125,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "action-timeline.inspect": return inspectActionTimeline(workspaceRoot, command.file);
+    case "action-timeline.validate": return validateActionTimelineFile(workspaceRoot, command.file);
+    case "action-timeline.simulate": return simulateActionTimelineFile(workspaceRoot, command.file, command.fixedDelta);
+    case "action-timeline.set": return dependencies.setActionTimelineValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "stamina.inspect": return inspectStamina(workspaceRoot, command.file);
     case "stamina.validate": return validateStaminaFile(workspaceRoot, command.file);
     case "stamina.simulate-action": return simulateStaminaActionFiles(workspaceRoot, command.staminaFile, command.actionFile);

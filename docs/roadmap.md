@@ -28,7 +28,7 @@ Canonical targeting rules, schema/semantic validation, deterministic candidate e
 
 ### Phase 2B.2 — Runtime targeting and target-driven camera framing (complete)
 
-The separate controlled targeting fixture proves real LOS, acquisition/scoring, retention/grace/loss/reacquisition, switching/cooldown, and target-driven framing from existing camera fields. **Targeting Editor v0.1 is complete through Phase 2B.2. Phase 2 camera and targeting is complete. Phase 3 dodge and defensive actions is not started.** This is not a complete combat system.
+The separate controlled targeting fixture proves real LOS, acquisition/scoring, retention/grace/loss/reacquisition, switching/cooldown, and target-driven framing from existing camera fields. **Targeting Editor v0.1 is complete through Phase 2B.2. Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs.** This is not a complete combat system.
 
 ## Phase 3 — Dodge and defensive actions
 
@@ -36,7 +36,7 @@ Promote dodge into a complete defensive-action slice with state restrictions, st
 
 ## Phase 4 — Action timeline and animation events
 
-Define action timelines and animation-event synchronization without damage semantics. **Exit condition:** a definition-driven non-damaging action executes with deterministic event ordering and measured Godot animation-event reports.
+Canonical Phase 4A action-timeline authoring, validation, inspection, deterministic event simulation, and safe editing are complete. Animation-runtime proof remains pending. **Exit condition:** a definition-driven non-damaging action executes with deterministic event ordering and measured Godot animation-event reports.
 
 ## Phase 5 — Hitboxes and hurtboxes
 
