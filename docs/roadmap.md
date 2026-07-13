@@ -46,9 +46,9 @@ Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, determ
 
 Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. **Exit condition met:** damage, reaction, stagger, and interrupt rules pass deterministic resolution tests and runtime-fixture measurements with stable reports; weapons, enemies, and encounters are not claimed complete.
 
-## Phase 7 — First weapon
+## Phase 7 — First weapon (Phase 7A complete)
 
-Compose prior systems into one weapon-specific mechanic and action set. **Exit condition:** the weapon is fully definition-driven, testable end to end, and requires no fixture-private combat truth.
+Canonical Phase 7A first-weapon domain composition is complete: validated weapon references now compose stamina, action timelines, contact, damage, and reactions deterministically. Real Godot end-to-end weapon proof remains pending, so the full phase exit condition is not yet met.
 
 ## Phase 8 — First large enemy
 

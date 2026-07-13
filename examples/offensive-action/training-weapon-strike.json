@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "offensive-action-profile",
+  "id": "training-weapon-strike",
+  "displayName": "Training Weapon Strike",
+  "durationSeconds": 0.5,
+  "staminaCost": 10,
+  "movementDistance": 0,
+  "damage": 20,
+  "activeStartSeconds": 0.15,
+  "activeEndSeconds": 0.3,
+  "cooldownSeconds": 0.35
+}

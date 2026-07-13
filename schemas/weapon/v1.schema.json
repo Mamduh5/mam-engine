@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam-engine.local/schemas/weapon/v1.schema.json",
+  "title": "mam-engine weapon profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "offensiveActionFile", "actionTimelineFile", "hitboxFile", "hitboxEnableEventId", "hitboxDisableEventId"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "weapon-profile" },
+    "id": { "type": "string", "minLength": 1 },
+    "displayName": { "type": "string", "minLength": 1 },
+    "offensiveActionFile": { "type": "string", "minLength": 1 },
+    "actionTimelineFile": { "type": "string", "minLength": 1 },
+    "hitboxFile": { "type": "string", "minLength": 1 },
+    "hitboxEnableEventId": { "type": "string", "minLength": 1 },
+    "hitboxDisableEventId": { "type": "string", "minLength": 1 }
+  }
+}

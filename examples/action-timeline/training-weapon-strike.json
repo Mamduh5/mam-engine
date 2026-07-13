@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "action-timeline-profile",
+  "id": "training-weapon-strike-timeline",
+  "displayName": "Training Weapon Strike Timeline",
+  "durationSeconds": 0.5,
+  "animationName": "training_weapon_strike",
+  "events": [
+    { "id": "strike-start", "timeSeconds": 0, "name": "strike_start" },
+    { "id": "hitbox-enable", "timeSeconds": 0.15, "name": "hitbox_enable" },
+    { "id": "hitbox-disable", "timeSeconds": 0.3, "name": "hitbox_disable" },
+    { "id": "strike-finish", "timeSeconds": 0.5, "name": "strike_finish" }
+  ]
+}

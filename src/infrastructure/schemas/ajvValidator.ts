@@ -1,6 +1,6 @@
 import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020";
 
-import { loadActionTimelineV1Schema, loadCameraV1Schema, loadContactVolumeV1Schema, loadDamageReactionV1Schema, loadDefensiveActionV1Schema, loadHealthV1Schema, loadMovementV1Schema, loadOffensiveActionV1Schema, loadStaminaV1Schema, loadTargetingV1Schema } from "./schemaLoader";
+import { loadActionTimelineV1Schema, loadCameraV1Schema, loadContactVolumeV1Schema, loadDamageReactionV1Schema, loadDefensiveActionV1Schema, loadHealthV1Schema, loadMovementV1Schema, loadOffensiveActionV1Schema, loadStaminaV1Schema, loadTargetingV1Schema, loadWeaponV1Schema } from "./schemaLoader";
 
 let movementValidator: ValidateFunction | undefined;
 let cameraValidator: ValidateFunction | undefined;
@@ -12,6 +12,7 @@ let staminaValidator: ValidateFunction | undefined;
 let actionTimelineValidator: ValidateFunction | undefined;
 let contactVolumeValidator: ValidateFunction | undefined;
 let damageReactionValidator: ValidateFunction | undefined;
+let weaponValidator: ValidateFunction | undefined;
 
 export function validateMovementSchema(value: unknown): ErrorObject[] {
   movementValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadMovementV1Schema());
@@ -71,4 +72,10 @@ export function validateDamageReactionSchema(value: unknown): ErrorObject[] {
   damageReactionValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadDamageReactionV1Schema());
   const valid = damageReactionValidator(value);
   return valid ? [] : [...(damageReactionValidator.errors ?? [])];
+}
+
+export function validateWeaponSchema(value: unknown): ErrorObject[] {
+  weaponValidator ??= new Ajv2020({ allErrors: true, strict: true }).compile(loadWeaponV1Schema());
+  const valid = weaponValidator(value);
+  return valid ? [] : [...(weaponValidator.errors ?? [])];
 }

@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. Canonical Phase 7A first-weapon domain composition is complete; real Godot end-to-end weapon proof remains pending.
 
 ## Implemented through Phase 2A.2
 
@@ -112,7 +112,7 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, and canonical Phase 6 damage-reaction proofs exist; weapons, enemies, encounters, and later combat composition remain roadmap work.
+- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, and Phase 7A definition-driven weapon-domain proofs exist; real Godot end-to-end weapon proof, enemies, encounters, and later combat composition remain roadmap work.
 
 ## Documentation
 

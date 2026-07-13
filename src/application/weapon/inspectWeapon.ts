@@ -1,0 +1,6 @@
+import { auditChangedFiles, captureWorkspaceState } from "../../infrastructure/files/changedFileAudit";
+import { ErrorCodes } from "../../shared/errorCodes";
+import { operationResult, type OperationResult } from "../../shared/operationResult";
+import { isLoadedWeaponBundle, loadValidWeaponBundle } from "./weaponOperationSupport";
+
+export async function inspectWeapon(workspaceRoot: string, inputFile: string): Promise<OperationResult> { const command = "weapon.inspect"; const input = { file: inputFile }; const before = await captureWorkspaceState(workspaceRoot); const loaded = await loadValidWeaponBundle(workspaceRoot, inputFile); const audit = auditChangedFiles(before, await captureWorkspaceState(workspaceRoot), []); if (!audit.ok) return operationResult({ command, status: "failed", input, errors: [{ code: ErrorCodes.WeaponWriteBlocked, message: "Read-only weapon inspection changed unexpected files", details: { unexpectedFiles: audit.unexpectedFiles } }], changedFiles: audit.changedFiles }); if (!isLoadedWeaponBundle(loaded)) return operationResult({ command, status: "failed", input, errors: loaded.errors }); return operationResult({ command, status: "passed", input: { file: loaded.relativePath }, data: { profile: loaded.profile, resolvedDefinitionPaths: loaded.resolvedDefinitionPaths, compatible: true } }); }

@@ -64,6 +64,10 @@ import { setDamageReactionValue } from "../application/damageReaction/setDamageR
 import { simulateDamageReactionFiles } from "../application/damageReaction/simulateDamageReaction";
 import { validateDamageReactionFile } from "../application/damageReaction/validateDamageReaction";
 import { runDamageReactionRuntimeTest } from "../application/runtime/runDamageReactionRuntimeTest";
+import { inspectWeapon } from "../application/weapon/inspectWeapon";
+import { setWeaponValue } from "../application/weapon/setWeaponValue";
+import { simulateWeaponStrikeFiles } from "../application/weapon/simulateWeaponStrike";
+import { validateWeaponFile } from "../application/weapon/validateWeapon";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -76,6 +80,7 @@ export interface CliApplicationDependencies {
   setActionTimelineValue: typeof setActionTimelineValue;
   setContactVolumeValue: typeof setContactVolumeValue;
   setDamageReactionValue: typeof setDamageReactionValue;
+  setWeaponValue: typeof setWeaponValue;
   rollbackSnapshot: typeof rollbackSnapshot;
 }
 
@@ -85,7 +90,7 @@ export interface CliExecution {
   exitCode: number;
 }
 
-const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, rollbackSnapshot };
+const productionDependencies: CliApplicationDependencies = { setMovementValue, setCameraValue, setTargetingValue, setDefensiveActionValue, setOffensiveActionValue, setHealthValue, setStaminaValue, setActionTimelineValue, setContactVolumeValue, setDamageReactionValue, setWeaponValue, rollbackSnapshot };
 
 export async function executeCli(
   argv: string[],
@@ -138,6 +143,10 @@ async function dispatch(
   dependencies: CliApplicationDependencies
 ): Promise<OperationResult> {
   switch (command.kind) {
+    case "weapon.inspect": return inspectWeapon(workspaceRoot, command.file);
+    case "weapon.validate": return validateWeaponFile(workspaceRoot, command.file);
+    case "weapon.simulate-strike": return simulateWeaponStrikeFiles(workspaceRoot, command.weaponFile, command.staminaFile, command.healthFile, command.hurtboxFile, command.reactionFile, command.fixedDelta);
+    case "weapon.set": return dependencies.setWeaponValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "damage-reaction.inspect": return inspectDamageReaction(workspaceRoot, command.file);
     case "damage-reaction.validate": return validateDamageReactionFile(workspaceRoot, command.file);
     case "damage-reaction.simulate-hit": return simulateDamageReactionFiles(workspaceRoot, command.reactionFile, command.healthFile, command.offensiveActionFile, command.targetActionWasActive);

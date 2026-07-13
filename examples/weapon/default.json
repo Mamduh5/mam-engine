@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "weapon-profile",
+  "id": "default-training-weapon",
+  "displayName": "Default Training Weapon",
+  "offensiveActionFile": "examples/offensive-action/training-weapon-strike.json",
+  "actionTimelineFile": "examples/action-timeline/training-weapon-strike.json",
+  "hitboxFile": "examples/contact-volume/training-weapon-hitbox.json",
+  "hitboxEnableEventId": "hitbox-enable",
+  "hitboxDisableEventId": "hitbox-disable"
+}

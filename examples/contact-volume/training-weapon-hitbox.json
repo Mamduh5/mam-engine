@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "contact-volume-profile",
+  "id": "training-weapon-hitbox",
+  "displayName": "Training Weapon Hitbox",
+  "role": "hitbox",
+  "center": { "x": 0, "y": 0, "z": 0 },
+  "radius": 1,
+  "activeStartSeconds": 0.15,
+  "activeEndSeconds": 0.3
+}
