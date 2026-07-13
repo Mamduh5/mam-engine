@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. Canonical Phase 7 is complete: the definition-driven training weapon is proven end to end through real Godot timeline, contact, stamina, damage, and reaction execution. Canonical Phase 8A large-enemy authoring, body-part contracts, telegraphs, and deterministic behavior simulation are complete; real Godot enemy-runtime proof remains pending.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. Canonical Phase 7 is complete: the definition-driven training weapon is proven end to end through real Godot timeline, contact, stamina, damage, and reaction execution. Canonical Phase 8 is complete: the training behemoth's behavior cycle, telegraph timing, target points, targetability, and real Godot hurtbox construction are proven.
 
 ## Implemented through Phase 2A.2
 
@@ -112,7 +112,7 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - No visual editor exists.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, and canonical Phase 8A large-enemy domain proofs exist; real Godot enemy execution, encounters, and later combat composition remain roadmap work.
+- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, and canonical Phase 8 training-behemoth runtime proofs exist; complete encounters and later combat composition remain roadmap work.
 
 ## Documentation
 

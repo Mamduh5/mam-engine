@@ -13,6 +13,7 @@ const StaminaFixtureRuntime = preload("res://scripts/stamina_fixture.gd")
 const ContactVolumeProfileRuntime = preload("res://scripts/contact_volume_profile.gd")
 const DamageReactionProfileRuntime = preload("res://scripts/damage_reaction_profile.gd")
 const WeaponProfileRuntime = preload("res://scripts/weapon_profile.gd")
+const LargeEnemyProfileRuntime = preload("res://scripts/large_enemy_profile.gd")
 const SCHEMA_VERSION := "mam.runtime/v1"
 const COMMAND_ID := "runtime.fixture.run"
 const MOVEMENT_FIXTURE_ID := "movement/basic-ground"
@@ -29,6 +30,7 @@ const ACTION_TIMELINE_FIXTURE_ID := "action-timeline/basic-animation-events"
 const CONTACT_VOLUME_FIXTURE_ID := "contact-volume/basic-sphere-overlap"
 const DAMAGE_REACTION_FIXTURE_ID := "damage-reaction/basic-resolution"
 const WEAPON_FIXTURE_ID := "weapon/training-strike"
+const LARGE_ENEMY_FIXTURE_ID := "large-enemy/training-behemoth"
 const MOVEMENT_SCENARIOS := ["accelerate", "stop", "sprint", "dodge", "turn"]
 const CAMERA_SCENARIOS := ["orbit", "pitch-clamp", "recenter", "follow", "collision", "basis"]
 const TARGETING_SCENARIOS := ["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]
@@ -39,7 +41,7 @@ static func validate_request(request: Variant) -> Array[String]:
 	if request.get("schemaVersion") != SCHEMA_VERSION: errors.append("unsupported protocol version")
 	if request.get("commandId") != COMMAND_ID: errors.append("unknown command ID")
 	var fixture_id: Variant = request.get("fixtureId")
-	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, WEAPON_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
+	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, WEAPON_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
 	if typeof(request.get("correlationId")) != TYPE_STRING or request.get("correlationId").is_empty(): errors.append("missing correlation ID")
 	if not _finite_number(request.get("timeoutMs")) or float(request.get("timeoutMs", 0)) <= 0.0 or float(request.get("timeoutMs", 0)) > 60000.0: errors.append("invalid timeout")
 	var payload: Variant = request.get("payload")
@@ -170,6 +172,20 @@ static func validate_request(request: Variant) -> Array[String]:
 			var weapon_stamina_result: Dictionary = StaminaFixtureRuntime.evaluate(payload.staminaProfile, payload.offensiveActionProfile)
 			if scenario.get("id") == "successful-strike" and not bool(weapon_stamina_result.actionAccepted): errors.append("successful weapon strike requires sufficient stamina")
 			if scenario.get("id") == "insufficient-stamina" and bool(weapon_stamina_result.actionAccepted): errors.append("insufficient weapon strike requires rejected stamina")
+	elif fixture_id == LARGE_ENEMY_FIXTURE_ID:
+		if payload.get("largeEnemyDefinitionKind") != "large-enemy-profile" or payload.get("largeEnemyDefinitionSchemaVersion") != 1: errors.append("unsupported large-enemy definition")
+		if payload.get("healthDefinitionKind") != "health-profile" or payload.get("healthDefinitionSchemaVersion") != 1: errors.append("unsupported large-enemy health definition")
+		if payload.get("reactionDefinitionKind") != "damage-reaction-profile" or payload.get("reactionDefinitionSchemaVersion") != 1: errors.append("unsupported large-enemy reaction definition")
+		if payload.get("hurtboxDefinitionKind") != "contact-volume-profile" or payload.get("hurtboxDefinitionSchemaVersion") != 1: errors.append("unsupported large-enemy hurtbox definition")
+		var enemy_errors: Array[String] = LargeEnemyProfileRuntime.validate(payload.get("largeEnemyProfile")); errors.append_array(enemy_errors)
+		errors.append_array(HealthProfileRuntime.validate(payload.get("healthProfile"))); errors.append_array(DamageReactionProfileRuntime.validate(payload.get("reactionProfile")))
+		if enemy_errors.is_empty(): errors.append_array(LargeEnemyProfileRuntime.validate_references(payload.largeEnemyProfile, payload.get("resolvedDefinitionPaths"), payload.get("hurtboxProfiles")))
+		if not ["full-cycle", "primary-part-disabled"].has(scenario.get("id")): errors.append("unsupported large-enemy scenario")
+		if enemy_errors.is_empty() and scenario.get("id") == "primary-part-disabled":
+			var targetable_count: int = 0
+			for part: Dictionary in payload.largeEnemyProfile.bodyParts:
+				if bool(part.targetable): targetable_count += 1
+			if targetable_count < 2: errors.append("primary-part-disabled requires another targetable body part")
 	else:
 		if payload.get("definitionKind") != "targeting-profile" or payload.get("definitionSchemaVersion") != 1: errors.append("unsupported targeting definition")
 		if payload.get("cameraDefinitionKind") != "camera-profile" or payload.get("cameraDefinitionSchemaVersion") != 1: errors.append("unsupported targeting camera definition")

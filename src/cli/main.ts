@@ -73,6 +73,7 @@ import { inspectLargeEnemy } from "../application/largeEnemy/inspectLargeEnemy";
 import { setLargeEnemyValue } from "../application/largeEnemy/setLargeEnemyValue";
 import { simulateLargeEnemyFile } from "../application/largeEnemy/simulateLargeEnemy";
 import { validateLargeEnemyFile } from "../application/largeEnemy/validateLargeEnemy";
+import { runLargeEnemyRuntimeTest } from "../application/runtime/runLargeEnemyRuntimeTest";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -152,6 +153,7 @@ async function dispatch(
     case "large-enemy.inspect": return inspectLargeEnemy(workspaceRoot, command.file);
     case "large-enemy.validate": return validateLargeEnemyFile(workspaceRoot, command.file);
     case "large-enemy.simulate": return simulateLargeEnemyFile(workspaceRoot, command.file, command.scenario, command.fixedDelta);
+    case "large-enemy.runtime-test": return runLargeEnemyRuntimeTest(workspaceRoot, command.file, command.scenario, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "large-enemy.set": return dependencies.setLargeEnemyValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "weapon.inspect": return inspectWeapon(workspaceRoot, command.file);
     case "weapon.validate": return validateWeaponFile(workspaceRoot, command.file);

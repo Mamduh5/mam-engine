@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "const": "runtime.fixture.run" },
-    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack", "health/basic-confirmed-hit"] },
+    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack", "health/basic-confirmed-hit", "large-enemy/training-behemoth"] },
     "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
     "requestedAt": { "type": "string" },
     "timeoutMs": { "type": "number", "exclusiveMinimum": 0, "maximum": 60000 },
@@ -38,6 +38,10 @@
     {
       "if": { "properties": { "fixtureId": { "const": "health/basic-confirmed-hit" } } },
       "then": { "properties": { "payload": { "$ref": "#/$defs/healthPayload" } } }
+    },
+    {
+      "if": { "properties": { "fixtureId": { "const": "large-enemy/training-behemoth" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/largeEnemyPayload" } } }
     }
   ],
   "$defs": {
@@ -189,6 +193,27 @@
         "profile": { "$ref": "../targeting/v1.schema.json" },
         "cameraDefinitionKind": { "const": "camera-profile" }, "cameraDefinitionSchemaVersion": { "const": 1 },
         "cameraProfile": { "$ref": "../camera/v1.schema.json" }, "scenario": { "$ref": "#/$defs/targetingScenario" }
+      }
+    },
+    "largeEnemyPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["largeEnemyDefinitionKind", "largeEnemyDefinitionSchemaVersion", "largeEnemyProfile", "resolvedDefinitionPaths", "healthDefinitionKind", "healthDefinitionSchemaVersion", "healthProfile", "reactionDefinitionKind", "reactionDefinitionSchemaVersion", "reactionProfile", "hurtboxDefinitionKind", "hurtboxDefinitionSchemaVersion", "hurtboxProfiles", "scenario"],
+      "properties": {
+        "largeEnemyDefinitionKind": { "const": "large-enemy-profile" },
+        "largeEnemyDefinitionSchemaVersion": { "const": 1 },
+        "largeEnemyProfile": { "$ref": "../large-enemy/v1.schema.json" },
+        "resolvedDefinitionPaths": {
+          "type": "object", "additionalProperties": false, "required": ["healthFile", "reactionFile", "bodyParts"],
+          "properties": {
+            "healthFile": { "type": "string", "minLength": 1 }, "reactionFile": { "type": "string", "minLength": 1 },
+            "bodyParts": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "hurtboxFile"], "properties": { "id": { "type": "string", "minLength": 1 }, "hurtboxFile": { "type": "string", "minLength": 1 } } } }
+          }
+        },
+        "healthDefinitionKind": { "const": "health-profile" }, "healthDefinitionSchemaVersion": { "const": 1 }, "healthProfile": { "$ref": "../health/v1.schema.json" },
+        "reactionDefinitionKind": { "const": "damage-reaction-profile" }, "reactionDefinitionSchemaVersion": { "const": 1 }, "reactionProfile": { "$ref": "../damage-reaction/v1.schema.json" },
+        "hurtboxDefinitionKind": { "const": "contact-volume-profile" }, "hurtboxDefinitionSchemaVersion": { "const": 1 }, "hurtboxProfiles": { "type": "array", "items": { "$ref": "../contact-volume/v1.schema.json" } },
+        "scenario": { "type": "object", "additionalProperties": false, "required": ["id", "durationSeconds", "fixedDeltaSeconds"], "properties": { "id": { "enum": ["full-cycle", "primary-part-disabled"] }, "durationSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 }, "fixedDeltaSeconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 } } }
       }
     }
   }
