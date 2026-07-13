@@ -3,6 +3,7 @@ import type { CameraScenario } from "../domain/camera/cameraTypes";
 import type { TargetingScenario } from "../domain/targeting/targetingTypes";
 import type { TargetingRuntimeScenario } from "../domain/runtime/targetingRuntimePlan";
 import type { StaminaCombatRuntimeScenario } from "../domain/runtime/runtimeProtocol";
+import type { ContactVolumeRuntimeScenario } from "../domain/runtime/runtimeProtocol";
 import type { TargetedCombatExchangeScenario } from "../domain/combat/targetedCombatExchangeSimulation";
 import { ErrorCodes } from "../shared/errorCodes";
 import type { ErrorCode } from "../shared/errorCodes";
@@ -11,6 +12,7 @@ export type ParsedCommand =
   | { kind: "contact-volume.inspect"; file: string; json: boolean }
   | { kind: "contact-volume.validate"; file: string; json: boolean }
   | { kind: "contact-volume.simulate-contact"; hitboxFile: string; hurtboxFile: string; fixedDelta?: number; json: boolean }
+  | { kind: "contact-volume.runtime-test"; hitboxFile: string; hurtboxFile: string; scenario: ContactVolumeRuntimeScenario; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "contact-volume.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "action-timeline.inspect"; file: string; json: boolean }
   | { kind: "action-timeline.validate"; file: string; json: boolean }
@@ -110,6 +112,7 @@ export function parseCommand(argv: string[]): ParsedCommand {
 function parseContactVolumeCommand(action: string, args: string[]): ParsedCommand {
   if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `contact-volume ${action} requires exactly one file argument`); return { kind: `contact-volume.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "simulate-contact") { const parsed = parseArguments(args, new Set(["--json", "--fixed-delta"]), new Set(["--fixed-delta"])); requirePositionals(parsed, 2, "contact-volume simulate-contact requires <hitbox-file> <hurtbox-file>"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); return { kind: "contact-volume.simulate-contact", hitboxFile: parsed.positional[0] as string, hurtboxFile: parsed.positional[1] as string, ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") }; }
+  if (action === "runtime-test") { const parsed = parseArguments(args, new Set(["--json", "--scenario", "--fixed-delta", "--godot", "--keep-session"]), new Set(["--scenario", "--fixed-delta", "--godot"])); requirePositionals(parsed, 2, "contact-volume runtime-test requires <hitbox-file> <hurtbox-file>"); const scenarioValue = parsed.flags.get("--scenario"); const scenario = scenarioValue === undefined ? "overlapping-active" : scenarioValue; if (scenario !== "overlapping-active" && scenario !== "window-miss") throw new CliParseError("--scenario must be one of: overlapping-active, window-miss"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); const godot = parsed.flags.get("--godot"); return { kind: "contact-volume.runtime-test", hitboxFile: parsed.positional[0] as string, hurtboxFile: parsed.positional[1] as string, scenario, ...(fixedDelta === undefined ? {} : { fixedDelta }), ...(typeof godot === "string" ? { godot } : {}), keepSession: parsed.flags.has("--keep-session"), json: parsed.flags.has("--json") }; }
   if (action === "set") { const parsed = parseArguments(args, new Set(["--json", "--dry-run"])); requirePositionals(parsed, 3, "contact-volume set requires <file> <property-path> <json-value>"); let value: unknown; try { value = JSON.parse(parsed.positional[2] as string) as unknown; } catch { throw new CliParseError("contact-volume set <json-value> must be valid JSON"); } return { kind: "contact-volume.set", file: parsed.positional[0] as string, propertyPath: parsed.positional[1] as string, value, dryRun: parsed.flags.has("--dry-run"), json: parsed.flags.has("--json") }; }
   throw new CliParseError(`Unknown contact-volume command '${action}'`);
 }

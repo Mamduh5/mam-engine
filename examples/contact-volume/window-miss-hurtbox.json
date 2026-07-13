@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "contact-volume-profile",
+  "id": "window-miss-hurtbox",
+  "displayName": "Window Miss Hurtbox",
+  "role": "hurtbox",
+  "center": { "x": 1.5, "y": 0, "z": 0 },
+  "radius": 0.75,
+  "activeStartSeconds": 0.5,
+  "activeEndSeconds": 0.6
+}

@@ -8,6 +8,7 @@ import type { StaminaActionProfile, StaminaProfile } from "../stamina/staminaTyp
 import type { TargetingRuntimeScenarioRequest } from "./targetingRuntimePlan";
 import type { TargetedCombatExchangeScenario } from "../combat/targetedCombatExchangeSimulation";
 import type { ActionTimelineProfile } from "../actionTimeline/actionTimelineTypes";
+import type { ContactVolumeProfile } from "../contactVolume/contactVolumeTypes";
 export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
 export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
@@ -22,6 +23,7 @@ export const STAMINA_FIXTURE_ID = "stamina/basic-action-cost" as const;
 export const STAMINA_COMBAT_FIXTURE_ID = "combat/stamina-gated-exchange" as const;
 export const TARGETED_COMBAT_FIXTURE_ID = "combat/targeted-stamina-exchange" as const;
 export const ACTION_TIMELINE_FIXTURE_ID = "action-timeline/basic-animation-events" as const;
+export const CONTACT_VOLUME_FIXTURE_ID = "contact-volume/basic-sphere-overlap" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -232,7 +234,27 @@ export interface ActionTimelineRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest;
+export type ContactVolumeRuntimeScenario = "overlapping-active" | "window-miss";
+
+export interface ContactVolumeRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof CONTACT_VOLUME_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    hitboxDefinitionKind: "contact-volume-profile";
+    hitboxDefinitionSchemaVersion: 1;
+    hitboxProfile: ContactVolumeProfile;
+    hurtboxDefinitionKind: "contact-volume-profile";
+    hurtboxDefinitionSchemaVersion: 1;
+    hurtboxProfile: ContactVolumeProfile;
+    scenario: { id: ContactVolumeRuntimeScenario; durationSeconds: number; fixedDeltaSeconds: number };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest | ContactVolumeRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

@@ -10,10 +10,12 @@ import { validateStaminaDefinition } from "../stamina/staminaValidation";
 import { simulateStaminaCombatExchange } from "../combat/staminaCombatExchangeSimulation";
 import { simulateTargetedCombatExchange } from "../combat/targetedCombatExchangeSimulation";
 import { validateActionTimelineDefinition } from "../actionTimeline/actionTimelineValidation";
+import { simulateContact } from "../contactVolume/contactVolumeSimulation";
+import { validateContactVolumeDefinition } from "../contactVolume/contactVolumeValidation";
 import { validateCameraRuntimeMetrics } from "./cameraRuntimeMetrics";
 import { validateTargetingRuntimePlan } from "./targetingRuntimePlan";
 import { validateTargetingRuntimeMetrics } from "./targetingRuntimeMetrics";
-import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
+import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
 
 export interface ProtocolValidation<T> { valid: boolean; value?: T; errors: string[] }
 
@@ -22,7 +24,7 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   if (!isRecord(value)) return { valid: false, errors: ["request must be an object"] };
   if (value.schemaVersion !== RUNTIME_SCHEMA_VERSION) errors.push("unsupported schemaVersion");
   if (value.commandId !== RUNTIME_RUN_COMMAND) errors.push("unknown commandId");
-  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID) errors.push("unknown fixtureId");
+  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID && value.fixtureId !== CONTACT_VOLUME_FIXTURE_ID) errors.push("unknown fixtureId");
   if (typeof value.correlationId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.correlationId)) errors.push("correlationId is missing or unsafe");
   if (typeof value.requestedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value.requestedAt) || !Number.isFinite(Date.parse(value.requestedAt))) errors.push("requestedAt must be an ISO timestamp");
   if (!finiteInRange(value.timeoutMs, 1, 60_000)) errors.push("timeoutMs must be finite and bounded");
@@ -37,8 +39,28 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   else if (value.fixtureId === STAMINA_COMBAT_FIXTURE_ID) validateStaminaCombatPayload(value.payload, errors);
   else if (value.fixtureId === TARGETED_COMBAT_FIXTURE_ID) validateTargetedCombatPayload(value.payload, errors);
   else if (value.fixtureId === ACTION_TIMELINE_FIXTURE_ID) validateActionTimelinePayload(value.payload, errors);
+  else if (value.fixtureId === CONTACT_VOLUME_FIXTURE_ID) validateContactVolumePayload(value.payload, errors);
   else if (value.fixtureId === MOVEMENT_FIXTURE_ID) validateMovementPayload(value.payload, errors);
   return errors.length === 0 ? { valid: true, value: value as unknown as RuntimeRequest, errors } : { valid: false, errors };
+}
+
+function validateContactVolumePayload(payload: Record<string, any>, errors: string[]): void {
+  if (payload.hitboxDefinitionKind !== "contact-volume-profile" || payload.hitboxDefinitionSchemaVersion !== 1) errors.push("unsupported contact volume hitbox definition");
+  if (payload.hurtboxDefinitionKind !== "contact-volume-profile" || payload.hurtboxDefinitionSchemaVersion !== 1) errors.push("unsupported contact volume hurtbox definition");
+  const hitbox = validateContactVolumeDefinition(payload.hitboxProfile); if (!hitbox.valid) errors.push(...hitbox.errors.map((error) => error.message));
+  const hurtbox = validateContactVolumeDefinition(payload.hurtboxProfile); if (!hurtbox.valid) errors.push(...hurtbox.errors.map((error) => error.message));
+  if (hitbox.profile?.role !== "hitbox") errors.push("contact volume first profile must be a hitbox");
+  if (hurtbox.profile?.role !== "hurtbox") errors.push("contact volume second profile must be a hurtbox");
+  const scenario = payload.scenario; if (!isRecord(scenario)) { errors.push("scenario must be an object"); return; }
+  if (!["overlapping-active", "window-miss"].includes(String(scenario.id))) errors.push("unsupported contact volume scenario");
+  if (!finiteInRange(scenario.durationSeconds, Number.EPSILON, 60)) errors.push("durationSeconds must be finite and bounded");
+  if (!finiteInRange(scenario.fixedDeltaSeconds, Number.EPSILON, 1)) errors.push("fixedDeltaSeconds must be finite and bounded");
+  if (hitbox.valid && hitbox.profile?.role === "hitbox" && hurtbox.valid && hurtbox.profile?.role === "hurtbox" && finiteInRange(scenario.fixedDeltaSeconds, Number.EPSILON, 1)) {
+    const simulation = simulateContact(hitbox.profile, hurtbox.profile, scenario.fixedDeltaSeconds);
+    if (scenario.durationSeconds !== simulation.totalSteps * scenario.fixedDeltaSeconds) errors.push("scenario duration must match contact simulation");
+    if (scenario.id === "overlapping-active" && (!simulation.spatialOverlap || !simulation.contactOccurred)) errors.push("overlapping-active scenario requires spatial and active overlap");
+    if (scenario.id === "window-miss" && (!simulation.spatialOverlap || simulation.contactOccurred)) errors.push("window-miss scenario requires spatial overlap without active overlap");
+  }
 }
 
 function validateActionTimelinePayload(payload: Record<string, any>, errors: string[]): void {

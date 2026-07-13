@@ -10,6 +10,7 @@ const HealthProfileRuntime = preload("res://scripts/health_profile.gd")
 const StaminaProfileRuntime = preload("res://scripts/stamina_profile.gd")
 const OffensiveActionFixtureRuntime = preload("res://scripts/offensive_action_fixture.gd")
 const StaminaFixtureRuntime = preload("res://scripts/stamina_fixture.gd")
+const ContactVolumeProfileRuntime = preload("res://scripts/contact_volume_profile.gd")
 const SCHEMA_VERSION := "mam.runtime/v1"
 const COMMAND_ID := "runtime.fixture.run"
 const MOVEMENT_FIXTURE_ID := "movement/basic-ground"
@@ -23,6 +24,7 @@ const STAMINA_FIXTURE_ID := "stamina/basic-action-cost"
 const STAMINA_COMBAT_FIXTURE_ID := "combat/stamina-gated-exchange"
 const TARGETED_COMBAT_FIXTURE_ID := "combat/targeted-stamina-exchange"
 const ACTION_TIMELINE_FIXTURE_ID := "action-timeline/basic-animation-events"
+const CONTACT_VOLUME_FIXTURE_ID := "contact-volume/basic-sphere-overlap"
 const MOVEMENT_SCENARIOS := ["accelerate", "stop", "sprint", "dodge", "turn"]
 const CAMERA_SCENARIOS := ["orbit", "pitch-clamp", "recenter", "follow", "collision", "basis"]
 const TARGETING_SCENARIOS := ["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]
@@ -33,7 +35,7 @@ static func validate_request(request: Variant) -> Array[String]:
 	if request.get("schemaVersion") != SCHEMA_VERSION: errors.append("unsupported protocol version")
 	if request.get("commandId") != COMMAND_ID: errors.append("unknown command ID")
 	var fixture_id: Variant = request.get("fixtureId")
-	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
+	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
 	if typeof(request.get("correlationId")) != TYPE_STRING or request.get("correlationId").is_empty(): errors.append("missing correlation ID")
 	if not _finite_number(request.get("timeoutMs")) or float(request.get("timeoutMs", 0)) <= 0.0 or float(request.get("timeoutMs", 0)) > 60000.0: errors.append("invalid timeout")
 	var payload: Variant = request.get("payload")
@@ -122,6 +124,14 @@ static func validate_request(request: Variant) -> Array[String]:
 		elif typeof(timeline_profile.get("events")) != TYPE_ARRAY: errors.append("action timeline events must be an array")
 		if scenario.get("id") != "default": errors.append("unsupported action timeline scenario")
 		if typeof(timeline_profile) == TYPE_DICTIONARY and _finite_number(timeline_profile.get("durationSeconds")) and scenario.get("durationSeconds") != timeline_profile.get("durationSeconds"): errors.append("scenario duration must match action timeline duration")
+	elif fixture_id == CONTACT_VOLUME_FIXTURE_ID:
+		if payload.get("hitboxDefinitionKind") != "contact-volume-profile" or payload.get("hitboxDefinitionSchemaVersion") != 1: errors.append("unsupported contact volume hitbox definition")
+		if payload.get("hurtboxDefinitionKind") != "contact-volume-profile" or payload.get("hurtboxDefinitionSchemaVersion") != 1: errors.append("unsupported contact volume hurtbox definition")
+		var hitbox_errors: Array[String] = ContactVolumeProfileRuntime.validate(payload.get("hitboxProfile")); errors.append_array(hitbox_errors)
+		var hurtbox_errors: Array[String] = ContactVolumeProfileRuntime.validate(payload.get("hurtboxProfile")); errors.append_array(hurtbox_errors)
+		if hitbox_errors.is_empty() and payload.hitboxProfile.get("role") != "hitbox": errors.append("contact volume first profile must be a hitbox")
+		if hurtbox_errors.is_empty() and payload.hurtboxProfile.get("role") != "hurtbox": errors.append("contact volume second profile must be a hurtbox")
+		if not ["overlapping-active", "window-miss"].has(scenario.get("id")): errors.append("unsupported contact volume scenario")
 	else:
 		if payload.get("definitionKind") != "targeting-profile" or payload.get("definitionSchemaVersion") != 1: errors.append("unsupported targeting definition")
 		if payload.get("cameraDefinitionKind") != "camera-profile" or payload.get("cameraDefinitionSchemaVersion") != 1: errors.append("unsupported targeting camera definition")

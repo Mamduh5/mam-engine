@@ -58,6 +58,7 @@ import { inspectContactVolume } from "../application/contactVolume/inspectContac
 import { setContactVolumeValue } from "../application/contactVolume/setContactVolumeValue";
 import { simulateContactVolumeFiles } from "../application/contactVolume/simulateContactVolume";
 import { validateContactVolumeFile } from "../application/contactVolume/validateContactVolume";
+import { runContactVolumeRuntimeTest } from "../application/runtime/runContactVolumeRuntimeTest";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -134,6 +135,7 @@ async function dispatch(
     case "contact-volume.inspect": return inspectContactVolume(workspaceRoot, command.file);
     case "contact-volume.validate": return validateContactVolumeFile(workspaceRoot, command.file);
     case "contact-volume.simulate-contact": return simulateContactVolumeFiles(workspaceRoot, command.hitboxFile, command.hurtboxFile, command.fixedDelta);
+    case "contact-volume.runtime-test": return runContactVolumeRuntimeTest(workspaceRoot, command.hitboxFile, command.hurtboxFile, command.scenario, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "contact-volume.set": return dependencies.setContactVolumeValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "action-timeline.inspect": return inspectActionTimeline(workspaceRoot, command.file);
     case "action-timeline.validate": return validateActionTimelineFile(workspaceRoot, command.file);
