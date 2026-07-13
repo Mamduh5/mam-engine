@@ -18,6 +18,7 @@ const ContactVolumeFixtureScene = preload("res://scenes/contact_volume_fixture.t
 const DamageReactionFixtureScene = preload("res://scenes/damage_reaction_fixture.tscn")
 const WeaponFixtureScene = preload("res://scenes/weapon_fixture.tscn")
 const LargeEnemyFixtureScene = preload("res://scenes/large_enemy_fixture.tscn")
+const EncounterFixtureScene = preload("res://scenes/encounter_fixture.tscn")
 
 func _ready() -> void:
 	var paths := _parse_paths(OS.get_cmdline_user_args())
@@ -95,6 +96,10 @@ func _execute(paths: Dictionary) -> void:
 		fixture = LargeEnemyFixtureScene.instantiate()
 		add_child(fixture)
 		fixture_scene = "res://scenes/large_enemy_fixture.tscn"
+	elif request.fixtureId == RuntimeProtocol.ENCOUNTER_FIXTURE_ID:
+		fixture = EncounterFixtureScene.instantiate()
+		add_child(fixture)
+		fixture_scene = "res://scenes/encounter_fixture.tscn"
 	if request.fixtureId == RuntimeProtocol.TARGETING_FIXTURE_ID: fixture.configure(request.payload.profile, request.payload.cameraProfile)
 	elif request.fixtureId == RuntimeProtocol.HEALTH_FIXTURE_ID: fixture.configure(request.payload.profile, request.payload.offensiveActionProfile)
 	elif request.fixtureId == RuntimeProtocol.COMBAT_FIXTURE_ID: fixture.configure(request.payload.healthProfile, request.payload.offensiveActionProfile)
@@ -105,6 +110,7 @@ func _execute(paths: Dictionary) -> void:
 	elif request.fixtureId == RuntimeProtocol.DAMAGE_REACTION_FIXTURE_ID: fixture.configure(request.payload.reactionProfile, request.payload.healthProfile, request.payload.offensiveActionProfile)
 	elif request.fixtureId == RuntimeProtocol.WEAPON_FIXTURE_ID: fixture.configure(request.payload.weaponProfile, request.payload.resolvedDefinitionPaths, request.payload.staminaProfile, request.payload.healthProfile, request.payload.hurtboxProfile, request.payload.reactionProfile, request.payload.offensiveActionProfile, request.payload.actionTimelineProfile, request.payload.hitboxProfile)
 	elif request.fixtureId == RuntimeProtocol.LARGE_ENEMY_FIXTURE_ID: fixture.configure(request.payload.largeEnemyProfile, request.payload.resolvedDefinitionPaths, request.payload.hurtboxProfiles)
+	elif request.fixtureId == RuntimeProtocol.ENCOUNTER_FIXTURE_ID: fixture.configure(request.payload)
 	else: fixture.configure(request.payload.profile)
 	var metrics: Dictionary = await fixture.run_scenario(request.payload.scenario)
 	var response := RuntimeProtocol.response(request, "runtime.fixture.run", "ok", metrics)

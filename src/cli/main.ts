@@ -84,6 +84,7 @@ import { inspectEncounter } from "../application/encounter/inspectEncounter";
 import { setEncounterValue } from "../application/encounter/setEncounterValue";
 import { simulateEncounterFile } from "../application/encounter/simulateEncounter";
 import { validateEncounterFile } from "../application/encounter/validateEncounter";
+import { runEncounterRuntimeTest } from "../application/runtime/runEncounterRuntimeTest";
 
 export interface CliApplicationDependencies {
   setMovementValue: typeof setMovementValue;
@@ -166,6 +167,7 @@ async function dispatch(
     case "encounter.inspect": return inspectEncounter(workspaceRoot, command.file);
     case "encounter.validate": return validateEncounterFile(workspaceRoot, command.file);
     case "encounter.simulate": return simulateEncounterFile(workspaceRoot, command.file, command.scenario, command.fixedDelta);
+    case "encounter.runtime-test": return runEncounterRuntimeTest(workspaceRoot, command.file, command.scenario, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "encounter.set": return dependencies.setEncounterValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
     case "hunter.inspect": return inspectHunter(workspaceRoot, command.file);
     case "hunter.validate": return validateHunterFile(workspaceRoot, command.file);

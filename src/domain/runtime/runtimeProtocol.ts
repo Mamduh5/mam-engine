@@ -12,6 +12,9 @@ import type { ContactVolumeProfile } from "../contactVolume/contactVolumeTypes";
 import type { DamageReactionProfile } from "../damageReaction/damageReactionTypes";
 import type { ResolvedWeaponDefinitionPaths, WeaponProfile } from "../weapon/weaponTypes";
 import type { LargeEnemyProfile, LargeEnemyScenario, ResolvedLargeEnemyDefinitionPaths } from "../largeEnemy/largeEnemyTypes";
+import type { EncounterProfile, EncounterScenario, ResolvedEncounterDefinitionPaths } from "../encounter/encounterTypes";
+import type { HunterProfile, ResolvedHunterDefinitionPaths } from "../hunter/hunterTypes";
+import type { ArenaProfile } from "../arena/arenaTypes";
 export { TARGETING_RUNTIME_SCENARIOS } from "./targetingRuntimePlan";
 
 export const RUNTIME_SCHEMA_VERSION = "mam.runtime/v1" as const;
@@ -30,6 +33,7 @@ export const CONTACT_VOLUME_FIXTURE_ID = "contact-volume/basic-sphere-overlap" a
 export const DAMAGE_REACTION_FIXTURE_ID = "damage-reaction/basic-resolution" as const;
 export const WEAPON_FIXTURE_ID = "weapon/training-strike" as const;
 export const LARGE_ENEMY_FIXTURE_ID = "large-enemy/training-behemoth" as const;
+export const ENCOUNTER_FIXTURE_ID = "encounter/training-hunt" as const;
 export const RUNTIME_RUN_COMMAND = "runtime.fixture.run" as const;
 
 export interface MovementRuntimeScenarioRequest {
@@ -347,7 +351,32 @@ export interface LargeEnemyRuntimeRequest {
   };
 }
 
-export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest | ContactVolumeRuntimeRequest | DamageReactionRuntimeRequest | WeaponRuntimeRequest | LargeEnemyRuntimeRequest;
+export interface EncounterRuntimeRequest {
+  schemaVersion: typeof RUNTIME_SCHEMA_VERSION;
+  commandId: typeof RUNTIME_RUN_COMMAND;
+  fixtureId: typeof ENCOUNTER_FIXTURE_ID;
+  correlationId: string;
+  requestedAt: string;
+  timeoutMs: number;
+  payload: {
+    encounterDefinitionKind: "encounter-profile"; encounterDefinitionSchemaVersion: 1; encounterProfile: EncounterProfile; resolvedDefinitionPaths: ResolvedEncounterDefinitionPaths;
+    hunterDefinitionKind: "hunter-profile"; hunterDefinitionSchemaVersion: 1; hunterProfile: HunterProfile; hunterResolvedDefinitionPaths: ResolvedHunterDefinitionPaths;
+    hunterHealthDefinitionKind: "health-profile"; hunterHealthDefinitionSchemaVersion: 1; hunterHealthProfile: HealthProfile;
+    staminaDefinitionKind: "stamina-profile"; staminaDefinitionSchemaVersion: 1; staminaProfile: StaminaProfile;
+    weaponDefinitionKind: "weapon-profile"; weaponDefinitionSchemaVersion: 1; weaponProfile: WeaponProfile; weaponResolvedDefinitionPaths: ResolvedWeaponDefinitionPaths;
+    offensiveActionDefinitionKind: "offensive-action-profile"; offensiveActionDefinitionSchemaVersion: 1; offensiveActionProfile: OffensiveActionProfile;
+    actionTimelineDefinitionKind: "action-timeline-profile"; actionTimelineDefinitionSchemaVersion: 1; actionTimelineProfile: ActionTimelineProfile;
+    hitboxDefinitionKind: "contact-volume-profile"; hitboxDefinitionSchemaVersion: 1; hitboxProfile: ContactVolumeProfile;
+    enemyDefinitionKind: "large-enemy-profile"; enemyDefinitionSchemaVersion: 1; enemyProfile: LargeEnemyProfile; enemyResolvedDefinitionPaths: ResolvedLargeEnemyDefinitionPaths;
+    enemyHealthDefinitionKind: "health-profile"; enemyHealthDefinitionSchemaVersion: 1; enemyHealthProfile: HealthProfile;
+    reactionDefinitionKind: "damage-reaction-profile"; reactionDefinitionSchemaVersion: 1; reactionProfile: DamageReactionProfile;
+    hurtboxDefinitionKind: "contact-volume-profile"; hurtboxDefinitionSchemaVersion: 1; hurtboxProfiles: ContactVolumeProfile[]; selectedBodyPartId: string; selectedHurtboxProfile: ContactVolumeProfile;
+    arenaDefinitionKind: "arena-profile"; arenaDefinitionSchemaVersion: 1; arenaProfile: ArenaProfile;
+    scenario: { id: EncounterScenario; durationSeconds: number; fixedDeltaSeconds: number; startingStamina: number };
+  };
+}
+
+export type RuntimeRequest = MovementRuntimeRequest | CameraRuntimeRequest | TargetingRuntimeRequest | DefensiveActionRuntimeRequest | OffensiveActionRuntimeRequest | HealthRuntimeRequest | CombatRuntimeRequest | StaminaRuntimeRequest | StaminaCombatRuntimeRequest | TargetedCombatRuntimeRequest | ActionTimelineRuntimeRequest | ContactVolumeRuntimeRequest | DamageReactionRuntimeRequest | WeaponRuntimeRequest | LargeEnemyRuntimeRequest | EncounterRuntimeRequest;
 export type RuntimeFixtureId = RuntimeRequest["fixtureId"];
 export type RuntimeStatus = "ready" | "ok" | "rejected" | "failed" | "timed_out";
 

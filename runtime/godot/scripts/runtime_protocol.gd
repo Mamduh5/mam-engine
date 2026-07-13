@@ -31,6 +31,7 @@ const CONTACT_VOLUME_FIXTURE_ID := "contact-volume/basic-sphere-overlap"
 const DAMAGE_REACTION_FIXTURE_ID := "damage-reaction/basic-resolution"
 const WEAPON_FIXTURE_ID := "weapon/training-strike"
 const LARGE_ENEMY_FIXTURE_ID := "large-enemy/training-behemoth"
+const ENCOUNTER_FIXTURE_ID := "encounter/training-hunt"
 const MOVEMENT_SCENARIOS := ["accelerate", "stop", "sprint", "dodge", "turn"]
 const CAMERA_SCENARIOS := ["orbit", "pitch-clamp", "recenter", "follow", "collision", "basis"]
 const TARGETING_SCENARIOS := ["acquire", "eligibility", "tie-break", "retention", "loss", "reacquire", "switch-left", "switch-right", "switch-cooldown", "framing-acquire", "framing-switch", "framing-loss", "framing-reacquire"]
@@ -41,7 +42,7 @@ static func validate_request(request: Variant) -> Array[String]:
 	if request.get("schemaVersion") != SCHEMA_VERSION: errors.append("unsupported protocol version")
 	if request.get("commandId") != COMMAND_ID: errors.append("unknown command ID")
 	var fixture_id: Variant = request.get("fixtureId")
-	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, WEAPON_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
+	if not [MOVEMENT_FIXTURE_ID, CAMERA_FIXTURE_ID, TARGETING_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, OFFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, STAMINA_COMBAT_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, ACTION_TIMELINE_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, WEAPON_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID, ENCOUNTER_FIXTURE_ID].has(fixture_id): errors.append("unknown fixture ID")
 	if typeof(request.get("correlationId")) != TYPE_STRING or request.get("correlationId").is_empty(): errors.append("missing correlation ID")
 	if not _finite_number(request.get("timeoutMs")) or float(request.get("timeoutMs", 0)) <= 0.0 or float(request.get("timeoutMs", 0)) > 60000.0: errors.append("invalid timeout")
 	var payload: Variant = request.get("payload")
@@ -186,6 +187,8 @@ static func validate_request(request: Variant) -> Array[String]:
 			for part: Dictionary in payload.largeEnemyProfile.bodyParts:
 				if bool(part.targetable): targetable_count += 1
 			if targetable_count < 2: errors.append("primary-part-disabled requires another targetable body part")
+	elif fixture_id == ENCOUNTER_FIXTURE_ID:
+		errors.append_array(_validate_encounter_payload(payload, scenario))
 	else:
 		if payload.get("definitionKind") != "targeting-profile" or payload.get("definitionSchemaVersion") != 1: errors.append("unsupported targeting definition")
 		if payload.get("cameraDefinitionKind") != "camera-profile" or payload.get("cameraDefinitionSchemaVersion") != 1: errors.append("unsupported targeting camera definition")
@@ -195,6 +198,49 @@ static func validate_request(request: Variant) -> Array[String]:
 	if not _finite_number(scenario.get("durationSeconds")) or float(scenario.get("durationSeconds", 0)) < 0.0: errors.append("invalid scenario duration")
 	if not _finite_number(scenario.get("fixedDeltaSeconds")) or float(scenario.get("fixedDeltaSeconds", 0)) <= 0.0 or float(scenario.get("fixedDeltaSeconds", 0)) > 1.0: errors.append("invalid fixed timestep")
 	if fixture_id == MOVEMENT_FIXTURE_ID and abs(float(scenario.get("fixedDeltaSeconds", 0)) - (1.0 / 60.0)) > 0.000000001: errors.append("invalid fixed timestep")
+	return errors
+
+static func _validate_encounter_payload(payload: Dictionary, scenario: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	if payload.get("encounterDefinitionKind") != "encounter-profile" or payload.get("encounterDefinitionSchemaVersion") != 1: errors.append("unsupported encounter definition")
+	if payload.get("hunterDefinitionKind") != "hunter-profile" or payload.get("hunterDefinitionSchemaVersion") != 1: errors.append("unsupported encounter hunter definition")
+	if payload.get("hunterHealthDefinitionKind") != "health-profile" or payload.get("hunterHealthDefinitionSchemaVersion") != 1: errors.append("unsupported encounter hunter health definition")
+	if payload.get("staminaDefinitionKind") != "stamina-profile" or payload.get("staminaDefinitionSchemaVersion") != 1: errors.append("unsupported encounter stamina definition")
+	if payload.get("weaponDefinitionKind") != "weapon-profile" or payload.get("weaponDefinitionSchemaVersion") != 1: errors.append("unsupported encounter weapon definition")
+	if payload.get("offensiveActionDefinitionKind") != "offensive-action-profile" or payload.get("offensiveActionDefinitionSchemaVersion") != 1: errors.append("unsupported encounter action definition")
+	if payload.get("actionTimelineDefinitionKind") != "action-timeline-profile" or payload.get("actionTimelineDefinitionSchemaVersion") != 1: errors.append("unsupported encounter timeline definition")
+	if payload.get("hitboxDefinitionKind") != "contact-volume-profile" or payload.get("hitboxDefinitionSchemaVersion") != 1: errors.append("unsupported encounter hitbox definition")
+	if payload.get("enemyDefinitionKind") != "large-enemy-profile" or payload.get("enemyDefinitionSchemaVersion") != 1: errors.append("unsupported encounter enemy definition")
+	if payload.get("enemyHealthDefinitionKind") != "health-profile" or payload.get("enemyHealthDefinitionSchemaVersion") != 1: errors.append("unsupported encounter enemy health definition")
+	if payload.get("reactionDefinitionKind") != "damage-reaction-profile" or payload.get("reactionDefinitionSchemaVersion") != 1: errors.append("unsupported encounter reaction definition")
+	if payload.get("hurtboxDefinitionKind") != "contact-volume-profile" or payload.get("hurtboxDefinitionSchemaVersion") != 1: errors.append("unsupported encounter hurtbox definitions")
+	if payload.get("arenaDefinitionKind") != "arena-profile" or payload.get("arenaDefinitionSchemaVersion") != 1: errors.append("unsupported encounter arena definition")
+	var encounter: Variant = payload.get("encounterProfile"); var hunter: Variant = payload.get("hunterProfile"); var arena: Variant = payload.get("arenaProfile")
+	if typeof(encounter) != TYPE_DICTIONARY or encounter.get("schemaVersion") != 1 or encounter.get("kind") != "encounter-profile" or not _finite_number(encounter.get("maxRounds")) or int(encounter.get("maxRounds", 0)) < 1 or float(encounter.get("maxRounds", 0)) != int(encounter.get("maxRounds", 0)): errors.append("invalid encounter profile")
+	if typeof(hunter) != TYPE_DICTIONARY or hunter.get("schemaVersion") != 1 or hunter.get("kind") != "hunter-profile": errors.append("invalid encounter hunter profile")
+	if typeof(arena) != TYPE_DICTIONARY or arena.get("schemaVersion") != 1 or arena.get("kind") != "arena-profile" or not _finite_number(arena.get("radius")) or float(arena.get("radius", 0)) <= 0.0 or not _valid_vector(arena.get("playerSpawn")) or not _valid_vector(arena.get("enemySpawn")): errors.append("invalid encounter arena profile")
+	errors.append_array(HealthProfileRuntime.validate(payload.get("hunterHealthProfile"))); errors.append_array(StaminaProfileRuntime.validate(payload.get("staminaProfile")))
+	var weapon_errors: Array[String] = WeaponProfileRuntime.validate(payload.get("weaponProfile")); errors.append_array(weapon_errors)
+	var action_errors: Array[String] = OffensiveActionProfileRuntime.validate(payload.get("offensiveActionProfile")); errors.append_array(action_errors)
+	var timeline_errors: Array[String] = WeaponProfileRuntime.validate_timeline(payload.get("actionTimelineProfile")); errors.append_array(timeline_errors)
+	var hitbox_errors: Array[String] = ContactVolumeProfileRuntime.validate(payload.get("hitboxProfile")); errors.append_array(hitbox_errors)
+	var enemy_errors: Array[String] = LargeEnemyProfileRuntime.validate(payload.get("enemyProfile")); errors.append_array(enemy_errors)
+	errors.append_array(HealthProfileRuntime.validate(payload.get("enemyHealthProfile"))); errors.append_array(DamageReactionProfileRuntime.validate(payload.get("reactionProfile")))
+	var hurtboxes: Variant = payload.get("hurtboxProfiles"); if typeof(hurtboxes) != TYPE_ARRAY: errors.append("encounter hurtboxes must be an array")
+	else:
+		for hurtbox: Variant in hurtboxes: errors.append_array(ContactVolumeProfileRuntime.validate(hurtbox))
+	var selected_hurtbox_errors: Array[String] = ContactVolumeProfileRuntime.validate(payload.get("selectedHurtboxProfile")); errors.append_array(selected_hurtbox_errors)
+	if hitbox_errors.is_empty() and payload.hitboxProfile.get("role") != "hitbox": errors.append("encounter weapon volume must be a hitbox")
+	if selected_hurtbox_errors.is_empty() and payload.selectedHurtboxProfile.get("role") != "hurtbox": errors.append("encounter selected volume must be a hurtbox")
+	if weapon_errors.is_empty() and action_errors.is_empty() and timeline_errors.is_empty() and hitbox_errors.is_empty(): errors.append_array(WeaponProfileRuntime.validate_references(payload.weaponProfile, payload.offensiveActionProfile, payload.actionTimelineProfile, payload.hitboxProfile, payload.get("weaponResolvedDefinitionPaths")))
+	if enemy_errors.is_empty(): errors.append_array(LargeEnemyProfileRuntime.validate_references(payload.enemyProfile, payload.get("enemyResolvedDefinitionPaths"), hurtboxes))
+	var selected_id: String = ""
+	if enemy_errors.is_empty():
+		for part: Dictionary in payload.enemyProfile.bodyParts:
+			if bool(part.targetable): selected_id = str(part.id); break
+	if selected_id.is_empty() or selected_id != str(payload.get("selectedBodyPartId", "")): errors.append("encounter selected body part must be first targetable")
+	if not ["successful-hunt", "stamina-exhausted"].has(scenario.get("id")): errors.append("unsupported encounter scenario")
+	if not _finite_number(scenario.get("startingStamina")) or float(scenario.get("startingStamina", -1)) < 0.0: errors.append("invalid encounter starting stamina")
 	return errors
 
 static func _validate_targeting_plan(plan: Dictionary) -> Array[String]:

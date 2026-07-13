@@ -8,7 +8,7 @@
   "properties": {
     "schemaVersion": { "const": "mam.runtime/v1" },
     "commandId": { "const": "runtime.fixture.run" },
-    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack", "health/basic-confirmed-hit", "large-enemy/training-behemoth"] },
+    "fixtureId": { "enum": ["movement/basic-ground", "camera/basic-third-person", "targeting/basic-lock-on", "defensive-action/basic-dodge", "offensive-action/basic-light-attack", "health/basic-confirmed-hit", "large-enemy/training-behemoth", "encounter/training-hunt"] },
     "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,128}$" },
     "requestedAt": { "type": "string" },
     "timeoutMs": { "type": "number", "exclusiveMinimum": 0, "maximum": 60000 },

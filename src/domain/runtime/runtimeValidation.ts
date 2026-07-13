@@ -18,10 +18,14 @@ import { simulateWeaponStrike } from "../weapon/weaponSimulation";
 import { validateWeaponCompatibility, validateWeaponDefinition } from "../weapon/weaponValidation";
 import { simulateLargeEnemyBehavior } from "../largeEnemy/largeEnemySimulation";
 import { validateLargeEnemyDefinition } from "../largeEnemy/largeEnemyValidation";
+import { validateEncounterDefinition } from "../encounter/encounterValidation";
+import { simulateEncounter } from "../encounter/encounterSimulation";
+import { validateHunterDefinition } from "../hunter/hunterValidation";
+import { validateArenaDefinition } from "../arena/arenaValidation";
 import { validateCameraRuntimeMetrics } from "./cameraRuntimeMetrics";
 import { validateTargetingRuntimePlan } from "./targetingRuntimePlan";
 import { validateTargetingRuntimeMetrics } from "./targetingRuntimeMetrics";
-import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, HEALTH_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, WEAPON_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
+import { ACTION_TIMELINE_FIXTURE_ID, CAMERA_FIXTURE_ID, CAMERA_RUNTIME_SCENARIOS, COMBAT_FIXTURE_ID, CONTACT_VOLUME_FIXTURE_ID, DAMAGE_REACTION_FIXTURE_ID, DEFENSIVE_ACTION_FIXTURE_ID, ENCOUNTER_FIXTURE_ID, HEALTH_FIXTURE_ID, LARGE_ENEMY_FIXTURE_ID, MOVEMENT_FIXTURE_ID, MOVEMENT_RUNTIME_SCENARIOS, OFFENSIVE_ACTION_FIXTURE_ID, RUNTIME_RUN_COMMAND, RUNTIME_SCHEMA_VERSION, STAMINA_COMBAT_FIXTURE_ID, STAMINA_FIXTURE_ID, TARGETED_COMBAT_FIXTURE_ID, TARGETING_FIXTURE_ID, WEAPON_FIXTURE_ID, type RuntimeRequest, type RuntimeResponse } from "./runtimeProtocol";
 
 export interface ProtocolValidation<T> { valid: boolean; value?: T; errors: string[] }
 
@@ -30,7 +34,7 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   if (!isRecord(value)) return { valid: false, errors: ["request must be an object"] };
   if (value.schemaVersion !== RUNTIME_SCHEMA_VERSION) errors.push("unsupported schemaVersion");
   if (value.commandId !== RUNTIME_RUN_COMMAND) errors.push("unknown commandId");
-  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID && value.fixtureId !== CONTACT_VOLUME_FIXTURE_ID && value.fixtureId !== DAMAGE_REACTION_FIXTURE_ID && value.fixtureId !== WEAPON_FIXTURE_ID && value.fixtureId !== LARGE_ENEMY_FIXTURE_ID) errors.push("unknown fixtureId");
+  if (value.fixtureId !== MOVEMENT_FIXTURE_ID && value.fixtureId !== CAMERA_FIXTURE_ID && value.fixtureId !== TARGETING_FIXTURE_ID && value.fixtureId !== DEFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== OFFENSIVE_ACTION_FIXTURE_ID && value.fixtureId !== HEALTH_FIXTURE_ID && value.fixtureId !== COMBAT_FIXTURE_ID && value.fixtureId !== STAMINA_FIXTURE_ID && value.fixtureId !== STAMINA_COMBAT_FIXTURE_ID && value.fixtureId !== TARGETED_COMBAT_FIXTURE_ID && value.fixtureId !== ACTION_TIMELINE_FIXTURE_ID && value.fixtureId !== CONTACT_VOLUME_FIXTURE_ID && value.fixtureId !== DAMAGE_REACTION_FIXTURE_ID && value.fixtureId !== WEAPON_FIXTURE_ID && value.fixtureId !== LARGE_ENEMY_FIXTURE_ID && value.fixtureId !== ENCOUNTER_FIXTURE_ID) errors.push("unknown fixtureId");
   if (typeof value.correlationId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.correlationId)) errors.push("correlationId is missing or unsafe");
   if (typeof value.requestedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value.requestedAt) || !Number.isFinite(Date.parse(value.requestedAt))) errors.push("requestedAt must be an ISO timestamp");
   if (!finiteInRange(value.timeoutMs, 1, 60_000)) errors.push("timeoutMs must be finite and bounded");
@@ -49,9 +53,57 @@ export function validateRuntimeRequest(value: unknown): ProtocolValidation<Runti
   else if (value.fixtureId === DAMAGE_REACTION_FIXTURE_ID) validateDamageReactionPayload(value.payload, errors);
   else if (value.fixtureId === WEAPON_FIXTURE_ID) validateWeaponPayload(value.payload, errors);
   else if (value.fixtureId === LARGE_ENEMY_FIXTURE_ID) validateLargeEnemyPayload(value.payload, errors);
+  else if (value.fixtureId === ENCOUNTER_FIXTURE_ID) validateEncounterPayload(value.payload, errors);
   else if (value.fixtureId === MOVEMENT_FIXTURE_ID) validateMovementPayload(value.payload, errors);
   return errors.length === 0 ? { valid: true, value: value as unknown as RuntimeRequest, errors } : { valid: false, errors };
 }
+
+function validateEncounterPayload(payload: Record<string, any>, errors: string[]): void {
+  if (payload.encounterDefinitionKind !== "encounter-profile" || payload.encounterDefinitionSchemaVersion !== 1) errors.push("unsupported encounter definition");
+  if (payload.hunterDefinitionKind !== "hunter-profile" || payload.hunterDefinitionSchemaVersion !== 1) errors.push("unsupported encounter hunter definition");
+  if (payload.hunterHealthDefinitionKind !== "health-profile" || payload.hunterHealthDefinitionSchemaVersion !== 1) errors.push("unsupported encounter hunter health definition");
+  if (payload.staminaDefinitionKind !== "stamina-profile" || payload.staminaDefinitionSchemaVersion !== 1) errors.push("unsupported encounter stamina definition");
+  if (payload.weaponDefinitionKind !== "weapon-profile" || payload.weaponDefinitionSchemaVersion !== 1) errors.push("unsupported encounter weapon definition");
+  if (payload.offensiveActionDefinitionKind !== "offensive-action-profile" || payload.offensiveActionDefinitionSchemaVersion !== 1) errors.push("unsupported encounter offensive action definition");
+  if (payload.actionTimelineDefinitionKind !== "action-timeline-profile" || payload.actionTimelineDefinitionSchemaVersion !== 1) errors.push("unsupported encounter action timeline definition");
+  if (payload.hitboxDefinitionKind !== "contact-volume-profile" || payload.hitboxDefinitionSchemaVersion !== 1) errors.push("unsupported encounter hitbox definition");
+  if (payload.enemyDefinitionKind !== "large-enemy-profile" || payload.enemyDefinitionSchemaVersion !== 1) errors.push("unsupported encounter enemy definition");
+  if (payload.enemyHealthDefinitionKind !== "health-profile" || payload.enemyHealthDefinitionSchemaVersion !== 1) errors.push("unsupported encounter enemy health definition");
+  if (payload.reactionDefinitionKind !== "damage-reaction-profile" || payload.reactionDefinitionSchemaVersion !== 1) errors.push("unsupported encounter reaction definition");
+  if (payload.hurtboxDefinitionKind !== "contact-volume-profile" || payload.hurtboxDefinitionSchemaVersion !== 1) errors.push("unsupported encounter hurtbox definitions");
+  if (payload.arenaDefinitionKind !== "arena-profile" || payload.arenaDefinitionSchemaVersion !== 1) errors.push("unsupported encounter arena definition");
+  const encounter = validateEncounterDefinition(payload.encounterProfile); if (!encounter.valid) errors.push(...encounter.errors.map((error) => error.message));
+  const hunter = validateHunterDefinition(payload.hunterProfile); if (!hunter.valid) errors.push(...hunter.errors.map((error) => error.message));
+  const hunterHealth = validateHealthDefinition(payload.hunterHealthProfile); if (!hunterHealth.valid) errors.push(...hunterHealth.errors.map((error) => error.message));
+  const stamina = validateStaminaDefinition(payload.staminaProfile); if (!stamina.valid) errors.push(...stamina.errors.map((error) => error.message));
+  const weapon = validateWeaponDefinition(payload.weaponProfile); if (!weapon.valid) errors.push(...weapon.errors.map((error) => error.message));
+  const action = validateOffensiveActionDefinition(payload.offensiveActionProfile); if (!action.valid) errors.push(...action.errors.map((error) => error.message));
+  const timeline = validateActionTimelineDefinition(payload.actionTimelineProfile); if (!timeline.valid) errors.push(...timeline.errors.map((error) => error.message));
+  const hitbox = validateContactVolumeDefinition(payload.hitboxProfile); if (!hitbox.valid) errors.push(...hitbox.errors.map((error) => error.message));
+  const enemy = validateLargeEnemyDefinition(payload.enemyProfile); if (!enemy.valid) errors.push(...enemy.errors.map((error) => error.message));
+  const enemyHealth = validateHealthDefinition(payload.enemyHealthProfile); if (!enemyHealth.valid) errors.push(...enemyHealth.errors.map((error) => error.message));
+  const reaction = validateDamageReactionDefinition(payload.reactionProfile); if (!reaction.valid) errors.push(...reaction.errors.map((error) => error.message));
+  const arena = validateArenaDefinition(payload.arenaProfile); if (!arena.valid) errors.push(...arena.errors.map((error) => error.message));
+  const hurtboxes = Array.isArray(payload.hurtboxProfiles) ? payload.hurtboxProfiles.map((value: unknown) => validateContactVolumeDefinition(value)) : []; if (!Array.isArray(payload.hurtboxProfiles)) errors.push("encounter hurtbox profiles must be an array");
+  for (const hurtbox of hurtboxes) { if (!hurtbox.valid) errors.push(...hurtbox.errors.map((error) => error.message)); else if (hurtbox.profile?.role !== "hurtbox") errors.push("encounter body-part contact volume must be a hurtbox"); }
+  const selectedHurtbox = validateContactVolumeDefinition(payload.selectedHurtboxProfile); if (!selectedHurtbox.valid) errors.push(...selectedHurtbox.errors.map((error) => error.message)); else if (selectedHurtbox.profile?.role !== "hurtbox") errors.push("encounter selected contact volume must be a hurtbox");
+  if (hitbox.profile?.role !== "hitbox") errors.push("encounter weapon contact volume must be a hitbox");
+  const topPaths = payload.resolvedDefinitionPaths; const hunterPaths = payload.hunterResolvedDefinitionPaths; const weaponPaths = payload.weaponResolvedDefinitionPaths; const enemyPaths = payload.enemyResolvedDefinitionPaths;
+  if (!isRecord(topPaths) || ![topPaths.hunterFile, topPaths.weaponFile, topPaths.enemyFile, topPaths.arenaFile].every(nonBlank)) errors.push("encounter resolved definition paths are invalid");
+  if (!isRecord(hunterPaths) || ![hunterPaths.healthFile, hunterPaths.staminaFile].every(nonBlank)) errors.push("encounter hunter paths are invalid");
+  if (!isRecord(weaponPaths) || ![weaponPaths.offensiveActionFile, weaponPaths.actionTimelineFile, weaponPaths.hitboxFile].every(nonBlank)) errors.push("encounter weapon paths are invalid");
+  if (!isRecord(enemyPaths) || !nonBlank(enemyPaths.healthFile) || !nonBlank(enemyPaths.reactionFile) || !Array.isArray(enemyPaths.bodyParts)) errors.push("encounter enemy paths are invalid");
+  const selectedIndex = enemy.profile?.bodyParts.findIndex((part) => part.targetable) ?? -1; if (selectedIndex < 0 || enemy.profile?.bodyParts[selectedIndex]?.id !== payload.selectedBodyPartId || selectedHurtbox.profile?.id !== hurtboxes[selectedIndex]?.profile?.id) errors.push("encounter selected body part must be the first targetable declaration");
+  const scenario = payload.scenario; if (!isRecord(scenario)) { errors.push("scenario must be an object"); return; }
+  if (!["successful-hunt", "stamina-exhausted"].includes(String(scenario.id))) errors.push("unsupported encounter scenario");
+  if (!finiteInRange(scenario.durationSeconds, Number.EPSILON, 60)) errors.push("durationSeconds must be finite and bounded"); if (!finiteInRange(scenario.fixedDeltaSeconds, Number.EPSILON, 1)) errors.push("fixedDeltaSeconds must be finite and bounded"); if (!finiteInRange(scenario.startingStamina, 0, Number.MAX_SAFE_INTEGER)) errors.push("startingStamina must be finite and non-negative");
+  if (encounter.profile && hunterHealth.profile && stamina.profile && weapon.profile && action.profile && timeline.profile && hitbox.profile?.role === "hitbox" && enemy.profile && enemyHealth.profile && reaction.profile && arena.profile && selectedHurtbox.profile?.role === "hurtbox" && isRecord(topPaths) && isRecord(weaponPaths) && isRecord(enemyPaths) && finiteInRange(scenario.fixedDeltaSeconds, Number.EPSILON, 1) && ["successful-hunt", "stamina-exhausted"].includes(String(scenario.id))) {
+    if (action.profile && timeline.profile && hitbox.profile) errors.push(...validateWeaponCompatibility(weapon.profile, action.profile, timeline.profile, hitbox.profile).map((error) => error.message));
+    try { const simulation = simulateEncounter({ profile: encounter.profile, resolvedDefinitionPaths: topPaths as any, arena: arena.profile, hunterHealth: hunterHealth.profile, hunterStamina: stamina.profile, weapon: { profile: weapon.profile, resolvedDefinitionPaths: weaponPaths as any, offensiveAction: action.profile, actionTimeline: timeline.profile, hitbox: hitbox.profile }, enemy: enemy.profile, enemyResolvedDefinitionPaths: enemyPaths as any, enemyHealth: enemyHealth.profile, enemyReaction: reaction.profile, selectedBodyPartId: String(payload.selectedBodyPartId), selectedHurtbox: selectedHurtbox.profile, scenario: scenario.id, fixedDeltaSeconds: scenario.fixedDeltaSeconds }); if (simulation.hunterStartingStamina !== scenario.startingStamina) errors.push("scenario starting stamina must match encounter simulation"); } catch (caught) { errors.push(caught instanceof Error ? caught.message : String(caught)); }
+  }
+}
+
+function nonBlank(value: unknown): boolean { return typeof value === "string" && value.length > 0; }
 
 function validateLargeEnemyPayload(payload: Record<string, any>, errors: string[]): void {
   if (payload.largeEnemyDefinitionKind !== "large-enemy-profile" || payload.largeEnemyDefinitionSchemaVersion !== 1) errors.push("unsupported large-enemy definition");
