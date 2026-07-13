@@ -156,6 +156,10 @@ export async function executeCli(
 }
 
 export async function runCli(argv: string[], workspaceRoot = process.cwd()): Promise<number> {
+  if (argv.length === 1 && (argv[0] === "--help" || argv[0] === "-h")) {
+    process.stdout.write("mam <command-group> <command> [arguments] [--json]\n\nCommand groups: movement, camera, targeting, defensive-action, offensive-action, health, stamina, action-timeline, contact-volume, damage-reaction, weapon, large-enemy, hunter, arena, encounter, combat, editor, snapshot, runtime\n");
+    return 0;
+  }
   const execution = await executeCli(argv, workspaceRoot);
   writeResult(execution.result, execution.json);
   return execution.exitCode;

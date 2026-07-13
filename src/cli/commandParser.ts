@@ -157,7 +157,7 @@ function parseEditorCommand(action: string, args: string[]): ParsedCommand {
   const portValue = parsed.flags.get("--port");
   const workspaceValue = parsed.flags.get("--workspace");
   const port = portValue === undefined ? 4310 : Number(portValue);
-  if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new CliParseError("--port must be an integer from 1 through 65535");
+  if (!Number.isInteger(port) || port < 0 || port > 65_535) throw new CliParseError("--port must be an integer from 0 through 65535");
   return { kind: "editor.serve", host: typeof hostValue === "string" ? hostValue : "127.0.0.1", port, ...(typeof workspaceValue === "string" ? { workspace: workspaceValue } : {}), json: parsed.flags.has("--json") };
 }
 

@@ -6,7 +6,7 @@
 
 Codex-native authoring means common changes use structured, versioned definitions instead of uncontrolled source rewrites. Inspection is machine-readable, validation is deterministic, and runtime tests run against named fixtures. Draft changes and persistent changes are distinct operations. Persistent or destructive operations declare allowed files, audit the actual changed files, preserve a baseline, create snapshots when required, and support rollback.
 
-A future visual editor is a client of the same services and protocols. It must not introduce a second definition format or move domain behavior into GUI code.
+The visual editor is a client of the same services and protocols. It does not introduce a second definition format or move domain behavior into GUI code; v0.1 limits editing and editor simulation to movement profiles.
 
 ## Product principles
 
@@ -23,6 +23,6 @@ The architectural ideas of read-only inspection, temporary drafts, explicit save
 
 ## Long-term action-game capability
 
-The intended game domain eventually includes third-person movement; camera and targeting; animation-driven attacks; weapon-specific mechanics; hitboxes and hurtboxes; dodging and defensive actions; interrupts; stagger; body-part damage; large-enemy behavior; telegraphs; VFX; audio events; and encounter authoring.
+The v0.1 domain includes scoped definitions and controlled proofs for third-person movement; camera and targeting; animation-driven attacks; one weapon strike; hitboxes and hurtboxes; dodging and defensive actions; interrupts; stagger; targetable body parts; one large-enemy cycle; telegraphs; and one encounter. VFX, audio events, and production gameplay remain future work.
 
-That list is direction, not current scope. The project must grow through completed, testable vertical slices. Each slice needs schemas, validation, inspection, deterministic logic where applicable, runtime-fixture proof, structured reports, safety auditing, and regression coverage before the next slice begins.
+Those capabilities remain bounded v0.1 slices, not a production game. Future growth must continue through testable vertical slices with schemas, validation, inspection, deterministic logic where applicable, runtime-fixture proof, structured reports, safety auditing, and regression coverage.

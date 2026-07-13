@@ -24,7 +24,7 @@ Use fixed timesteps and explicit inputs to assert ordered samples and metrics. M
 
 ### Godot headless integration tests
 
-Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute movement, camera, and targeting fixtures, and compare runtime metrics with named tolerances. Camera coverage includes cold cache, orbit, pitch, recenter variants, move-then-settle follow, real spatial collision enabled/disabled, basis, lens, session cleanup, and file safety. Targeting coverage adds real LOS, acquisition, retention/loss/reacquisition, switching/cooldown, target-driven framing, and lens readback. These tests require compatible Godot 4.7 stable and run in a separate slower integration job.
+Launch the real process-per-run Godot adapter, validate readiness and clean exit, execute the controlled fixture categories recorded in the v0.1 capability manifest, and compare runtime metrics with named tolerances. This includes movement/camera/targeting behavior and the later scoped action, combat, weapon, large-enemy, and encounter proofs. These tests require compatible Godot 4.7 stable and run in separate slower integration jobs.
 
 ### Runtime fixture smoke tests
 

@@ -4,7 +4,7 @@
 
 The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phases 4 through 9 are complete with their scoped domain and Godot evidence. Canonical Phase 10 is complete: the loopback-only local editor provides definition exploration, transactional single-property movement editing, and deterministic saved-versus-preview movement simulation. The canonical roadmap through Phase 10 is complete; other definition kinds remain read-only and broader visual authoring workflows remain pending.
 
-## Implemented through Phase 2A.2
+## Core v0.1 capabilities
 
 - A Node.js/TypeScript `mam` CLI with versioned JSON results.
 - JSON Schema and semantic validation for movement profile v1.
@@ -26,6 +26,8 @@ The long-term target is a Dauntless-style action hunting game. **Movement Editor
 - A separate `targeting/basic-lock-on` fixture consuming normalized targeting and camera profiles plus ephemeral plans for real LOS, acquisition, retention, switching, and target-driven framing.
 - Structured camera runtime metrics and named domain/runtime tolerances, including real cold-cache Godot integration tests.
 - Targeting profile v1 validation and safe authoring, deterministic acquisition/scoring, stable ties, retention/grace/reacquisition, and directional switching/cooldown simulations.
+- Canonical Phases 0–10 complete, including definition-driven combat/enemy/encounter slices and their scoped controlled Godot fixture proofs.
+- A loopback-only visual editor using existing application/domain services for discovery and inspection of every registered kind, plus the complete movement-profile preview/simulate/save/undo workflow.
 
 ## Why CLI first
 
@@ -119,7 +121,7 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - No persistent live runtime session, live editing, visual camera editor, or explicit interactive shutdown command exists.
 - The visual editor supports transactional single-property movement-profile editing and deterministic saved-versus-preview movement simulation only; other definition kinds remain read-only, and broader authoring workflows remain pending.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
-- Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
+- Runtime evidence, including targeting, combat, weapon, large-enemy, and encounter coverage, comes from controlled fixtures rather than production gameplay. Audio, VFX, progression, multiplayer, and open-world implementation remain unsupported.
 - Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, canonical Phase 8 training-behemoth runtime proofs, canonical Phase 9 training-encounter proof, and the complete canonical Phase 10 local movement editor workflow exist; production gameplay, polished UI, save games, progression, and broader visual-editor workflows are not claimed complete.
 
 ## Documentation
@@ -133,4 +135,6 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 - [Runtime and CLI protocols](docs/runtime-protocol.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Roadmap](docs/roadmap.md)
+- [v0.1 capability manifest](docs/capabilities-v0.1.json)
+- [v0.1 release readiness](docs/release-readiness-v0.1.md)
 - Decisions: [CLI first](docs/decisions/0001-cli-first.md), [Godot runtime](docs/decisions/0002-godot-runtime.md), [authored vs. engine-owned files](docs/decisions/0003-codex-owned-vs-engine-owned.md), and [process-per-run transport](docs/decisions/0004-process-per-run-runtime-transport.md)

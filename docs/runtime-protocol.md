@@ -2,7 +2,7 @@
 
 ## Current implementation status
 
-Movement Editor v0.1 and Camera Editor Phase 2A.2 implement both the Codex-facing CLI operation envelope and the shared process-per-run Godot runtime transport. Every `mam ... --json` command returns:
+Canonical Phases 0–10 implement the Codex-facing CLI operation envelope and shared process-per-run Godot runtime transport across the registered controlled fixture categories. Every `mam ... --json` command returns:
 
 ```json
 {

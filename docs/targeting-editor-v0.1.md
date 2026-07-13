@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 2B.1 domain foundation and Phase 2B.2 runtime targeting and target-driven camera framing are complete. Phase 2 camera and targeting is complete. Phase 3 dodge and defensive actions is not started.
+Phase 2B.1 domain foundation and Phase 2B.2 runtime targeting and target-driven camera framing are complete. Canonical Phases 0–10 are complete; this document remains scoped to the Phase 2 targeting contract.
 
 ## Canonical profile
 
@@ -50,4 +50,4 @@ Inspect, validate, simulate, and dry-run set are zero-write operations. Real set
 
 Node and real Godot tests cover the normalized dual-profile request, deterministic plans, real spatial LOS, acquisition/scoring/ties, retention/grace/loss/reacquisition, switching/cooldown, target-driven framing, lens readback, session lifecycle, and file safety. Candidate and event data remain ephemeral.
 
-This controlled fixture is not a complete combat system. Excluded: enemies, AI, health, attacks, weapons, damage, hitboxes, animation, root motion, audio, VFX, screen shake, camera zones, networking, multiplayer, persistent runtime sessions, and visual editing.
+This controlled targeting fixture is not production gameplay and does not itself execute combat, enemies, weapons, damage, animation, audio, VFX, networking, multiplayer, or live runtime editing. Later canonical phases provide separate scoped fixtures without widening this targeting contract.

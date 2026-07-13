@@ -24,7 +24,7 @@ Codex-authored game content includes:
 - encounter definitions
 - fixture configuration
 
-Movement profiles are supported from Phase 1A and the basic-ground fixture configuration is implemented in Phase 1B. The other categories reserve long-term boundaries and are not implemented.
+Canonical Phases 0–10 implement the registered movement, camera, targeting, action, health, stamina, timeline, contact-volume, reaction, weapon, large-enemy, hunter, arena, and encounter definition categories. The CLI remains the authoritative automation interface; visual editing is limited to movement profiles.
 
 Engine-owned infrastructure includes:
 

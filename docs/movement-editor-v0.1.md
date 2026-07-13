@@ -105,4 +105,4 @@ Errors include a dotted `path` when a field or file can be identified, a stable 
 8. Snapshot, reversible rollback, and recovery behavior are testable. **Met in Phase 1A.1.**
 9. No combat functionality is required. **Preserved.**
 
-Phase 1B uses process-per-run clean exit rather than a persistent shutdown command. Persistent sessions, explicit interactive shutdown, live editing, camera editing, animation, combat, and a visual editor remain unimplemented.
+Phase 1B uses process-per-run clean exit rather than a persistent shutdown command. Persistent sessions, explicit interactive shutdown, and live runtime editing remain unsupported. Camera, animation, combat, and the local visual editor are implemented through later separate canonical contracts and controlled proofs.

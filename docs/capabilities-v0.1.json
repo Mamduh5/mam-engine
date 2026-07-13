@@ -1,0 +1,102 @@
+{
+  "releaseVersion": "0.1.0",
+  "completedCanonicalPhases": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "supportedDefinitionKinds": [
+    "movement-profile",
+    "camera-profile",
+    "targeting-profile",
+    "defensive-action-profile",
+    "offensive-action-profile",
+    "health-profile",
+    "stamina-profile",
+    "action-timeline-profile",
+    "contact-volume-profile",
+    "damage-reaction-profile",
+    "weapon-profile",
+    "large-enemy-profile",
+    "hunter-profile",
+    "arena-profile",
+    "encounter-profile"
+  ],
+  "cliCommandGroups": [
+    "movement",
+    "camera",
+    "targeting",
+    "defensive-action",
+    "offensive-action",
+    "health",
+    "stamina",
+    "action-timeline",
+    "contact-volume",
+    "damage-reaction",
+    "weapon",
+    "large-enemy",
+    "hunter",
+    "arena",
+    "encounter",
+    "combat",
+    "editor",
+    "snapshot",
+    "runtime"
+  ],
+  "visualEditorEditableDefinitionKinds": [
+    "movement-profile"
+  ],
+  "visualEditorReadOnlyDefinitionKinds": [
+    "camera-profile",
+    "targeting-profile",
+    "defensive-action-profile",
+    "offensive-action-profile",
+    "health-profile",
+    "stamina-profile",
+    "action-timeline-profile",
+    "contact-volume-profile",
+    "damage-reaction-profile",
+    "weapon-profile",
+    "large-enemy-profile",
+    "hunter-profile",
+    "arena-profile",
+    "encounter-profile"
+  ],
+  "visualEditorSimulationDefinitionKinds": [
+    "movement-profile"
+  ],
+  "runtimeFixtureCategories": [
+    "movement",
+    "camera",
+    "targeting",
+    "defensive-action",
+    "offensive-action",
+    "health",
+    "combat",
+    "stamina",
+    "stamina-combat",
+    "targeted-combat",
+    "action-timeline",
+    "contact-volume",
+    "damage-reaction",
+    "weapon",
+    "large-enemy",
+    "encounter"
+  ],
+  "explicitlyUnsupportedCapabilities": [
+    "production-gameplay",
+    "asset-authoring",
+    "progression",
+    "multiplayer",
+    "live-runtime-editing",
+    "additional-visual-editor-editable-definition-kinds"
+  ]
+}

@@ -30,4 +30,4 @@ Every scenario reports structured metrics plus effective `Camera3D` FOV, near cl
 
 Focused Node tests cover camera runtime request/response validation, metric shape, comparison failures, pre-spawn validation, and CLI envelopes. Real headless tests cover cold cache, orbit, pitch clamp, default/disabled/below-threshold/manual-input recenter behavior, follow motion/settling, enabled/disabled collision, basis, lens readback, clean exit, session cleanup, and zero canonical file changes.
 
-Still not implemented: targeting, lock-on, target switching, enemy framing, enemies, combat camera, attacks, weapons, damage, animation, root motion, screen shake, camera zones, cutscenes, photo mode, audio, VFX, multiplayer, networking, persistent live sessions, arbitrary game adapters, or a visual editor.
+This camera fixture remains scoped to camera behavior and does not itself execute combat, enemies, weapons, damage, animation, audio, VFX, networking, multiplayer, or live runtime editing. Targeting, later canonical gameplay slices, and the local visual editor are implemented through separate contracts and controlled proofs.

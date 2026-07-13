@@ -10,7 +10,7 @@ Establish product scope, dependency boundaries, ownership, runtime protocol, tes
 
 Phase 1A delivers structured movement profiles, deterministic simulation, CLI authoring, safety, snapshots, rollback, and engine-independent tests. Phase 1A.1 hardens persistence. Phase 1B adds the Godot movement adapter/fixture, process-per-run lifecycle, measured reports, comparisons, and headless integration tests. **Exit condition met:** every acceptance criterion in [Movement Editor v0.1](movement-editor-v0.1.md) has automated evidence, including the official pinned Godot 4.7-stable release and its CI integration job.
 
-## Phase 2 — Camera and targeting
+## Phase 2 — Camera and targeting (complete)
 
 Add camera definitions, camera-relative intent, target acquisition/selection contracts, inspection, simulation where meaningful, and fixture measurements. **Exit condition:** camera and targeting can be authored without engine-code edits and pass deterministic/fixture acceptance tests without combat.
 
@@ -30,11 +30,11 @@ Canonical targeting rules, schema/semantic validation, deterministic candidate e
 
 The separate controlled targeting fixture proves real LOS, acquisition/scoring, retention/grace/loss/reacquisition, switching/cooldown, and target-driven framing from existing camera fields. **Targeting Editor v0.1 is complete through Phase 2B.2. Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs.** This is not a complete combat system.
 
-## Phase 3 — Dodge and defensive actions
+## Phase 3 — Dodge and defensive actions (complete)
 
-Promote dodge into a complete defensive-action slice with state restrictions, stamina, invulnerability timing, and runtime evidence. **Exit condition:** all defensive transitions and timing windows are definition-driven, validated, deterministic, and measured in Godot.
+Canonical Phase 3 dodge and defensive-action profiles, state restrictions, stamina use, invulnerability timing, deterministic simulation, and controlled Godot measurements are complete. **Exit condition met:** defensive transitions and timing windows are definition-driven, validated, deterministic, and measured in Godot.
 
-## Phase 4 — Action timeline and animation events
+## Phase 4 — Action timeline and animation events (complete)
 
 Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. **Exit condition met:** a definition-driven non-damaging action executes with deterministic event ordering and measured Godot animation-event reports.
 
