@@ -149,6 +149,7 @@ function renderInspection(inspection) {
   wrapper.append(sectionWithList("Referenced definitions", inspection.resolvedReferences.map((reference) => `${reference.field}: ${reference.relativePath}`), "No resolved references."));
   const findings = inspection.validationFindings.map((finding) => `${finding.code}${finding.path ? ` · ${finding.path}` : ""}: ${finding.message}`);
   wrapper.append(sectionWithList("Validation findings", findings, summary.valid ? "No validation findings." : "Invalid definition."));
+  if (summary.valid && summary.kind === "movement-profile") wrapper.append(persistedSimulationSection(summary));
   const rawSection = document.createElement("section");
   rawSection.className = "inspector-section";
   const details = document.createElement("details");
@@ -165,12 +166,16 @@ function renderInspection(inspection) {
 async function beginMovementEdit() {
   if (state.selectedPath === null || state.currentInspection === null) return;
   elements.inspector.setAttribute("aria-busy", "true");
-  try { renderMovementEdit(await getJson(`/api/definitions/edit?file=${encodeURIComponent(state.selectedPath)}`)); }
+  try {
+    const encoded = encodeURIComponent(state.selectedPath);
+    const [editModel, simulationModel] = await Promise.all([getJson(`/api/definitions/edit?file=${encoded}`), getJson(`/api/definitions/simulation?file=${encoded}`)]);
+    renderMovementEdit(editModel, simulationModel);
+  }
   catch (error) { showFailure("Edit unavailable", errorMessage(error)); }
   finally { elements.inspector.removeAttribute("aria-busy"); }
 }
 
-function renderMovementEdit(model) {
+function renderMovementEdit(model, simulationModel) {
   let selected = model.editableFields[0];
   let candidate = selected?.value;
   let previewPassed = false;
@@ -203,13 +208,33 @@ function renderMovementEdit(model) {
   controls.append(cancel, preview, save);
   form.append(pathLabel, pathSelect, original, inputLabel, inputSlot, findings, controls);
   wrapper.append(form);
+
+  const simulationSection = sectionShell("Preview comparison");
+  simulationSection.classList.add("simulation-panel");
+  const scenarioLabel = document.createElement("label"); scenarioLabel.htmlFor = "preview-scenario"; scenarioLabel.textContent = "Scenario";
+  const scenarioSelect = document.createElement("select"); scenarioSelect.id = "preview-scenario";
+  for (const scenario of simulationModel.availableScenarios) { const option = document.createElement("option"); option.value = scenario.id; option.textContent = scenario.id; scenarioSelect.append(option); }
+  const secondsLabel = document.createElement("label"); secondsLabel.htmlFor = "preview-seconds"; secondsLabel.textContent = "Seconds (optional)";
+  const secondsInput = document.createElement("input"); secondsInput.id = "preview-seconds"; secondsInput.type = "number"; secondsInput.min = "0.01"; secondsInput.max = "60"; secondsInput.step = "any";
+  const simulatePreview = actionButton("Simulate preview", "primary"); simulatePreview.disabled = true;
+  const comparison = document.createElement("div"); comparison.className = "simulation-result"; comparison.setAttribute("aria-live", "polite");
+  simulationSection.append(scenarioLabel, scenarioSelect, secondsLabel, secondsInput, simulatePreview, comparison);
+  wrapper.append(simulationSection);
   elements.inspector.replaceChildren(wrapper);
+
+  const selectedScenario = () => simulationModel.availableScenarios.find((scenario) => scenario.id === scenarioSelect.value);
+  const clearComparison = () => comparison.replaceChildren();
+  const updateSeconds = () => { const accepts = selectedScenario()?.acceptsCustomSeconds === true; secondsInput.disabled = !accepts; secondsLabel.hidden = !accepts; secondsInput.hidden = !accepts; if (!accepts) secondsInput.value = ""; clearComparison(); };
+  scenarioSelect.addEventListener("change", updateSeconds);
+  secondsInput.addEventListener("input", clearComparison);
 
   const renderInput = () => {
     candidate = selected.value;
     previewPassed = false;
     save.disabled = true;
+    simulatePreview.disabled = true;
     findings.replaceChildren();
+    clearComparison();
     original.textContent = `Original value: ${formatValue(selected.value)}`;
     const input = document.createElement("input"); input.id = "edit-value"; input.name = "value";
     if (selected.valueType === "number") { input.type = "number"; input.step = "any"; input.value = String(selected.value); }
@@ -219,7 +244,9 @@ function renderMovementEdit(model) {
       candidate = selected.valueType === "number" ? (input.value === "" ? null : Number(input.value)) : selected.valueType === "boolean" ? input.checked : input.value;
       previewPassed = false;
       save.disabled = true;
+      simulatePreview.disabled = true;
       findings.replaceChildren();
+      clearComparison();
       const changed = candidate !== selected.value;
       dirty.textContent = changed ? "Unsaved change" : "Unchanged";
       dirty.classList.toggle("dirty", changed);
@@ -237,9 +264,28 @@ function renderMovementEdit(model) {
       const result = await postJson("/api/definitions/edit/preview", { file: model.relativePath, expectedRevision: model.revision, path: selected.path, value: candidate });
       previewPassed = result.previewStatus === "passed";
       save.disabled = !previewPassed;
+      simulatePreview.disabled = !previewPassed;
       showValidationFindings(findings, result.validationFindings, previewPassed ? "Preview passed. Save is enabled." : "Preview failed.");
-    } catch (error) { previewPassed = false; save.disabled = true; showRequestError(findings, error); }
-    finally { setBusy(controls, false); save.disabled = !previewPassed; }
+    } catch (error) { previewPassed = false; save.disabled = true; simulatePreview.disabled = true; showRequestError(findings, error); }
+    finally { setBusy(controls, false); save.disabled = !previewPassed; simulatePreview.disabled = !previewPassed; }
+  });
+  simulatePreview.addEventListener("click", async () => {
+    if (!previewPassed) return;
+    simulatePreview.disabled = true;
+    comparison.replaceChildren(message("Running deterministic comparison…"));
+    try {
+      const seconds = optionalSeconds(secondsInput);
+      const result = await postJson("/api/definitions/simulation/run", {
+        file: model.relativePath,
+        expectedRevision: model.revision,
+        scenario: scenarioSelect.value,
+        ...(seconds === undefined ? {} : { seconds }),
+        candidate: { path: selected.path, value: candidate }
+      });
+      if (result.candidateSimulation === null) showValidationFindings(comparison, result.validationFindings, "Candidate simulation unavailable.");
+      else comparison.replaceChildren(comparisonTable(result));
+    } catch (error) { showRequestError(comparison, error); }
+    finally { simulatePreview.disabled = !previewPassed; }
   });
   save.addEventListener("click", async () => {
     if (!previewPassed) return;
@@ -254,6 +300,7 @@ function renderMovementEdit(model) {
     } catch (error) { showRequestError(findings, error); }
     finally { setBusy(controls, false); }
   });
+  updateSeconds();
   renderInput();
 }
 
@@ -270,6 +317,77 @@ async function undoLastSave(button) {
     await selectDefinition(undo.file, true);
   } catch (error) { showFailure("Undo failed", errorMessage(error)); }
 }
+
+function persistedSimulationSection(summary) {
+  const section = sectionShell("Simulation");
+  section.classList.add("simulation-panel");
+  const content = document.createElement("div");
+  content.append(message("Loading simulation options…"));
+  section.append(content);
+  void getJson(`/api/definitions/simulation?file=${encodeURIComponent(summary.relativePath)}`)
+    .then((model) => renderPersistedSimulationControls(content, model))
+    .catch((error) => content.replaceChildren(message(errorMessage(error))));
+  return section;
+}
+
+function renderPersistedSimulationControls(content, model) {
+  const scenarioLabel = document.createElement("label"); scenarioLabel.htmlFor = "simulation-scenario"; scenarioLabel.textContent = "Scenario";
+  const scenarioSelect = document.createElement("select"); scenarioSelect.id = "simulation-scenario";
+  for (const scenario of model.availableScenarios) { const option = document.createElement("option"); option.value = scenario.id; option.textContent = scenario.id; scenarioSelect.append(option); }
+  const secondsLabel = document.createElement("label"); secondsLabel.htmlFor = "simulation-seconds"; secondsLabel.textContent = "Seconds (optional)";
+  const secondsInput = document.createElement("input"); secondsInput.id = "simulation-seconds"; secondsInput.type = "number"; secondsInput.min = "0.01"; secondsInput.max = "60"; secondsInput.step = "any";
+  const run = actionButton("Run simulation", "primary");
+  const resultSlot = document.createElement("div"); resultSlot.className = "simulation-result"; resultSlot.setAttribute("aria-live", "polite");
+  const selectedScenario = () => model.availableScenarios.find((scenario) => scenario.id === scenarioSelect.value);
+  const clearResult = () => resultSlot.replaceChildren();
+  const updateSeconds = () => { const accepts = selectedScenario()?.acceptsCustomSeconds === true; secondsInput.disabled = !accepts; secondsInput.hidden = !accepts; secondsLabel.hidden = !accepts; if (!accepts) secondsInput.value = ""; clearResult(); };
+  scenarioSelect.addEventListener("change", updateSeconds);
+  secondsInput.addEventListener("input", clearResult);
+  run.addEventListener("click", async () => {
+    run.disabled = true;
+    resultSlot.replaceChildren(message("Running deterministic simulation…"));
+    try {
+      const seconds = optionalSeconds(secondsInput);
+      const result = await postJson("/api/definitions/simulation/run", {
+        file: model.relativePath,
+        expectedRevision: model.currentRevision,
+        scenario: scenarioSelect.value,
+        ...(seconds === undefined ? {} : { seconds })
+      });
+      resultSlot.replaceChildren(simulationResultTable(result));
+    } catch (error) { showRequestError(resultSlot, error); }
+    finally { run.disabled = false; }
+  });
+  content.replaceChildren(scenarioLabel, scenarioSelect, secondsLabel, secondsInput, run, resultSlot);
+  updateSeconds();
+}
+
+function simulationResultTable(result) {
+  const wrapper = document.createElement("div");
+  wrapper.append(message(`Scenario: ${result.scenario} · revision ${result.sourceRevision.slice(0, 12)}`));
+  wrapper.append(metricTable(["Metric", "Value"], Object.entries(result.persistedSimulation.metrics).map(([metric, value]) => [metric, formatValue(value)])));
+  return wrapper;
+}
+
+function comparisonTable(result) {
+  const wrapper = document.createElement("div");
+  wrapper.append(message(`Saved versus preview · ${result.scenario}`));
+  wrapper.append(metricTable(["Metric", "Saved", "Preview", "Delta", "Changed"], result.metricComparison.map((row) => [row.metric, formatValue(row.persisted), formatValue(row.candidate), formatValue(row.delta), row.changed ? "yes" : "no"])));
+  return wrapper;
+}
+
+function metricTable(headings, rows) {
+  const table = document.createElement("table"); table.className = "simulation-table";
+  const head = document.createElement("thead"); const headerRow = document.createElement("tr");
+  for (const heading of headings) { const cell = document.createElement("th"); cell.scope = "col"; cell.textContent = heading; headerRow.append(cell); }
+  head.append(headerRow);
+  const body = document.createElement("tbody");
+  for (const values of rows) { const row = document.createElement("tr"); values.forEach((value, index) => { const cell = document.createElement(index === 0 ? "th" : "td"); if (index === 0) cell.scope = "row"; cell.textContent = value; row.append(cell); }); body.append(row); }
+  table.append(head, body);
+  return table;
+}
+
+function optionalSeconds(input) { return input.disabled || input.value === "" ? undefined : Number(input.value); }
 
 function sectionWithFields(title, fields) {
   const section = sectionShell(title);

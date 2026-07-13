@@ -28,8 +28,10 @@ test("editor serves the static visual shell and packages its assets", async (con
   assert.equal(client.status, 200);
   const clientScript = await client.text();
   assert.equal(clientScript.includes("/api/definitions/inspect"), true);
-  for (const control of ["Edit", "Preview", "Save", "Cancel", "Undo last save"]) assert.equal(clientScript.includes(`\"${control}\"`), true);
-  for (const route of ["/api/definitions/edit/preview", "/api/definitions/edit/save", "/api/definitions/edit/rollback"]) assert.equal(clientScript.includes(route), true);
+  for (const control of ["Edit", "Preview", "Save", "Cancel", "Undo last save", "Run simulation", "Simulate preview"]) assert.equal(clientScript.includes(`\"${control}\"`), true);
+  for (const route of ["/api/definitions/edit/preview", "/api/definitions/edit/save", "/api/definitions/edit/rollback", "/api/definitions/simulation", "/api/definitions/simulation/run"]) assert.equal(clientScript.includes(route), true);
+  for (const contract of ["availableScenarios", "acceptsCustomSeconds", "persistedSimulation", "metricComparison"]) assert.equal(clientScript.includes(contract), true);
+  assert.equal(clientScript.includes("candidate: { path: selected.path, value: candidate }"), true);
   const head = await fetch(`${server.url}/client.js`, { method: "HEAD" });
   assert.equal(head.status, 200);
   assert.equal(await head.text(), "");

@@ -38,8 +38,8 @@ export async function getMovementEditModel(workspaceRoot: string, inputFile: str
 export async function previewMovementEdit(workspaceRoot: string, body: unknown): Promise<Record<string, unknown>> {
   const request = parseEditRequest(body);
   const current = await loadContext(workspaceRoot, request.file);
-  assertRevision(current.model.revision, request.expectedRevision);
-  assertEditableValue(current.model, request.path, request.value);
+  assertEditorRevision(current.model.revision, request.expectedRevision);
+  assertMovementEditableValue(current.model, request.path, request.value);
   const result = await setMovementValue(workspaceRoot, current.model.relativePath, request.path, request.value, true);
   return {
     previewStatus: result.status === "dry_run" ? "passed" : "failed",
@@ -55,8 +55,8 @@ export async function saveMovementEdit(workspaceRoot: string, body: unknown): Pr
   const request = parseEditRequest(body);
   return withEditorMutation(workspaceRoot, request.file, async () => {
     const current = await loadContext(workspaceRoot, request.file);
-    assertRevision(current.model.revision, request.expectedRevision);
-    assertEditableValue(current.model, request.path, request.value);
+    assertEditorRevision(current.model.revision, request.expectedRevision);
+    assertMovementEditableValue(current.model, request.path, request.value);
     const result = await setMovementValue(workspaceRoot, current.model.relativePath, request.path, request.value, false);
     if (result.status !== "passed") {
       return { saveStatus: "failed", previousRevision: current.model.revision, currentRevision: current.model.revision, snapshotId: result.snapshotId, changedFiles: result.changedFiles, savedPropertyPath: request.path, savedValue: request.value, inspection: current.inspection, validationFindings: result.errors };
@@ -70,7 +70,7 @@ export async function rollbackMovementEdit(workspaceRoot: string, body: unknown)
   const request = parseRollbackRequest(body);
   return withEditorMutation(workspaceRoot, request.file, async () => {
     const current = await loadContext(workspaceRoot, request.file);
-    assertRevision(current.model.revision, request.expectedRevision);
+    assertEditorRevision(current.model.revision, request.expectedRevision);
     const snapshot = await readSnapshot(workspaceRoot, request.snapshotId);
     if (snapshot === null || snapshot.targetPath !== current.model.relativePath || (snapshot.definitionKind !== undefined && snapshot.definitionKind !== "movement-profile")) {
       throw new EditorEditError("EDITOR_SNAPSHOT_MISMATCH", "Snapshot does not apply to the requested movement definition", 400);
@@ -123,11 +123,11 @@ function parseRollbackRequest(value: unknown): MovementRollbackRequest {
   return { file: value.file, expectedRevision: value.expectedRevision, snapshotId: value.snapshotId };
 }
 
-function assertRevision(current: string, expected: string): void {
+export function assertEditorRevision(current: string, expected: string): void {
   if (current !== expected) throw new EditorEditError("EDITOR_REVISION_CONFLICT", "Definition changed since it was loaded", 409);
 }
 
-function assertEditableValue(model: MovementEditModel, propertyPath: string, value: unknown): void {
+export function assertMovementEditableValue(model: MovementEditModel, propertyPath: string, value: unknown): void {
   const field = model.editableFields.find((candidate) => candidate.path === propertyPath);
   if (field === undefined) throw new EditorEditError("EDITOR_PROPERTY_NOT_EDITABLE", "Property path is not an editable movement primitive", 400, [{ code: ErrorCodes.MovementPropertyNotFound, path: propertyPath, message: "Only existing editable movement properties may be changed" }]);
   if (typeof value !== field.valueType) throw new EditorEditError("EDITOR_VALUE_TYPE_INVALID", `Property '${propertyPath}' requires a ${field.valueType} value`, 400, [{ code: ErrorCodes.MovementPropertyValueInvalid, path: propertyPath, message: `Expected ${field.valueType} value`, actual: typeof value, expected: field.valueType }]);

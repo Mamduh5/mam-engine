@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { discoverEditorDefinitions, EDITOR_PROTOCOL_VERSION, EditorInspectionError, inspectEditorDefinition } from "../../application/editor/editorDefinitionExplorer";
 import { EditorEditError, getMovementEditModel, previewMovementEdit, rollbackMovementEdit, saveMovementEdit } from "../../application/editor/movementEditor";
+import { getMovementSimulationModel, runMovementEditorSimulation } from "../../application/editor/movementSimulationEditor";
 import { SUPPORTED_DEFINITION_KINDS } from "../../application/definitions/definitionValidationRegistry";
 
 const DEFAULT_HOST = "127.0.0.1";
@@ -68,11 +69,17 @@ async function routeRequest(request: IncomingMessage, response: ServerResponse, 
       if (file === null || file.length === 0) { sendJson(response, method, 400, errorBody("EDITOR_FILE_REQUIRED", "A workspace-relative movement file is required"), true); return; }
       sendJson(response, method, 200, await getMovementEditModel(workspaceRoot, file), true); return;
     }
-    if (["/api/definitions/edit/preview", "/api/definitions/edit/save", "/api/definitions/edit/rollback"].includes(url.pathname)) {
+    if (url.pathname === "/api/definitions/simulation") {
+      if (method !== "GET" && method !== "HEAD") { response.setHeader("Allow", "GET, HEAD"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Simulation model accepts only GET and HEAD"), true); return; }
+      const file = url.searchParams.get("file");
+      if (file === null || file.length === 0) { sendJson(response, method, 400, errorBody("EDITOR_FILE_REQUIRED", "A workspace-relative movement file is required"), true); return; }
+      sendJson(response, method, 200, await getMovementSimulationModel(workspaceRoot, file), true); return;
+    }
+    if (["/api/definitions/edit/preview", "/api/definitions/edit/save", "/api/definitions/edit/rollback", "/api/definitions/simulation/run"].includes(url.pathname)) {
       if (method !== "POST") { response.setHeader("Allow", "POST"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Mutation route accepts only POST"), true); return; }
       validateMutationRequest(request, serverOrigin);
       const body = await readMutationBody(request);
-      const result = url.pathname.endsWith("/preview") ? await previewMovementEdit(workspaceRoot, body) : url.pathname.endsWith("/save") ? await saveMovementEdit(workspaceRoot, body) : await rollbackMovementEdit(workspaceRoot, body);
+      const result = url.pathname === "/api/definitions/simulation/run" ? await runMovementEditorSimulation(workspaceRoot, body) : url.pathname.endsWith("/preview") ? await previewMovementEdit(workspaceRoot, body) : url.pathname.endsWith("/save") ? await saveMovementEdit(workspaceRoot, body) : await rollbackMovementEdit(workspaceRoot, body);
       sendJson(response, method, 200, result, true); return;
     }
     if (method !== "GET" && method !== "HEAD") { response.setHeader("Allow", "GET, HEAD"); sendJson(response, method, 405, errorBody("EDITOR_METHOD_NOT_ALLOWED", "Only GET and HEAD are supported"), true); return; }

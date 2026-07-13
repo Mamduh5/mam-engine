@@ -2,7 +2,7 @@
 
 `mam-engine` is a Codex-native editor and engine for authoring, validating, simulating, inspecting, and testing third-person action games. Its primary user is Codex or another automated coding agent, so operations use explicit contracts and machine-readable results.
 
-The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phase 4 timeline authoring and real Godot animation-event synchronization are complete. Canonical Phase 5 spherical hitbox/hurtbox authoring, activation windows, deterministic simulation, and real Godot spatial-contact proof are complete. Canonical Phase 6 damage resolution, hit reactions, stagger, interruption, and real Godot runtime measurements are complete. Canonical Phase 7 is complete: the definition-driven training weapon is proven end to end through real Godot timeline, contact, stamina, damage, and reaction execution. Canonical Phase 8 is complete: the training behemoth's behavior cycle, telegraph timing, target points, targetability, and real Godot hurtbox construction are proven. Canonical Phase 9 is complete: the training encounter is proven through deterministic TypeScript orchestration, headless Godot execution, non-headless input, success and failure reports, completed-round checkpoint recovery, and invalid-checkpoint rejection. Canonical Phases 10A and 10B are complete: the loopback-only local editor provides definition exploration plus transactional single-property movement editing with preview, revision-conflict protection, snapshots, and undo. Other definition kinds remain read-only; simulation controls and broader visual authoring workflows remain pending.
+The long-term target is a Dauntless-style action hunting game. **Movement Editor v0.1, Camera Editor v0.1 through Phase 2A.2, and Targeting Editor v0.1 through Phase 2B.2 are complete.** Defensive, offensive, health, stamina, and targeted-combat primitives now exist with controlled Godot proofs. Canonical Phases 4 through 9 are complete with their scoped domain and Godot evidence. Canonical Phase 10 is complete: the loopback-only local editor provides definition exploration, transactional single-property movement editing, and deterministic saved-versus-preview movement simulation. The canonical roadmap through Phase 10 is complete; other definition kinds remain read-only and broader visual authoring workflows remain pending.
 
 ## Implemented through Phase 2A.2
 
@@ -55,7 +55,7 @@ Start the local editor at `http://127.0.0.1:4310`:
 npm run mam -- editor serve
 ```
 
-Phase 10B adds movement-profile editing to that local editor. Each save requires a successful dry-run preview and matching file revision, uses the existing transactional movement setter and pre-write snapshot, and can be undone through the existing rollback behavior. Other definition kinds remain read-only.
+Phase 10 completes the movement-profile workflow in that local editor. Each save requires a successful dry-run preview and matching file revision, uses the existing transactional setter and snapshot/rollback behavior, and can compare a validated candidate against the saved profile through the canonical deterministic movement simulation. Other definition kinds remain read-only.
 
 ```text
 mam movement inspect <file> [--json]
@@ -117,10 +117,10 @@ Rollback is reversible by default. Before restoring a selected historical snapsh
 ## Current limitations
 
 - No persistent live runtime session, live editing, visual camera editor, or explicit interactive shutdown command exists.
-- The visual editor supports transactional single-property movement-profile editing only; other definition kinds remain read-only, and simulation controls plus broader authoring workflows remain pending.
+- The visual editor supports transactional single-property movement-profile editing and deterministic saved-versus-preview movement simulation only; other definition kinds remain read-only, and broader authoring workflows remain pending.
 - There is no jumping, airborne movement, swimming, climbing, slopes, ledges, root motion, or animation state.
 - Targeting runtime is controlled fixture proof, not a complete combat system. There is no enemy, weapon, damage, audio, VFX, progression, multiplayer, or open-world implementation.
-- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, canonical Phase 8 training-behemoth runtime proofs, canonical Phase 9 training-encounter proof, and the Phase 10A/10B local editor foundation plus movement editing workflow exist; production gameplay, polished UI, save games, progression, and complete visual-editor workflows are not claimed complete.
+- Defensive, offensive, health, stamina, targeted-combat, real Godot action-timeline synchronization, canonical Phase 5 spherical contact-volume, canonical Phase 6 damage-reaction, canonical Phase 7 end-to-end training-weapon, canonical Phase 8 training-behemoth runtime proofs, canonical Phase 9 training-encounter proof, and the complete canonical Phase 10 local movement editor workflow exist; production gameplay, polished UI, save games, progression, and broader visual-editor workflows are not claimed complete.
 
 ## Documentation
 
