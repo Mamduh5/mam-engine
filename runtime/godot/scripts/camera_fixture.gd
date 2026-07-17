@@ -142,7 +142,7 @@ func _collision(scenario: Dictionary) -> Dictionary:
 		minimum = minf(minimum, float(state.actualDistance))
 		if bool(state.collisionDetected):
 			detected = true
-			compressed = float(state.actualDistance)
+			compressed = minf(compressed, float(state.actualDistance))
 	return {"desiredDistance": desired, "minimumObservedDistance": minimum, "compressedDistance": compressed, "finalRecoveredDistance": state.actualDistance, "compressionRatio": compressed / desired, "recoveryDurationSeconds": maxf(0.0, (steps - obstruction_steps) * float(scenario.fixedDeltaSeconds)), "physicsSteps": steps, "fixedDeltaSeconds": scenario.fixedDeltaSeconds, "collisionDetected": detected}
 
 func _basis() -> Dictionary:
