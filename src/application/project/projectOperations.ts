@@ -8,6 +8,8 @@ import type { CameraProfile } from "../../domain/camera/cameraTypes";
 import { validateCameraDefinition } from "../../domain/camera/cameraValidation";
 import type { MovementProfile } from "../../domain/movement/movementTypes";
 import { validateMovementDefinition } from "../../domain/movement/movementValidation";
+import type { TargetingProfile } from "../../domain/targeting/targetingTypes";
+import { validateTargetingDefinition } from "../../domain/targeting/targetingValidation";
 import type { MamProjectManifest, ProjectValidationFinding } from "../../domain/project/projectTypes";
 import { safeRelativeJson, validateProjectManifest } from "../../domain/project/projectValidation";
 import { atomicWriteText, fileExists, formatJson } from "../../infrastructure/files/jsonFileStore";
@@ -39,6 +41,17 @@ const basicCamera = (id: string, displayName: string): CameraProfile => ({
   lens: { fieldOfViewDegrees: 65, nearClipDistance: 0.1, farClipDistance: 500 }
 });
 
+const basicTargeting = (id: string, displayName: string): TargetingProfile => ({
+  schemaVersion: 1,
+  kind: "targeting-profile",
+  id,
+  displayName,
+  acquisition: { maximumDistance: 30, maximumAngleDegrees: 60, requireLineOfSight: true },
+  scoring: { distanceWeight: 0.45, angleWeight: 0.45, priorityWeight: 0.1 },
+  retention: { maximumDistanceMultiplier: 1.2, additionalAngleDegrees: 15, lostTargetGraceSeconds: 0.5, autoReacquire: true },
+  switching: { enabled: true, cooldownSeconds: 0.2, maximumAngleDegrees: 120, minimumSeparationDegrees: 2 }
+});
+
 export interface LoadedProject { root: string; manifestPath: string; manifest: MamProjectManifest }
 
 export async function initProject(workspaceRoot: string, directory?: string): Promise<OperationResult> {
@@ -53,7 +66,7 @@ export async function initProject(workspaceRoot: string, directory?: string): Pr
   const meaningful = entries.filter((entry) => entry !== ".git");
   if (meaningful.length > 0) return operationResult({ command, status: "failed", input, errors: [error(ErrorCodes.ProjectDirectoryNotEmpty, undefined, "Project init requires an empty directory", meaningful, [])] });
   const displayName = title(path.basename(target) || "mam project");
-  const manifest: MamProjectManifest = { schemaVersion: 1, kind: "mam-project", id: `${slug(path.basename(target) || "mam-project")}-project`, displayName, definitionRoot: "definitions", entryMovementFile: null, entryCameraFile: null };
+  const manifest: MamProjectManifest = { schemaVersion: 1, kind: "mam-project", id: `${slug(path.basename(target) || "mam-project")}-project`, displayName, definitionRoot: "definitions", entryMovementFile: null, entryCameraFile: null, entryTargetingFile: null };
   const generatedReadme = `# ${displayName}\n\nCreated with mam-engine.\n\n## Start\n\n\`\`\`sh\nmam movement create movement/player.json\nmam project validate\nmam project play\n\`\`\`\n`;
   await mkdir(path.join(target, "definitions", "movement"), { recursive: true });
   await atomicWriteText(manifestPath, formatJson(manifest));
@@ -110,6 +123,33 @@ export async function createCameraProfile(workspaceRoot: string, inputFile: stri
   return operationResult({ command, status: "passed", input: { file: inputFile }, data: { file: relativeFile, profile, projectEntryCameraFile: relativeFile }, changedFiles: [relativeFile, ...(manifestChanged ? [PROJECT_MANIFEST_FILE] : [])] });
 }
 
+export async function createTargetingProfile(workspaceRoot: string, inputFile: string): Promise<OperationResult> {
+  const command = "targeting.create";
+  const project = await loadProject(workspaceRoot);
+  if (!("manifest" in project)) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: project.errors });
+  const relativeFile = resolveDefinitionCreatePath(project.manifest, inputFile);
+  if (relativeFile === null) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: [error(ErrorCodes.ProjectWriteBlocked, inputFile, "Targeting path must be a JSON file inside the project definition root")] });
+  const absoluteFile = path.join(project.root, ...relativeFile.split("/"));
+  if (await fileExists(absoluteFile)) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: [error(ErrorCodes.ProjectWriteBlocked, relativeFile, "Targeting create will not overwrite an existing file")] });
+  const base = path.posix.basename(relativeFile, ".json");
+  const profile = basicTargeting(slug(base), title(base));
+  const validation = validateTargetingDefinition(profile);
+  if (!validation.valid) return operationResult({ command, status: "failed", input: { file: inputFile }, errors: validation.errors });
+  const updatedManifest: MamProjectManifest = { ...project.manifest, entryTargetingFile: relativeFile };
+  const originalManifestText = await readFile(project.manifestPath, "utf8");
+  const updatedManifestText = formatJson(updatedManifest);
+  const manifestChanged = originalManifestText !== updatedManifestText;
+  try {
+    await atomicWriteText(absoluteFile, formatJson(profile));
+    if (manifestChanged) await atomicWriteText(project.manifestPath, updatedManifestText);
+  } catch (caught) {
+    await rm(absoluteFile, { force: true }).catch(() => undefined);
+    if (manifestChanged) await atomicWriteText(project.manifestPath, originalManifestText).catch(() => undefined);
+    throw caught;
+  }
+  return operationResult({ command, status: "passed", input: { file: inputFile }, data: { file: relativeFile, profile, projectEntryTargetingFile: relativeFile }, changedFiles: [relativeFile, ...(manifestChanged ? [PROJECT_MANIFEST_FILE] : [])] });
+}
+
 export async function validateProject(workspaceRoot: string): Promise<OperationResult> {
   const command = "project.validate";
   const inspected = await inspectProjectWorkspace(workspaceRoot);
@@ -117,9 +157,9 @@ export async function validateProject(workspaceRoot: string): Promise<OperationR
   return operationResult({ command, status: inspected.valid ? "passed" : "failed", data: inspected, errors, changedFiles: [] });
 }
 
-export async function inspectProjectWorkspace(workspaceRoot: string): Promise<{ valid: boolean; initialized: boolean; manifest: MamProjectManifest | null; manifestPath: string; definitionCount: number; validDefinitionCount: number; entryMovementValid: boolean; entryCameraValid: boolean; findings: ProjectValidationFinding[] }> {
+export async function inspectProjectWorkspace(workspaceRoot: string): Promise<{ valid: boolean; initialized: boolean; manifest: MamProjectManifest | null; manifestPath: string; definitionCount: number; validDefinitionCount: number; entryMovementValid: boolean; entryCameraValid: boolean; entryTargetingValid: boolean; findings: ProjectValidationFinding[] }> {
   const loaded = await loadProject(workspaceRoot);
-  if (!("manifest" in loaded)) return { valid: false, initialized: false, manifest: null, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: 0, validDefinitionCount: 0, entryMovementValid: false, entryCameraValid: false, findings: loaded.findings };
+  if (!("manifest" in loaded)) return { valid: false, initialized: false, manifest: null, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: 0, validDefinitionCount: 0, entryMovementValid: false, entryCameraValid: false, entryTargetingValid: false, findings: loaded.findings };
   const findings: ProjectValidationFinding[] = [];
   const definitionRoot = path.join(loaded.root, ...loaded.manifest.definitionRoot.split("/"));
   try { if (!(await stat(definitionRoot)).isDirectory()) findings.push({ code: "PROJECT_DEFINITION_ROOT_INVALID", path: "definitionRoot", message: "Definition root is not a directory" }); }
@@ -148,7 +188,12 @@ export async function inspectProjectWorkspace(workspaceRoot: string): Promise<{ 
     if (!loaded.manifest.entryCameraFile.startsWith(`${loaded.manifest.definitionRoot}/`) || kinds.get(loaded.manifest.entryCameraFile) !== "camera-profile") findings.push({ code: "PROJECT_ENTRY_CAMERA_INVALID", path: "entryCameraFile", file: loaded.manifest.entryCameraFile, message: "Project entry camera must resolve to a valid camera-profile inside definitionRoot" });
     else entryCameraValid = true;
   }
-  return { valid: findings.length === 0, initialized: true, manifest: loaded.manifest, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: files.length, validDefinitionCount, entryMovementValid, entryCameraValid, findings };
+  let entryTargetingValid = false;
+  if (loaded.manifest.entryTargetingFile !== undefined && loaded.manifest.entryTargetingFile !== null) {
+    if (!loaded.manifest.entryTargetingFile.startsWith(`${loaded.manifest.definitionRoot}/`) || kinds.get(loaded.manifest.entryTargetingFile) !== "targeting-profile") findings.push({ code: "PROJECT_ENTRY_TARGETING_INVALID", path: "entryTargetingFile", file: loaded.manifest.entryTargetingFile, message: "Project entry targeting must resolve to a valid targeting-profile inside definitionRoot" });
+    else entryTargetingValid = true;
+  }
+  return { valid: findings.length === 0, initialized: true, manifest: loaded.manifest, manifestPath: PROJECT_MANIFEST_FILE, definitionCount: files.length, validDefinitionCount, entryMovementValid, entryCameraValid, entryTargetingValid, findings };
 }
 
 export async function loadProject(workspaceRoot: string): Promise<LoadedProject | { errors: OperationError[]; findings: ProjectValidationFinding[] }> {

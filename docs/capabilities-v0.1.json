@@ -1,5 +1,5 @@
 {
-  "releaseVersion": "0.3.0",
+  "releaseVersion": "0.4.0",
   "completedCanonicalPhases": [
     0,
     1,
@@ -95,10 +95,10 @@
   ],
   "productionConsumerRuntimeCategories": [
     "movement",
-    "camera"
+    "camera",
+    "targeting"
   ],
   "explicitlyUnsupportedCapabilities": [
-    "production-targeting-runtime",
     "asset-authoring",
     "progression",
     "multiplayer",

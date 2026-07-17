@@ -29,7 +29,7 @@ export const COMMAND_HELP: Record<CommandGroup, readonly string[]> = {
     `camera set <file> <property-path> <json-value> ${commonSetFlags}`
   ],
   targeting: [
-    "targeting inspect <file> [--json]", "targeting validate <file> [--json]",
+    "targeting create <file> [--json]", "targeting inspect <file> [--json]", "targeting validate <file> [--json]",
     "targeting simulate <file> --scenario <acquire|eligibility|tie-break|retention|loss|reacquire|switch-left|switch-right|switch-cooldown> [--seconds <number>] [--fixed-delta <number>] [--json]",
     `targeting runtime-test <file> --camera <camera-file> --scenario <id> [--seconds <number>] [--fixed-delta <number>] ${commonRuntimeFlags}`,
     `targeting set <file> <property-path> <json-value> ${commonSetFlags}`

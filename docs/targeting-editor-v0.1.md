@@ -35,6 +35,7 @@ Switching measures signed horizontal displacement from the current target direct
 ## CLI and scenarios
 
 ```text
+mam targeting create <file> [--json]
 mam targeting inspect <file> [--json]
 mam targeting validate <file> [--json]
 mam targeting simulate <file> --scenario <acquire|eligibility|tie-break|retention|loss|reacquire|switch-left|switch-right|switch-cooldown> [--seconds <number>] [--fixed-delta <number>] [--json]
@@ -51,3 +52,9 @@ Inspect, validate, simulate, and dry-run set are zero-write operations. Real set
 Node and real Godot tests cover the normalized dual-profile request, deterministic plans, real spatial LOS, acquisition/scoring/ties, retention/grace/loss/reacquisition, switching/cooldown, target-driven framing, lens readback, session lifecycle, and file safety. Candidate and event data remain ephemeral.
 
 This controlled targeting fixture is not production gameplay and does not itself execute combat, enemies, weapons, damage, animation, audio, VFX, networking, multiplayer, or live runtime editing. Later canonical phases provide separate scoped fixtures without widening this targeting contract.
+
+## Production consumer boundary
+
+Initialized projects may optionally register `entryTargetingFile`; `mam targeting create` authors the canonical defaults transactionally. Consumer sync validates all configured entries before writing a separate integrity-protected targeting bundle. `MamTargetingBundleLoader` fails closed, and `MamTargetingRuntime` accepts explicit game-owned camera basis, immutable candidates, caller-computed visibility, and lock/unlock/switch requests. The production core owns the canonical algorithm and structured lock state; the controlled fixture supplies its real ray-query result as `visible` and drives that same core.
+
+The game owns candidate nodes, lifecycle, positions, aim points, LOS physics queries, input mapping, camera, movement, HUD, and combat. The addon performs no discovery and creates no target, scene, input action, HUD, camera, or combat object. Packed-consumer evidence covers acquisition, order-independent ties, retention/grace, unlock, directional switching/cooldown, malformed input, unbind, and use after npm removal.

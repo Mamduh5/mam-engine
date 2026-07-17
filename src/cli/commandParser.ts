@@ -90,6 +90,7 @@ export type ParsedCommand =
   | { kind: "camera.runtime-test"; file: string; scenario: CameraScenario; seconds?: number; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
   | { kind: "camera.set"; file: string; propertyPath: string; value: unknown; dryRun: boolean; json: boolean }
   | { kind: "targeting.inspect"; file: string; json: boolean }
+  | { kind: "targeting.create"; file: string; json: boolean }
   | { kind: "targeting.validate"; file: string; json: boolean }
   | { kind: "targeting.simulate"; file: string; scenario: TargetingScenario; seconds?: number; fixedDelta?: number; json: boolean }
   | { kind: "targeting.runtime-test"; file: string; camera: string; scenario: TargetingRuntimeScenario; seconds?: number; fixedDelta?: number; godot?: string; keepSession: boolean; json: boolean }
@@ -124,7 +125,7 @@ export const SUPPORTED_COMMAND_ACTIONS = {
   godot: ["consumer"],
   movement: ["create", "inspect", "validate", "simulate", "set", "runtime-test"],
   camera: ["create", "inspect", "validate", "simulate", "set", "runtime-test"],
-  targeting: ["inspect", "validate", "simulate", "set", "runtime-test"],
+  targeting: ["create", "inspect", "validate", "simulate", "set", "runtime-test"],
   "defensive-action": ["inspect", "validate", "simulate", "set", "runtime-test"],
   "offensive-action": ["inspect", "validate", "simulate", "set", "runtime-test"],
   health: ["inspect", "validate", "simulate-hit", "set", "runtime-test"],
@@ -378,6 +379,7 @@ function parseDefensiveActionCommand(action: string, args: string[]): ParsedComm
 }
 
 function parseTargetingCommand(action: string, args: string[]): ParsedCommand {
+  if (action === "create") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, "targeting create requires exactly one file argument"); return { kind: "targeting.create", file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "inspect" || action === "validate") { const parsed = parseArguments(args, new Set(["--json"])); requirePositionals(parsed, 1, `targeting ${action} requires exactly one file argument`); return { kind: `targeting.${action}`, file: parsed.positional[0] as string, json: parsed.flags.has("--json") }; }
   if (action === "simulate") { const parsed = parseArguments(args, new Set(["--json", "--scenario", "--seconds", "--fixed-delta"]), new Set(["--scenario", "--seconds", "--fixed-delta"])); requirePositionals(parsed, 1, "targeting simulate requires exactly one file argument"); const scenario = parsed.flags.get("--scenario"); if (typeof scenario !== "string" || !targetingScenarios.has(scenario as TargetingScenario)) throw new CliParseError("--scenario must be one of: acquire, eligibility, tie-break, retention, loss, reacquire, switch-left, switch-right, switch-cooldown", ErrorCodes.TargetingScenarioUnsupported); const seconds = optionalPositiveNumber(parsed.flags.get("--seconds"), "--seconds"); const fixedDelta = optionalPositiveNumber(parsed.flags.get("--fixed-delta"), "--fixed-delta"); return { kind: "targeting.simulate", file: parsed.positional[0] as string, scenario: scenario as TargetingScenario, ...(seconds === undefined ? {} : { seconds }), ...(fixedDelta === undefined ? {} : { fixedDelta }), json: parsed.flags.has("--json") }; }
   if (action === "runtime-test") {

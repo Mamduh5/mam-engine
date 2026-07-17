@@ -6,12 +6,13 @@ import path from "node:path";
 import test from "node:test";
 
 import { createMovementProfile, initProject } from "../src/application/project/projectOperations";
-import { GODOT_ADAPTER_CONTRACT, GODOT_BUNDLE_FILE, GODOT_CAMERA_ADAPTER_CONTRACT, GODOT_CAMERA_BUNDLE_FILE, GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA, GODOT_MANIFEST_FILE, GODOT_RUNTIME_BUNDLE_SCHEMA, installGodotConsumer, syncGodotConsumer } from "../src/application/godotConsumer/godotConsumerOperations";
+import { GODOT_ADAPTER_CONTRACT, GODOT_BUNDLE_FILE, GODOT_CAMERA_ADAPTER_CONTRACT, GODOT_CAMERA_BUNDLE_FILE, GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA, GODOT_MANIFEST_FILE, GODOT_RUNTIME_BUNDLE_SCHEMA, GODOT_TARGETING_ADAPTER_CONTRACT, GODOT_TARGETING_BUNDLE_FILE, GODOT_TARGETING_RUNTIME_BUNDLE_SCHEMA, installGodotConsumer, syncGodotConsumer } from "../src/application/godotConsumer/godotConsumerOperations";
 import { atomicWriteText } from "../src/infrastructure/files/jsonFileStore";
 import { ErrorCodes } from "../src/shared/errorCodes";
 import { executeCli } from "../src/cli/main";
 
 const CAMERA_SOURCE_FILE = "definitions/camera/player.json";
+const TARGETING_SOURCE_FILE = "definitions/targeting/player.json";
 
 async function project(context: test.TestContext): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), "mam godot consumer "));
@@ -25,6 +26,13 @@ async function configureCamera(root: string): Promise<string> {
   const content = await readFile(path.resolve(__dirname, "../..", "examples", "camera", "default.json"), "utf8");
   const target = path.join(root, ...CAMERA_SOURCE_FILE.split("/")); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, content, "utf8");
   const manifestPath = path.join(root, "mam-project.json"); const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Record<string, unknown>; manifest.entryCameraFile = CAMERA_SOURCE_FILE; await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  return content;
+}
+
+async function configureTargeting(root: string): Promise<string> {
+  const content = await readFile(path.resolve(__dirname, "../..", "examples", "targeting", "default.json"), "utf8");
+  const target = path.join(root, ...TARGETING_SOURCE_FILE.split("/")); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, content, "utf8");
+  const manifestPath = path.join(root, "mam-project.json"); const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Record<string, unknown>; manifest.entryTargetingFile = TARGETING_SOURCE_FILE; await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   return content;
 }
 
@@ -82,6 +90,18 @@ test("sync writes a separate deterministic camera bundle and check verifies ever
   assert.deepEqual((await syncGodotConsumer(root, false)).changedFiles, [GODOT_CAMERA_BUNDLE_FILE]); assert.equal(await readFile(cameraPath, "utf8"), cameraBytes);
   await writeFile(cameraPath, "not json\n"); const malformed = await syncGodotConsumer(root, true); assert.equal(malformed.errors[0]?.code, ErrorCodes.GodotRuntimeBundleMalformed); assert.equal(malformed.errors[0]?.path, GODOT_CAMERA_BUNDLE_FILE);
   await writeFile(cameraPath, cameraBytes.replace("payloadJson", "payloadJSON")); const stale = await syncGodotConsumer(root, true); assert.equal(stale.errors[0]?.code, ErrorCodes.GodotRuntimeBundleStale); assert.equal(stale.errors[0]?.path, GODOT_CAMERA_BUNDLE_FILE);
+});
+
+test("sync writes a separate deterministic targeting bundle and check verifies configured targeting", async (context) => {
+  const root = await project(context); const targetingSource = await configureTargeting(root); assert.equal((await installGodotConsumer(root)).status, "passed");
+  const missing = await syncGodotConsumer(root, true); assert.equal(missing.status, "failed"); assert.deepEqual(missing.errors.map((error) => error.path), [GODOT_BUNDLE_FILE, GODOT_TARGETING_BUNDLE_FILE]);
+  const first = await syncGodotConsumer(root, false); assert.equal(first.status, "passed"); assert.deepEqual(first.changedFiles, [GODOT_BUNDLE_FILE, GODOT_TARGETING_BUNDLE_FILE]);
+  const targetPath = path.join(root, ...GODOT_TARGETING_BUNDLE_FILE.split("/")); const bytes = await readFile(targetPath, "utf8"); assert.ok(bytes.endsWith("\n"));
+  const bundle = JSON.parse(bytes) as { schemaVersion: string; payloadJson: string; integrity: { payloadSha256: string } }; const payload = JSON.parse(bundle.payloadJson) as { adapterContractVersion: string; definition: { kind: string; schemaVersion: number; sourcePath: string; sourceSha256: string; profile: { kind: string } } };
+  assert.equal(bundle.schemaVersion, GODOT_TARGETING_RUNTIME_BUNDLE_SCHEMA); assert.equal(bundle.integrity.payloadSha256, sha256(bundle.payloadJson)); assert.equal(payload.adapterContractVersion, GODOT_TARGETING_ADAPTER_CONTRACT); assert.equal(payload.definition.kind, "targeting-profile"); assert.equal(payload.definition.schemaVersion, 1); assert.equal(payload.definition.sourcePath, TARGETING_SOURCE_FILE); assert.equal(payload.definition.sourceSha256, sha256(targetingSource)); assert.equal(payload.definition.profile.kind, "targeting-profile");
+  assert.equal((first.data as { targetingBundle: { bundleFile: string } }).targetingBundle.bundleFile, GODOT_TARGETING_BUNDLE_FILE); assert.equal((await syncGodotConsumer(root, true)).status, "passed"); assert.deepEqual((await syncGodotConsumer(root, false)).changedFiles, []);
+  await rm(targetPath); const targetMissing = await syncGodotConsumer(root, true); assert.deepEqual(targetMissing.errors.map((error) => error.path), [GODOT_TARGETING_BUNDLE_FILE]); assert.deepEqual((await syncGodotConsumer(root, false)).changedFiles, [GODOT_TARGETING_BUNDLE_FILE]);
+  await writeFile(targetPath, "not json\n"); const malformed = await syncGodotConsumer(root, true); assert.equal(malformed.errors[0]?.code, ErrorCodes.GodotRuntimeBundleMalformed); assert.equal(malformed.errors[0]?.path, GODOT_TARGETING_BUNDLE_FILE);
 });
 
 test("sync preserves the prior valid bundle on validation and write failures", async (context) => {

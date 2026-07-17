@@ -1,10 +1,10 @@
-# Godot consumer movement and camera runtime v0.3
+# Godot consumer runtime v0.4
 
 ## Scope
 
-`mam-engine` 0.3.0 ships a scene-free Godot 4.7 addon for grounded movement and reusable third-person camera control. The game owns every scene and node. The addon consumes deterministic generated bundles and does not require Node, npm, the engine checkout, fixtures, or process transport after export.
+`mam-engine` 0.4.0 ships a scene-free Godot 4.7 addon for grounded movement, reusable third-person camera control, and production targeting. The game owns every scene and node. The addon consumes deterministic generated bundles and does not require Node, npm, the engine checkout, fixtures, or process transport after export.
 
-The project manifest keeps the required `entryMovementFile` and adds optional `entryCameraFile`. `mam camera create camera/player.json` creates a complete validated camera-profile from the canonical prototype values and registers it without overwriting an existing file. Legacy and movement-only manifests may omit the camera entry. A configured camera path must remain inside `definitionRoot` and resolve to a valid `camera-profile`; there is no hidden example fallback.
+The project manifest keeps required `entryMovementFile` plus optional `entryCameraFile` and `entryTargetingFile`. `mam camera create camera/player.json` and `mam targeting create targeting/player.json` create complete validated profiles from canonical defaults and register them without overwrite. Legacy, movement-only, and movement-plus-camera manifests remain valid. Configured paths must remain inside `definitionRoot` and resolve to the matching kind; there is no example fallback.
 
 ## Install and synchronization
 
@@ -15,15 +15,15 @@ mam godot consumer sync [--project <directory>] [--check] [--json]
 
 Install owns only `addons/mam_engine/`. Its `mam-managed-files.json` records package/contract versions and every installed file's SHA-256. Repeated installation is a no-op. Upgrades replace or remove only previously managed files and fail before writes on local drift or an unowned conflict. No fixture scene, controlled wall, mock target, dispatcher, or process transport is installed.
 
-Movement synchronization remains required and preserves `mam_generated/mam_runtime_bundle.json` and `mam.godot-runtime-bundle/v1`. When `entryCameraFile` is configured, the same operation also writes `mam_generated/mam_camera_runtime_bundle.json` using `mam.godot-camera-runtime-bundle/v1` and `mam.godot-camera-adapter/v1`. Each deterministic payload contains the package and adapter contract versions, canonical kind/schema, project-relative source path, SHA-256 of the exact source bytes, and normalized validated profile; the envelope includes a payload SHA-256. Stable key ordering, two-space indentation, and one trailing newline are used, with no timestamps, absolute paths, or machine values.
+Movement synchronization remains required and preserves `mam_generated/mam_runtime_bundle.json` and its contract. Configured camera and targeting entries add `mam_camera_runtime_bundle.json` and `mam_targeting_runtime_bundle.json`; targeting uses `mam.godot-targeting-runtime-bundle/v1` and `mam.godot-targeting-adapter/v1`. Each deterministic payload contains package/adapter versions, canonical kind/schema, project-relative source path, SHA-256 of exact source bytes, and the normalized validated profile; the envelope includes a payload SHA-256. Stable key ordering, two-space indentation, one trailing newline, and no timestamps or machine paths are guaranteed.
 
 Sync validates every configured source before writing any bundle. A failure preserves prior valid generated files. `--check` performs no writes and requires the managed addon and every configured bundle to be present and exact.
 
 ## Bundle loaders
 
-`MamRuntimeBundleLoader.load_bundle()` loads movement. `MamCameraBundleLoader.load_bundle("res://mam_generated/mam_camera_runtime_bundle.json")` loads camera. Both return `{status: "passed" | "failed", data: {}, diagnostics: []}` and never return a partially usable profile.
+`MamRuntimeBundleLoader.load_bundle()` loads movement, `MamCameraBundleLoader.load_bundle(...)` loads camera, and `MamTargetingBundleLoader.load_bundle("res://mam_generated/mam_targeting_runtime_bundle.json")` loads targeting. All return `{status: "passed" | "failed", data: {}, diagnostics: []}` and never return a partially usable profile.
 
-The camera loader fails closed for missing or unreadable files, malformed JSON, unsupported bundle or adapter contracts, payload-integrity mismatch, wrong kind/schema, missing required data or canonical source, source-byte hash drift, and an incomplete normalized profile. Canonical semantic validation remains TypeScript-owned at sync time; Godot validates the transport and runtime boundary without substituting defaults.
+Camera and targeting loaders fail closed for missing or unreadable files, malformed JSON, unsupported bundle or adapter contracts, payload-integrity mismatch, wrong kind/schema, incomplete fields/profile, missing canonical source, or source-byte hash drift. Canonical semantic validation remains TypeScript-owned at sync time; Godot validates the transport/runtime boundary without defaults.
 
 ## Movement API
 
@@ -52,8 +52,16 @@ The game owns nodes, scene placement, input mapping, target selection, the contr
 
 Structured state includes `yawDegrees`, `pitchDegrees`, `desiredDistance`, `actualDistance`, `collisionDetected`, `rigPosition`, `lookAtPosition`, `cameraForward`, `cameraRight`, `manualOrbitActive`, `recentering`, `accepted`, and `diagnostics`. Horizontal `cameraForward` and `cameraRight` are normalized, orthogonal, and can be passed directly to the movement runtime as its camera basis.
 
+## Targeting API
+
+`MamTargetingRuntime` exposes `bind(profile)`, `physics_step(delta, input)`, `clear_target()`, and `unbind()`. It reads no `Input`, nodes, groups, scene tree, physics layers, camera nodes, or global state. Each step receives `origin`, `cameraForward`, `cameraRight`, `cameraUp`, `candidates`, `lockRequested`, `unlockRequested`, and `switchDirection`; negative X switches left and positive X switches right.
+
+Each candidate contains exactly stable `id`, `position`, `aimPosition`, `targetable`, caller-supplied `visible`, and normalized `priority`. Duplicate IDs and malformed values fail with structured diagnostics. The runtime copies candidate values and never mutates caller data. The game performs LOS queries and supplies `visible`; the addon never casts rays or discovers targetable nodes.
+
+The runtime owns canonical acquisition filters/scoring, score/angle/distance/ordinal-ID ties, retention bounds, fixed-step grace and loss, optional deterministic reacquisition, explicit unlock, signed-horizontal switching, and cooldown. State includes mode/lock, target ID/position/aim point/distance/score, grace and cooldown remaining, acquisition/loss/switch flags, evaluations, acceptance, and diagnostics. HUD, movement coordination, later camera framing, and later combat may consume this state without giving the runtime ownership of game nodes.
+
 ## Evidence and limitations
 
-Focused Node tests cover legacy manifests, camera creation, invalid entries, deterministic dual-bundle sync/check, preservation on failure, and managed-addon upgrades. Godot and packed-consumer evidence exercises the installed public loader/runtime with consumer-owned nodes after npm is unavailable. The controlled camera fixture uses the production camera core; fixture scenes are not public addon content.
+Focused Node tests cover legacy manifests, profile creation, invalid entries, deterministic multi-bundle sync/check, preservation on failure, and managed-addon upgrades. Godot and packed-consumer evidence exercises installed public loaders/runtimes after npm is unavailable. Controlled movement, camera, and targeting fixtures use production cores; fixture scenes, targets, walls, and transport are not public addon content.
 
-This contract does not provide targeting, lock-on framing, combat or cinematic cameras, camera zones, shake, cutscenes, photo mode, input maps, game UI, animation, or game-scene integration. Production targeting remains ENGINE-GAP-001C, and integration into `3d-combat-game` remains game-owned follow-up work.
+This contract does not provide target discovery, enemy AI, combat, damage, lock-on camera framing, camera zones, input maps, game UI, animation, networking, or game-scene integration. GAME-004 enemy and targeting integration remains game-owned follow-up work.

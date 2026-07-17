@@ -51,15 +51,15 @@ Translates validated definitions and fixture commands into Godot execution, then
 
 Provide controlled worlds, initial state, inputs, clocks, and expected measurements for one vertical slice. A fixture cannot add a private authoring model.
 
-### Production Godot consumer - movement and camera implemented in 0.3.0
+### Production Godot consumer - movement, camera, and targeting implemented in 0.4.0
 
-The CLI installs only a manifest-owned addon. Sync requires the canonically validated movement entry and preserves its existing bundle contract; an optional validated `entryCameraFile` produces a separate integrity-protected camera bundle. Validation completes before writes, `--check` is zero-write, and deterministic output excludes timestamps and machine paths.
+The CLI installs only a manifest-owned addon. Sync requires the canonically validated movement entry and preserves its existing bundle contract; optional validated `entryCameraFile` and `entryTargetingFile` values produce separate integrity-protected bundles. Validation completes before writes, `--check` is zero-write, and deterministic output excludes timestamps and machine paths.
 
-The game owns scenes, nodes, input actions, lifecycle, targets, and presentation. The production movement runtime binds a game-owned `CharacterBody3D`; the camera runtime binds a game-owned target, rig pivots, `Camera3D`, and a `ShapeCast3D` unless profile collision is disabled. The camera receives explicit orbit/movement input, owns only rig/lens/collision state while bound, and publishes a horizontal normalized basis for movement. Shared movement and camera cores keep controlled fixtures from becoming alternate production algorithms.
+The game owns scenes, nodes, input actions, lifecycle, visibility queries, candidate nodes, and presentation. Movement and camera bind game-owned nodes. Targeting binds only a validated profile and accepts explicit origin, camera basis, immutable candidate values, visibility, lock/unlock requests, and switch direction. It owns selection, stable ties, retention, grace, reacquisition, and cooldown state. Shared production cores keep controlled fixtures from becoming alternate algorithms.
 
 The runtime dispatcher validates `mam.runtime/v1` and selects one of the controlled fixture categories recorded in the capability manifest. All use the same atomic request/readiness/response transport, bounded process owner, session store, correlation checks, and changed-file audit. Godot receives validated profiles and ephemeral scenario data rather than treating source definition paths as runtime truth.
 
-Targeting Phase 2B.2 keeps candidates, world events, and lock state as ephemeral runtime inputs. The targeting fixture performs real dedicated-mask ray queries and independently evaluates acquisition, retention, switching, and framing using existing camera fields; it adds no canonical properties or combat semantics.
+Targeting Phase 2B.2 keeps candidates and world events ephemeral. Its controlled fixture performs dedicated-mask ray queries, converts the result to caller-owned visibility evidence, and drives the production targeting core; fixture-only geometry never enters the public addon.
 
 ### Reports - CLI operation envelope implemented
 

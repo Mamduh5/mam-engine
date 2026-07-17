@@ -4,7 +4,7 @@ Progress is gated by evidence, not dates. A phase exits only when its contracts,
 
 ## Production consumer track
 
-ENGINE-GAP-001A is complete in 0.2.0: public install/sync commands, deterministic movement bundle, scene-free Godot addon, shared fixture/production movement core, and packed external-consumer evidence. ENGINE-GAP-001B is complete in 0.3.0: optional project camera entry and creation, a separate deterministic camera bundle, public loader/runtime, explicit game-owned bindings and input, real `ShapeCast3D` collision, lens and movement-basis output, and packed-consumer evidence. ENGINE-GAP-001C production targeting remains deferred; GAME-003 camera integration remains game-owned follow-up work. Controlled targeting fixtures are not production consumers.
+ENGINE-GAP-001A is complete in 0.2.0 and ENGINE-GAP-001B in 0.3.0. ENGINE-GAP-001C is complete in 0.4.0: optional targeting project authoring, deterministic separate bundle synchronization, a fail-closed loader, a scene-free production targeting core/runtime, explicit candidates and visibility, stable ties, retention/grace/reacquisition, directional switching/cooldown, shared controlled-fixture use, and packed external-consumer evidence. GAME-003 camera and GAME-004 enemy/targeting integration remain game-owned follow-up work.
 
 ## Phase 0 — Repository foundation and contracts (complete)
 

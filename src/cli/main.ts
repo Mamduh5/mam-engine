@@ -91,7 +91,7 @@ import { runEncounterRuntimeTest } from "../application/runtime/runEncounterRunt
 import { runEncounterInteractiveTest } from "../application/runtime/runEncounterInteractiveTest";
 import { runEncounterRecoveryTest } from "../application/runtime/runEncounterRecoveryTest";
 import { serveEditor } from "../application/editor/serveEditor";
-import { createCameraProfile, createMovementProfile, initProject, validateProject } from "../application/project/projectOperations";
+import { createCameraProfile, createMovementProfile, createTargetingProfile, initProject, validateProject } from "../application/project/projectOperations";
 import { runProjectPlay } from "../application/runtime/runProjectPlay";
 import { installGodotConsumer, syncGodotConsumer } from "../application/godotConsumer/godotConsumerOperations";
 
@@ -256,6 +256,7 @@ async function dispatch(
     case "camera.simulate": return simulateCameraFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);
     case "camera.runtime-test": return runCameraRuntimeTest(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta, { godot: command.godot, keepSession: command.keepSession });
     case "camera.set": return dependencies.setCameraValue(workspaceRoot, command.file, command.propertyPath, command.value, command.dryRun);
+    case "targeting.create": return createTargetingProfile(workspaceRoot, command.file);
     case "targeting.inspect": return inspectTargeting(workspaceRoot, command.file);
     case "targeting.validate": return validateTargetingFile(workspaceRoot, command.file);
     case "targeting.simulate": return simulateTargetingFile(workspaceRoot, command.file, command.scenario, command.seconds, command.fixedDelta);

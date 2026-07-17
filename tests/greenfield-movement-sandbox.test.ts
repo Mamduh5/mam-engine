@@ -55,6 +55,16 @@ test("project init, movement create, and project validate form a safe greenfield
   assert.equal(cameraValidated.result.status, "passed", JSON.stringify(cameraValidated.result));
   assert.equal((cameraValidated.result.data as Record<string, unknown>).definitionCount, 2);
   assert.equal((cameraValidated.result.data as Record<string, unknown>).entryCameraValid, true);
+
+  const targetingCreated = await executeCli(["targeting", "create", "targeting/player.json", "--json"], root);
+  assert.equal(targetingCreated.result.status, "passed", JSON.stringify(targetingCreated.result));
+  assert.deepEqual(targetingCreated.result.changedFiles, ["definitions/targeting/player.json", "mam-project.json"]);
+  const targeting = JSON.parse(await readFile(path.join(root, "definitions", "targeting", "player.json"), "utf8")) as Record<string, any>;
+  assert.equal(targeting.kind, "targeting-profile"); assert.equal(targeting.id, "player"); assert.equal(targeting.acquisition.maximumDistance, 30); assert.equal(targeting.retention.lostTargetGraceSeconds, 0.5);
+  const targetingManifest = JSON.parse(await readFile(path.join(root, "mam-project.json"), "utf8")) as Record<string, unknown>;
+  assert.equal(targetingManifest.entryTargetingFile, "definitions/targeting/player.json");
+  const targetingValidated = await executeCli(["project", "validate", "--json"], root);
+  assert.equal(targetingValidated.result.status, "passed", JSON.stringify(targetingValidated.result)); assert.equal((targetingValidated.result.data as Record<string, unknown>).entryTargetingValid, true);
   await rm(path.join(root, "definitions", "camera", "player.json"));
   const recreated = await executeCli(["camera", "create", "camera/player.json", "--json"], root);
   assert.equal(recreated.result.status, "passed", JSON.stringify(recreated.result));
@@ -68,21 +78,26 @@ test("project init, movement create, and project validate form a safe greenfield
   assert.equal((await executeCli(["camera", "create", "camera/player.json", "--json"], root)).result.status, "failed");
   assert.equal((await executeCli(["camera", "create", "../outside-camera.json", "--json"], root)).result.status, "failed");
   assert.equal((await executeCli(["camera", "create", "C:/outside-camera.json", "--json"], root)).result.status, "failed");
+  assert.equal((await executeCli(["targeting", "create", "targeting/player.json", "--json"], root)).result.status, "failed");
+  assert.equal((await executeCli(["targeting", "create", "../outside-targeting.json", "--json"], root)).result.status, "failed");
+  assert.equal((await executeCli(["targeting", "create", "C:/outside-targeting.json", "--json"], root)).result.status, "failed");
   await assert.rejects(readFile(path.join(root, "outside-camera.json")));
   assert.equal((await executeCli(["project", "init", "--json"], root)).result.status, "failed");
 });
 
-test("project validation accepts legacy movement-only manifests and rejects invalid configured camera entries", async (context) => {
+test("project validation accepts legacy manifests and rejects invalid optional production entries", async (context) => {
   const root = await emptyWorkspace(context);
   assert.equal((await initProject(root)).status, "passed");
   assert.equal((await executeCli(["movement", "create", "movement/player.json", "--json"], root)).result.status, "passed");
   const manifestPath = path.join(root, "mam-project.json");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Record<string, unknown>;
   delete manifest.entryCameraFile;
+  delete manifest.entryTargetingFile;
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   const legacy = await executeCli(["project", "validate", "--json"], root);
   assert.equal(legacy.result.status, "passed", JSON.stringify(legacy.result));
   assert.equal((legacy.result.data as Record<string, unknown>).entryCameraValid, false);
+  assert.equal((legacy.result.data as Record<string, unknown>).entryTargetingValid, false);
 
   manifest.entryCameraFile = "camera/player.json";
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
@@ -95,6 +110,14 @@ test("project validation accepts legacy movement-only manifests and rejects inva
   invalid = await executeCli(["project", "validate", "--json"], root);
   assert.equal(invalid.result.status, "failed");
   assert.equal((invalid.result.data as Record<string, any>).findings.some((finding: Record<string, string>) => finding.code === "PROJECT_ENTRY_CAMERA_INVALID" && finding.file === manifest.entryMovementFile), true);
+
+  delete manifest.entryCameraFile; manifest.entryTargetingFile = "targeting/player.json";
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  invalid = await executeCli(["project", "validate", "--json"], root);
+  assert.equal(invalid.result.status, "failed"); assert.equal((invalid.result.data as Record<string, any>).findings.some((finding: Record<string, string>) => finding.code === "PROJECT_ENTRY_TARGETING_INVALID" && finding.path === "entryTargetingFile"), true);
+  manifest.entryTargetingFile = manifest.entryMovementFile; await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  invalid = await executeCli(["project", "validate", "--json"], root);
+  assert.equal((invalid.result.data as Record<string, any>).findings.some((finding: Record<string, string>) => finding.code === "PROJECT_ENTRY_TARGETING_INVALID" && finding.file === manifest.entryMovementFile), true);
 });
 
 test("project validation rejects invalid definitions and an unconfigured entry read-only", async (context) => {

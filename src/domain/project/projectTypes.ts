@@ -6,6 +6,7 @@ export interface MamProjectManifest {
   definitionRoot: string;
   entryMovementFile: string | null;
   entryCameraFile?: string | null;
+  entryTargetingFile?: string | null;
 }
 
 export interface ProjectValidationFinding {

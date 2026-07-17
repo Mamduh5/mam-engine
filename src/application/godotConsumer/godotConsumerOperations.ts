@@ -6,6 +6,7 @@ import path from "node:path";
 import { inspectProjectWorkspace, loadProject } from "../project/projectOperations";
 import { isLoadedCamera, loadValidCamera } from "../camera/cameraOperationSupport";
 import { isLoadedMovement, loadErrors, loadValidMovement } from "../movement/movementOperationSupport";
+import { isLoadedTargeting, loadValidTargeting } from "../targeting/targetingOperationSupport";
 import { auditChangedFiles, captureWorkspaceState, normalizeRepositoryPath, type FileState } from "../../infrastructure/files/changedFileAudit";
 import { atomicWriteText, fileExists, formatJson } from "../../infrastructure/files/jsonFileStore";
 import { resolvePackageAsset } from "../../infrastructure/runtime/packageAssetResolver";
@@ -17,10 +18,13 @@ export const GODOT_RUNTIME_BUNDLE_SCHEMA = "mam.godot-runtime-bundle/v1";
 export const GODOT_ADAPTER_CONTRACT = "mam.godot-movement-adapter/v1";
 export const GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA = "mam.godot-camera-runtime-bundle/v1";
 export const GODOT_CAMERA_ADAPTER_CONTRACT = "mam.godot-camera-adapter/v1";
+export const GODOT_TARGETING_RUNTIME_BUNDLE_SCHEMA = "mam.godot-targeting-runtime-bundle/v1";
+export const GODOT_TARGETING_ADAPTER_CONTRACT = "mam.godot-targeting-adapter/v1";
 export const GODOT_ADDON_ROOT = "addons/mam_engine";
 export const GODOT_MANIFEST_FILE = `${GODOT_ADDON_ROOT}/mam-managed-files.json`;
 export const GODOT_BUNDLE_FILE = "mam_generated/mam_runtime_bundle.json";
 export const GODOT_CAMERA_BUNDLE_FILE = "mam_generated/mam_camera_runtime_bundle.json";
+export const GODOT_TARGETING_BUNDLE_FILE = "mam_generated/mam_targeting_runtime_bundle.json";
 
 interface ManagedFile { path: string; sha256: string }
 interface ManagedManifest { schemaVersion: typeof GODOT_CONSUMER_CONTRACT; packageVersion: string; consumerContractVersion: typeof GODOT_ADAPTER_CONTRACT; files: ManagedFile[] }
@@ -64,6 +68,11 @@ export async function syncGodotConsumer(projectRoot: string, check: boolean, inj
     const camera = await loadValidCamera(projectRoot, loadedProject.manifest.entryCameraFile);
     if (!isLoadedCamera(camera)) return operationResult({ command, status: "failed", input: { check }, errors: camera.errors, changedFiles: [] });
     bundles.push(buildCameraBundle(plan.packageVersion, camera.relativePath, camera.content, camera.profile));
+  }
+  if (loadedProject.manifest.entryTargetingFile != null) {
+    const targeting = await loadValidTargeting(projectRoot, loadedProject.manifest.entryTargetingFile);
+    if (!isLoadedTargeting(targeting)) return operationResult({ command, status: "failed", input: { check }, errors: targeting.errors, changedFiles: [] });
+    bundles.push(buildTargetingBundle(plan.packageVersion, targeting.relativePath, targeting.content, targeting.profile));
   }
   const currentBundles: { bundle: RuntimeBundle; current: string | null }[] = []; const readErrors: OperationError[] = [];
   for (const bundle of bundles) {
@@ -118,6 +127,7 @@ function parseManifest(content: string): ManagedManifest | null { try { const va
 
 function buildBundle(packageVersion: string, sourcePath: string, sourceContent: string, profile: unknown): RuntimeBundle { const payload = stableValue({ adapterContractVersion: GODOT_ADAPTER_CONTRACT, definition: { kind: "movement-profile", profile: stableValue(profile), schemaVersion: 1, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent) }, packageVersion }); const payloadJson = JSON.stringify(payload); const value = { schemaVersion: GODOT_RUNTIME_BUNDLE_SCHEMA, payloadJson, integrity: { algorithm: "sha256", payloadSha256: sha256(payloadJson) } }; return { file: GODOT_BUNDLE_FILE, text: stableJson(value), data: { bundleFile: GODOT_BUNDLE_FILE, schemaVersion: GODOT_RUNTIME_BUNDLE_SCHEMA, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent), payloadSha256: sha256(payloadJson) } }; }
 function buildCameraBundle(packageVersion: string, sourcePath: string, sourceContent: string, profile: unknown): RuntimeBundle { const payload = stableValue({ adapterContractVersion: GODOT_CAMERA_ADAPTER_CONTRACT, definition: { kind: "camera-profile", profile: stableValue(profile), schemaVersion: 1, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent) }, packageVersion }); const payloadJson = JSON.stringify(payload); const value = { schemaVersion: GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA, payloadJson, integrity: { algorithm: "sha256", payloadSha256: sha256(payloadJson) } }; return { file: GODOT_CAMERA_BUNDLE_FILE, text: stableJson(value), data: { bundleFile: GODOT_CAMERA_BUNDLE_FILE, schemaVersion: GODOT_CAMERA_RUNTIME_BUNDLE_SCHEMA, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent), payloadSha256: sha256(payloadJson) } }; }
+function buildTargetingBundle(packageVersion: string, sourcePath: string, sourceContent: string, profile: unknown): RuntimeBundle { const payload = stableValue({ adapterContractVersion: GODOT_TARGETING_ADAPTER_CONTRACT, definition: { kind: "targeting-profile", profile: stableValue(profile), schemaVersion: 1, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent) }, packageVersion }); const payloadJson = JSON.stringify(payload); const value = { schemaVersion: GODOT_TARGETING_RUNTIME_BUNDLE_SCHEMA, payloadJson, integrity: { algorithm: "sha256", payloadSha256: sha256(payloadJson) } }; return { file: GODOT_TARGETING_BUNDLE_FILE, text: stableJson(value), data: { bundleFile: GODOT_TARGETING_BUNDLE_FILE, schemaVersion: GODOT_TARGETING_RUNTIME_BUNDLE_SCHEMA, sourcePath: normalizeRepositoryPath(sourcePath), sourceSha256: sha256(sourceContent), payloadSha256: sha256(payloadJson) } }; }
 
 async function mutateFiles(root: string, before: FileState, writes: { file: string; content: string }[], removals: string[], allowed: string[], dependencies: GodotConsumerDependencies): Promise<{ ok: true; changedFiles: string[] } | { ok: false; changedFiles: string[]; recovery: Record<string, unknown>; errors: OperationError[] }> {
   const originals = new Map<string, string | null>(); for (const file of allowed) { try { originals.set(file, await readFile(path.join(root, ...file.split("/")), "utf8")); } catch (caught) { if ((caught as NodeJS.ErrnoException).code === "ENOENT") originals.set(file, null); else throw caught; } }
@@ -126,7 +136,7 @@ async function mutateFiles(root: string, before: FileState, writes: { file: stri
 }
 
 function projectErrors(findings: { path?: string; file?: string; message: string }[]): OperationError[] { return findings.map((finding) => ({ code: ErrorCodes.GodotConsumerProjectInvalid, ...((finding.path ?? finding.file) ? { path: finding.path ?? finding.file } : {}), message: finding.message })); }
-function syncData(bundles: RuntimeBundle[]): Record<string, unknown> { const movement = bundles[0]?.data ?? {}; const camera = bundles.find((bundle) => bundle.file === GODOT_CAMERA_BUNDLE_FILE); return camera === undefined ? movement : { ...movement, cameraBundle: camera.data }; }
+function syncData(bundles: RuntimeBundle[]): Record<string, unknown> { const movement = bundles[0]?.data ?? {}; const camera = bundles.find((bundle) => bundle.file === GODOT_CAMERA_BUNDLE_FILE); const targeting = bundles.find((bundle) => bundle.file === GODOT_TARGETING_BUNDLE_FILE); return { ...movement, ...(camera === undefined ? {} : { cameraBundle: camera.data }), ...(targeting === undefined ? {} : { targetingBundle: targeting.data }) }; }
 function installData(plan: SourcePlan): Record<string, unknown> { return { addonRoot: GODOT_ADDON_ROOT, manifestFile: GODOT_MANIFEST_FILE, packageVersion: plan.packageVersion, consumerContractVersion: GODOT_ADAPTER_CONTRACT, managedFileCount: plan.manifest.files.length }; }
 function safeManagedPath(root: string, relative: string): string | null { const normalized = normalizeRepositoryPath(relative); if (!normalized.startsWith(`${GODOT_ADDON_ROOT}/`) || normalized.includes("../") || path.isAbsolute(relative)) return null; const absolute = path.resolve(root, ...normalized.split("/")); return absolute.startsWith(`${path.resolve(root)}${path.sep}`) ? absolute : null; }
 function stableValue(value: unknown): unknown { if (Array.isArray(value)) return value.map(stableValue); if (value !== null && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, stableValue(item)])); return value; }
